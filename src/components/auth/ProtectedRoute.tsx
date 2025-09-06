@@ -23,21 +23,40 @@ export function ProtectedRoute({
   useEffect(() => {
     if (!loading) {
       if (!user) {
+        console.log('ProtectedRoute: No user found, redirecting to:', fallback);
         router.push(fallback);
         return;
       }
 
-      // Check if user is active (if required)
-      if (requireActive && !user.isActive) {
+      // Check if user is active (if required) - exempt admin users
+      // Admin users should always have access regardless of isActive status
+      if (requireActive && !user.isActive && user.role !== 'admin') {
+        console.log('ProtectedRoute: User not active and not admin, redirecting to /pending-approval', {
+          user: user.email,
+          role: user.role,
+          isActive: user.isActive
+        });
         router.push('/pending-approval');
         return;
       }
 
       // Check role requirements
       if (requiredRole && user.role !== requiredRole) {
+        console.log('ProtectedRoute: User role mismatch, redirecting to /unauthorized', {
+          user: user.email,
+          userRole: user.role,
+          requiredRole
+        });
         router.push('/unauthorized');
         return;
       }
+
+      console.log('ProtectedRoute: Access granted', {
+        user: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        requiredRole
+      });
     }
   }, [user, loading, requiredRole, requireActive, fallback, router]);
 
@@ -49,7 +68,8 @@ export function ProtectedRoute({
     );
   }
 
-  if (!user || (requireActive && !user.isActive) || (requiredRole && user.role !== requiredRole)) {
+  if (!user || (requireActive && !user.isActive && user.role !== 'admin') || (requiredRole && user.role !== requiredRole)) {
+    // Admin users are exempt from isActive check
     return null;
   }
 

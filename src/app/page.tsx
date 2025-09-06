@@ -14,12 +14,21 @@ export default function Home() {
         // Admin users should always have access, operators need approval
         const shouldHaveAccess = user.role === 'admin' || user.isActive;
         
+        console.log('Main page routing:', {
+          user: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          shouldHaveAccess,
+          destination: shouldHaveAccess ? '/dashboard' : '/pending-approval'
+        });
+        
         if (shouldHaveAccess) {
           router.push('/dashboard');
         } else {
           router.push('/pending-approval');
         }
       } else {
+        console.log('Main page: No user found, redirecting to /login');
         router.push('/login');
       }
     }
