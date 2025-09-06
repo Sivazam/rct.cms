@@ -70,7 +70,28 @@ export async function POST(request: NextRequest) {
 
     // Send SMS notifications (mock implementation - in real app, get entry details first)
     try {
-      // SMS to Admin
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // SMS to Admin - currently simulating instead of sending
+      console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
+      console.log('Message:', SMSTemplates.renewalConfirmation(
+        operatorName || 'Operator',
+        'Customer Name', // This should come from entry data
+        months,
+        amount,
+        entryId
+      ));
+
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // SMS to Customer - currently simulating instead of sending
+      console.log('SMS would be sent to customer:', '+91XXXXXXXXXX'); // This should come from entry data
+      console.log('Message:', SMSTemplates.customerRenewalConfirmation(
+        entryId,
+        newExpiryDate.toLocaleDateString(),
+        amount
+      ));
+
+      // Simulate SMS sending (replace with actual sendSMS calls when Fast2SMS is ready)
+      /*
       await sendSMS(
         process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
         SMSTemplates.renewalConfirmation(
@@ -83,7 +104,6 @@ export async function POST(request: NextRequest) {
         entryId
       );
 
-      // SMS to Customer (mock mobile number)
       await sendSMS(
         '+91XXXXXXXXXX', // This should come from entry data
         SMSTemplates.customerRenewalConfirmation(
@@ -93,6 +113,7 @@ export async function POST(request: NextRequest) {
         ),
         entryId
       );
+      */
     } catch (smsError) {
       console.error('Error sending SMS:', smsError);
       // Don't fail the renewal if SMS fails

@@ -12,6 +12,7 @@ import { Calendar, Calculator, DollarSign, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { updateEntry } from '@/lib/firestore';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
+import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Entry {
@@ -47,6 +48,7 @@ interface RenewalFormProps {
 
 export default function RenewalForm({ entry, onSuccess, onCancel, loading = false }: RenewalFormProps) {
   const { user } = useAuth();
+  const { showSMSDialog } = useSMSDialog();
   const [formData, setFormData] = useState({
     renewalMonths: 1,
     paymentMethod: 'cash' as 'cash' | 'upi'
@@ -110,8 +112,10 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         status: 'active' // Reactivate if expired
       });
 
-      // Send SMS notifications
-      await sendSMS(
+      // Send SMS notifications (using dialogs for now)
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // SMS to Admin - currently showing dialog instead of sending
+      showSMSDialog(
         process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
         SMSTemplates.renewalConfirmation(
           user.name || 'Operator',
@@ -120,16 +124,32 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
           renewalSummary.amount,
           entry.id
         ),
+        'renewalConfirmation',
+        {
+          operatorName: user.name || 'Operator',
+          customerName: entry.customerName,
+          months: formData.renewalMonths,
+          amount: renewalSummary.amount,
+          entryId: entry.id
+        },
         entry.id
       );
 
-      await sendSMS(
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // SMS to customer - currently showing dialog instead of sending
+      showSMSDialog(
         entry.customerMobile,
         SMSTemplates.customerRenewalConfirmation(
           entry.id,
           renewalSummary.newExpiryDate.toLocaleDateString(),
           renewalSummary.amount
         ),
+        'customerRenewalConfirmation',
+        {
+          entryId: entry.id,
+          newExpiryDate: renewalSummary.newExpiryDate.toLocaleDateString(),
+          amount: renewalSummary.amount
+        },
         entry.id
       );
 
@@ -371,5 +391,6 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         </form>
       </CardContent>
     </Card>
-  );
+
+    );
 }

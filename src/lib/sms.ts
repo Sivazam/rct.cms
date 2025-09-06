@@ -1,41 +1,85 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
+// TODO: Replace with actual Fast2SMS integration when credentials are available
+// This function currently shows dialogs for client-side calls and logs for server-side calls
+// FAST2SMS_CONFIG will be used when real SMS integration is implemented
 const FAST2SMS_CONFIG = {
-  apiKey: process.env.FAST2SMS_API_KEY || '',
-  senderId: process.env.FAST2SMS_SENDER_ID || 'RCTTST',
+  apiKey: process.env.FAST2SMS_API_KEY || '', // TODO: Add your Fast2SMS API key here
+  senderId: process.env.FAST2SMS_SENDER_ID || 'RCTTST', // TODO: Update with your sender ID
   route: "otp",
   baseUrl: "https://www.fast2sms.com/dev/bulkV2"
 };
 
+// TODO: This function currently handles both client-side (dialogs) and server-side (logging) calls
+// Replace with actual Fast2SMS API integration when credentials are available
 export const sendSMS = async (mobile: string, message: string, entryId: string | null = null) => {
   try {
-    const response = await fetch(FAST2SMS_CONFIG.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': FAST2SMS_CONFIG.apiKey,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        route: FAST2SMS_CONFIG.route,
-        sender_id: FAST2SMS_CONFIG.senderId,
-        message: message,
-        numbers: mobile.replace('+91', ''), // remove country code
-        flash: 0
-      })
-    });
+    // Check if we're in a browser environment (client-side)
+    const isClientSide = typeof window !== 'undefined';
     
-    const result = await response.json();
+    if (isClientSide) {
+      // Client-side: We can't send SMS directly, so we'll log it for now
+      // In the actual components, we're using showSMSDialog() instead
+      console.log('SMS (Client-side) - would be sent to:', mobile);
+      console.log('SMS (Client-side) - Message:', message);
+      console.log('SMS (Client-side) - Entry ID:', entryId);
+    } else {
+      // Server-side: Log the SMS that would be sent
+      console.log('SMS (Server-side) - would be sent to:', mobile);
+      console.log('SMS (Server-side) - Message:', message);
+      console.log('SMS (Server-side) - Entry ID:', entryId);
+      
+      // TODO: Uncomment this code when Fast2SMS credentials are available for server-side SMS
+      /*
+      const response = await fetch(FAST2SMS_CONFIG.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': FAST2SMS_CONFIG.apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          route: FAST2SMS_CONFIG.route,
+          sender_id: FAST2SMS_CONFIG.senderId,
+          message: message,
+          numbers: mobile.replace('+91', ''), // remove country code
+          flash: 0
+        })
+      });
+      
+      const result = await response.json();
+      return result;
+      */
+    }
     
-    // Log in Firestore
-    await addDoc(collection(db, 'smsLogs'), {
-      recipient: mobile,
-      message: message,
-      status: result.return ? 'sent' : 'failed',
-      entryId: entryId,
-      fast2smsResponse: result,
-      sentAt: serverTimestamp()
-    });
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Simulate successful response
+    const result = {
+      return: true,
+      request_id: 'temp_' + Date.now(),
+      message: isClientSide ? 'SMS logged (client-side)' : 'SMS logged (server-side)'
+    };
+    
+    // TODO: Keep this logging for tracking SMS sends
+    // Log in Firestore for audit purposes (only if we have access to Firestore)
+    try {
+      if (typeof db !== 'undefined') {
+        await addDoc(collection(db, 'smsLogs'), {
+          recipient: mobile,
+          message: message,
+          status: result.return ? 'sent' : 'failed',
+          entryId: entryId,
+          fast2smsResponse: result,
+          sentAt: serverTimestamp(),
+          isSimulated: true, // TODO: Remove this field when using real SMS
+          isClientSide: isClientSide
+        });
+      }
+    } catch (logError) {
+      console.error('Failed to log SMS to Firestore:', logError);
+    }
     
     return result;
   } catch (error) {

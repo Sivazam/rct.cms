@@ -15,6 +15,7 @@ import { Search, Plus, Users, Phone, MapPin, Calendar, Package, AlertCircle } fr
 import { motion } from 'framer-motion';
 import { getCustomerByMobile, addCustomer, addEntry, getLocations } from '@/lib/firestore';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
+import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
@@ -35,6 +36,7 @@ interface Location {
 
 export default function CustomerEntrySystem() {
   const { user } = useAuth();
+  const { showSMSDialog } = useSMSDialog();
   const [searchMobile, setSearchMobile] = useState('');
   const [searchResult, setSearchResult] = useState<Customer | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -160,13 +162,14 @@ export default function CustomerEntrySystem() {
         paymentMethod: formData.paymentMethod
       });
 
-      // Send SMS notifications
+      // Send SMS notifications (using dialogs for now)
       const selectedLocationData = locations.find(loc => loc.id === selectedLocation);
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 30);
 
-      // SMS to admin
-      await sendSMS(
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // SMS to admin - currently showing dialog instead of sending
+      showSMSDialog(
         '+919876543210', // Admin mobile - should be configurable
         SMSTemplates.entryConfirmation(
           user.name || 'Operator',
@@ -175,16 +178,30 @@ export default function CustomerEntrySystem() {
           formData.numberOfPots,
           entryId
         ),
+        'entryConfirmation',
+        {
+          operatorName: user.name || 'Operator',
+          location: selectedLocationData?.venueName || 'Unknown Location',
+          customerName: formData.customerName,
+          pots: formData.numberOfPots,
+          entryId: entryId
+        },
         entryId
       );
 
-      // SMS to customer
-      await sendSMS(
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // SMS to customer - currently showing dialog instead of sending
+      showSMSDialog(
         formData.customerMobile,
         SMSTemplates.customerEntryConfirmation(
           entryId,
           expiryDate.toLocaleDateString()
         ),
+        'customerEntryConfirmation',
+        {
+          entryId: entryId,
+          expiryDate: expiryDate.toLocaleDateString()
+        },
         entryId
       );
 
@@ -469,6 +486,9 @@ export default function CustomerEntrySystem() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* SMS Dialog for notifications */}
+      <SMSDialog />
     </div>
   );
 }

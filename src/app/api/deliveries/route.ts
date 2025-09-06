@@ -102,7 +102,16 @@ export async function POST(request: NextRequest) {
       formattedDate
     );
 
+    // TODO: Replace with actual Fast2SMS integration when credentials are available
+    // SMS to customer - currently simulating instead of sending
+    console.log('SMS would be sent to customer:', customerMobile);
+    console.log('Message:', smsMessage);
+    
+    // Simulate SMS sending (replace with actual sendSMS call when Fast2SMS is ready)
+    const smsResult = { success: true }; // Mock successful result
+    /*
     const smsResult = await sendSMS(customerMobile, smsMessage, entryId);
+    */
 
     // Update delivery record with SMS status
     await updateDoc(doc(db, 'deliveries', deliveryDocRef.id), {
@@ -118,9 +127,19 @@ export async function POST(request: NextRequest) {
       formattedDate
     );
 
-    // You might want to send this to a specific admin mobile number
-    // For now, we'll just log it
-    console.log('Admin notification:', adminSmsMessage);
+    // TODO: Replace with actual Fast2SMS integration when credentials are available
+    // SMS to admin - currently simulating instead of sending
+    console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
+    console.log('Message:', adminSmsMessage);
+    
+    // Simulate admin SMS (replace with actual sendSMS call when Fast2SMS is ready)
+    /*
+    await sendSMS(
+      process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
+      adminSmsMessage,
+      entryId
+    );
+    */
 
     // Log the delivery
     await addDoc(collection(db, 'deliveryLogs'), {

@@ -61,7 +61,16 @@ export async function POST(request: NextRequest) {
     
     const smsMessage = `RCT-CMS: Your delivery verification OTP is ${otp}. This OTP will expire in 10 minutes. Please do not share this OTP with anyone. Entry ID: ${entryId.slice(-6)}`;
 
+    // TODO: Replace with actual Fast2SMS integration when credentials are available
+    // OTP SMS to customer - currently simulating instead of sending
+    console.log('SMS would be sent to customer:', customerMobile);
+    console.log('Message:', smsMessage);
+    
+    // Simulate SMS sending (replace with actual sendSMS call when Fast2SMS is ready)
+    const smsResult = { success: true }; // Mock successful result
+    /*
     const smsResult = await sendSMS(customerMobile, smsMessage, entryId);
+    */
 
     if (!smsResult.success) {
       console.error('Failed to send OTP SMS:', smsResult.error);

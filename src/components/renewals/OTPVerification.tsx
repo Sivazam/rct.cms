@@ -11,6 +11,7 @@ import { Shield, Smartphone, Clock, RefreshCw, CheckCircle, AlertTriangle } from
 import { motion } from 'framer-motion';
 import { generateOTP, verifyOTP } from '@/lib/firestore';
 import { sendSMS } from '@/lib/sms';
+import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 
 interface OTPVerificationProps {
   mobile: string;
@@ -29,6 +30,7 @@ export default function OTPVerification({
   onCancel, 
   loading = false 
 }: OTPVerificationProps) {
+  const { showSMSDialog } = useSMSDialog();
   const [otp, setOtp] = useState('');
   const [otpId, setOtpId] = useState('');
   const [generatedOTP, setGeneratedOTP] = useState('');
@@ -70,9 +72,22 @@ export default function OTPVerification({
       setIsResendEnabled(false);
       setAttempts(0);
 
-      // Send OTP via SMS
+      // Send OTP via SMS (using dialogs for now)
       const message = `Your OTP for ${type} is: ${result.otp}. Valid for 10 minutes. Do not share this OTP with anyone. - RCT-CMS`;
-      await sendSMS(mobile, message, entryId);
+      
+      // TODO: Replace with actual Fast2SMS integration when credentials are available
+      // OTP SMS - currently showing dialog instead of sending
+      showSMSDialog(
+        mobile,
+        message,
+        'otp',
+        {
+          type: type,
+          otp: result.otp,
+          expiryMinutes: OTP_EXPIRY_MINUTES
+        },
+        entryId
+      );
 
     } catch (error: any) {
       setError(error.message || 'Failed to generate OTP');
@@ -279,5 +294,6 @@ export default function OTPVerification({
         </div>
       </CardContent>
     </Card>
+
   );
 }

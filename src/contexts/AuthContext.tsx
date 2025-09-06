@@ -81,12 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await sendEmailVerification(firebaseUser);
       
       // Create user document in Firestore
+      // Admin users are active by default, operators need approval
       await setDoc(doc(db, 'users', firebaseUser.uid), {
         email,
         name,
         mobile,
         role,
-        isActive: false, // Default to false, needs admin approval
+        isActive: role === 'admin', // Admin users are active immediately, operators need approval
         locationIds: [],
         createdAt: serverTimestamp(),
         createdBy: firebaseUser.uid,
