@@ -5,6 +5,7 @@ import RenewalSearch from './RenewalSearch';
 import OTPVerification from './OTPVerification';
 import RenewalForm from './RenewalForm';
 import RenewalConfirmation from './RenewalConfirmation';
+import RenewalsList from './RenewalsList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, RefreshCw, Users, AlertTriangle } from 'lucide-react';
@@ -239,6 +240,13 @@ export default function RenewalSystem() {
         <div className="bg-white rounded-lg shadow-sm p-6">
           {renderStep()}
         </div>
+
+        {/* Renewals List - Only shown in search step */}
+        {currentStep === 'search' && (
+          <div className="mt-6">
+            <RenewalsList />
+          </div>
+        )}
 
         {/* Quick Stats */}
         {currentStep === 'search' && (

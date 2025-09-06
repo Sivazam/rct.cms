@@ -4,6 +4,7 @@ import { useState } from 'react';
 import CustomerSearch from './CustomerSearch';
 import CustomerEntryForm from './CustomerEntryForm';
 import EntryConfirmation from './EntryConfirmation';
+import EntriesList from './EntriesList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Package, Users } from 'lucide-react';
@@ -208,6 +209,13 @@ export default function CustomerEntrySystem() {
         <div className="bg-white rounded-lg shadow-sm p-6">
           {renderStep()}
         </div>
+
+        {/* Entries List - Only shown in search step */}
+        {currentStep === 'search' && (
+          <div className="mt-6">
+            <EntriesList />
+          </div>
+        )}
 
         {/* Quick Stats */}
         {currentStep === 'search' && (

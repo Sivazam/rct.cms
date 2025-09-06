@@ -115,15 +115,23 @@ export const getPendingOperators = async () => {
     const q = query(
       collection(db, 'users'), 
       where('role', '==', 'operator'),
-      where('isActive', '==', false),
-      orderBy('createdAt', 'desc')
+      where('isActive', '==', false)
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const operators = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Sort manually to avoid orderBy index requirements
+    operators.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(0);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
+    
+    return operators;
   } catch (error) {
     console.error('Error getting pending operators:', error);
     throw error;
@@ -135,15 +143,23 @@ export const getActiveOperators = async () => {
     const q = query(
       collection(db, 'users'), 
       where('role', '==', 'operator'),
-      where('isActive', '==', true),
-      orderBy('createdAt', 'desc')
+      where('isActive', '==', true)
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const operators = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Sort manually to avoid orderBy index requirements
+    operators.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(0);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
+    
+    return operators;
   } catch (error) {
     console.error('Error getting active operators:', error);
     throw error;
