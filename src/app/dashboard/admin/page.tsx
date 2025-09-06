@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import LocationManagement from '@/components/admin/LocationManagement';
 import OperatorManagement from '@/components/admin/OperatorManagement';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
+import RenewalSystem from '@/components/renewals/RenewalSystem';
 import { 
   Users, 
   MapPin, 
@@ -92,11 +93,12 @@ export default function AdminDashboard() {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="locations">Locations</TabsTrigger>
               <TabsTrigger value="operators">Operators</TabsTrigger>
               <TabsTrigger value="entries">Entries</TabsTrigger>
+              <TabsTrigger value="renewals">Renewals</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
 
@@ -245,6 +247,11 @@ export default function AdminDashboard() {
             {/* Entries Tab */}
             <TabsContent value="entries" className="space-y-6">
               <CustomerEntrySystem />
+            </TabsContent>
+
+            {/* Renewals Tab */}
+            <TabsContent value="renewals" className="space-y-6">
+              <RenewalSystem />
             </TabsContent>
 
             {/* Analytics Tab */}

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
+import RenewalSystem from '@/components/renewals/RenewalSystem';
 import { 
   Search, 
   Plus, 
@@ -269,20 +270,7 @@ export default function OperatorDashboard() {
 
             {/* Renewals Tab */}
             <TabsContent value="renewals" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Renewal Management</CardTitle>
-                  <CardDescription>
-                    Manage customer renewals and expiring entries
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-gray-500 py-8">
-                    <RefreshCw className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>Renewal management interface coming soon</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <RenewalSystem />
             </TabsContent>
 
             {/* Deliveries Tab */}
