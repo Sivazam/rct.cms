@@ -9,6 +9,11 @@ export default function Home() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
+    console.log('Home page: useEffect triggered', {
+      user: user ? { email: user.email, role: user.role, isActive: user.isActive } : null,
+      loading
+    });
+
     if (!loading) {
       if (user) {
         // Admin users should always have access, operators need approval
@@ -23,12 +28,14 @@ export default function Home() {
         });
         
         if (shouldHaveAccess) {
+          console.log('Home page: Redirecting to /dashboard');
           router.push('/dashboard');
         } else {
+          console.log('Home page: Redirecting to /pending-approval');
           router.push('/pending-approval');
         }
       } else {
-        console.log('Main page: No user found, redirecting to /login');
+        console.log('Home page: No user found, redirecting to /login');
         router.push('/login');
       }
     }
