@@ -11,7 +11,10 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        if (user.isActive) {
+        // Admin users should always have access, operators need approval
+        const shouldHaveAccess = user.role === 'admin' || user.isActive;
+        
+        if (shouldHaveAccess) {
           router.push('/dashboard');
         } else {
           router.push('/pending-approval');

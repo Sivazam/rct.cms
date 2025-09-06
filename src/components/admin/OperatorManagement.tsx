@@ -51,11 +51,16 @@ export default function OperatorManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('Fetching operator data...');
       const [pendingOps, activeOps, locs] = await Promise.all([
         getUsers('operator', false),
         getUsers('operator', true),
         getLocations()
       ]);
+      
+      console.log('Pending operators:', pendingOps);
+      console.log('Active operators:', activeOps);
+      console.log('Locations:', locs);
       
       setPendingOperators(pendingOps);
       setActiveOperators(activeOps);

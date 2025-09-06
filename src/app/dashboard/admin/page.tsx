@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import OperatorManagement from '@/components/admin/OperatorManagement';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
+import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { 
   Users, 
   MapPin, 
@@ -30,25 +31,64 @@ import {
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState('all');
+  const [locations, setLocations] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({
+    totalEntries: 0,
+    totalRenewals: 0,
+    totalDeliveries: 0,
+    expiringIn7Days: 0,
+    monthlyRevenue: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - replace with actual Firestore queries
-  const locations = [
-    { id: 'loc1', name: 'Branch 1', address: '123 Main St', entries: 45, renewals: 23, deliveries: 12 },
-    { id: 'loc2', name: 'Branch 2', address: '456 Oak Ave', entries: 32, renewals: 18, deliveries: 8 },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, [selectedLocation]);
 
-  const stats = {
-    totalEntries: 150,
-    totalRenewals: 89,
-    totalDeliveries: 45,
-    expiringIn7Days: 12,
-    monthlyRevenue: 45000
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch locations
+      const locationsData = await getLocations();
+      setLocations(locationsData.filter(loc => loc.isActive));
+      
+      // Fetch statistics based on selected location
+      const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
+      const statsData = await getSystemStats(locationId);
+      
+      // Fetch real entries count
+      const entries = await getEntries({
+        locationId: locationId,
+        status: 'active'
+      });
+      
+      // Fetch renewals count
+      const renewals = await getEntries({
+        locationId: locationId,
+        expiringSoon: true
+      });
+      
+      // Fetch deliveries count
+      const deliveries = await getEntries({
+        locationId: locationId,
+        status: 'delivered'
+      });
+      
+      setStats({
+        totalEntries: entries.length,
+        totalRenewals: renewals.length,
+        totalDeliveries: deliveries.length,
+        expiringIn7Days: renewals.length,
+        monthlyRevenue: statsData.monthlyRevenue || 0
+      });
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const pendingOperators = [
-    { id: 'op1', name: 'John Doe', email: 'john@example.com', mobile: '+919876543210', role: 'operator' },
-    { id: 'op2', name: 'Jane Smith', email: 'jane@example.com', mobile: '+919876543211', role: 'operator' },
-  ];
 
   const handleLogout = async () => {
     await logout();

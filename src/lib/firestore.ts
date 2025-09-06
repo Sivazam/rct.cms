@@ -58,19 +58,29 @@ export const getUsers = async (role?: string, isActive?: boolean) => {
   try {
     let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
     
+    console.log('getUsers called with:', { role, isActive });
+    
     if (role) {
       q = query(q, where('role', '==', role));
+      console.log('Added role filter:', role);
     }
     
     if (isActive !== undefined) {
       q = query(q, where('isActive', '==', isActive));
+      console.log('Added isActive filter:', isActive);
     }
     
+    console.log('Executing query...');
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    console.log('Query snapshot size:', querySnapshot.size);
+    
+    const users = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    console.log('Users found:', users);
+    return users;
   } catch (error) {
     console.error('Error getting users:', error);
     throw error;

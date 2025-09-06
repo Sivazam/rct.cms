@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
+import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { 
   Search, 
   Plus, 
@@ -27,27 +28,86 @@ import {
 
 export default function OperatorDashboard() {
   const { user, logout } = useAuth();
-  const [selectedLocation, setSelectedLocation] = useState('loc1');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [locations, setLocations] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({
+    totalEntries: 0,
+    totalRenewals: 0,
+    totalDeliveries: 0,
+    expiringIn7Days: 0,
+    monthlyRevenue: 0
+  });
+  const [recentEntries, setRecentEntries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - replace with actual Firestore queries
-  const locations = [
-    { id: 'loc1', name: 'Branch 1', address: '123 Main St' },
-    { id: 'loc2', name: 'Branch 2', address: '456 Oak Ave' },
-  ];
+  useEffect(() => {
+    fetchOperatorData();
+  }, [selectedLocation]);
 
-  const stats = {
-    totalEntries: 45,
-    totalRenewals: 23,
-    totalDeliveries: 12,
-    expiringIn7Days: 3,
-    monthlyRevenue: 15000
+  const fetchOperatorData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get operator's assigned locations
+      const operatorLocations = user?.locationIds || [];
+      if (operatorLocations.length === 0) {
+        console.log('No locations assigned to operator');
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch all available locations
+      const allLocations = await getLocations();
+      const assignedLocations = allLocations.filter(loc => 
+        operatorLocations.includes(loc.id) && loc.isActive
+      );
+      setLocations(assignedLocations);
+      
+      // Set default selected location
+      if (!selectedLocation && assignedLocations.length > 0) {
+        setSelectedLocation(assignedLocations[0].id);
+      }
+      
+      if (selectedLocation) {
+        // Fetch statistics for selected location
+        const entries = await getEntries({
+          locationId: selectedLocation,
+          status: 'active'
+        });
+        
+        const renewals = await getEntries({
+          locationId: selectedLocation,
+          expiringSoon: true
+        });
+        
+        const deliveries = await getEntries({
+          locationId: selectedLocation,
+          status: 'delivered'
+        });
+        
+        const statsData = await getSystemStats(selectedLocation);
+        
+        setStats({
+          totalEntries: entries.length,
+          totalRenewals: renewals.length,
+          totalDeliveries: deliveries.length,
+          expiringIn7Days: renewals.length,
+          monthlyRevenue: statsData.monthlyRevenue || 0
+        });
+        
+        // Fetch recent entries for this location
+        const recentEntriesData = await getEntries({
+          locationId: selectedLocation
+        });
+        setRecentEntries(recentEntriesData.slice(0, 5)); // Show last 5 entries
+      }
+      
+    } catch (error) {
+      console.error('Error fetching operator data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const recentEntries = [
-    { id: 'ent1', customerName: 'Raj Kumar', mobile: '+919876543210', pots: 2, date: '2024-01-15', status: 'active' },
-    { id: 'ent2', customerName: 'Sita Devi', mobile: '+919876543211', pots: 1, date: '2024-01-14', status: 'active' },
-    { id: 'ent3', customerName: 'Amit Singh', mobile: '+919876543212', pots: 3, date: '2024-01-13', status: 'expiring' },
-  ];
 
   const handleLogout = async () => {
     await logout();

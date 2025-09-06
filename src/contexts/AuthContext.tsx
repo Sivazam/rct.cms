@@ -74,15 +74,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (email: string, password: string, name: string, mobile: string, role: 'admin' | 'operator' = 'operator') => {
     try {
+      console.log('Signup attempt:', { email, name, mobile, role });
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
+      
+      console.log('Firebase user created:', firebaseUser.uid);
       
       // Send email verification
       await sendEmailVerification(firebaseUser);
       
       // Create user document in Firestore
       // Admin users are active by default, operators need approval
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
+      const userData = {
         email,
         name,
         mobile,
@@ -92,7 +95,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: serverTimestamp(),
         createdBy: firebaseUser.uid,
         lastLogin: serverTimestamp()
-      });
+      };
+      
+      console.log('Creating user document in Firestore:', userData);
+      
+      await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+      console.log('User document created successfully');
       
     } catch (error) {
       console.error('Signup error:', error);
