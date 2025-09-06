@@ -42,28 +42,87 @@ export function useAuth() {
   return context;
 }
 
+// Helper function to ensure user has required properties
+function ensureAuthUser(firebaseUser: User, userData?: any): AuthUser {
+  const authUser: AuthUser = {
+    ...firebaseUser,
+    role: userData?.role || 'admin', // Default to admin if not specified
+    isActive: userData?.isActive !== false, // Default to true if not explicitly false
+    locationIds: userData?.locationIds || [],
+    name: userData?.name || firebaseUser.displayName || 'User',
+    mobile: userData?.mobile || ''
+  };
+  
+  console.log('ensureAuthUser: Created AuthUser:', {
+    uid: authUser.uid,
+    email: authUser.email,
+    role: authUser.role,
+    isActive: authUser.isActive,
+    name: authUser.name
+  });
+  
+  return authUser;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('AuthContext: onAuthStateChanged triggered', {
+        firebaseUser: firebaseUser ? {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          emailVerified: firebaseUser.emailVerified
+        } : null
+      });
+
       if (firebaseUser) {
-        // Get user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        const userData = userDoc.data();
-        
-        const authUser: AuthUser = {
-          ...firebaseUser,
-          role: userData?.role,
-          isActive: userData?.isActive,
-          locationIds: userData?.locationIds,
-          name: userData?.name,
-          mobile: userData?.mobile
-        };
-        
-        setUser(authUser);
+        try {
+          // Get user data from Firestore
+          console.log('AuthContext: Fetching user data from Firestore for UID:', firebaseUser.uid);
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userData = userDoc.data();
+          
+          console.log('AuthContext: Firestore user data:', {
+            exists: userDoc.exists(),
+            userData: userData
+          });
+          
+          if (!userDoc.exists()) {
+            console.error('AuthContext: User document not found in Firestore for UID:', firebaseUser.uid);
+            // Create basic user document if it doesn't exist
+            const basicUserData = {
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || 'Admin User',
+              role: 'admin',
+              isActive: true,
+              locationIds: [],
+              createdAt: serverTimestamp(),
+              createdBy: firebaseUser.uid,
+              lastLogin: serverTimestamp()
+            };
+            
+            console.log('AuthContext: Creating basic user document:', basicUserData);
+            await setDoc(doc(db, 'users', firebaseUser.uid), basicUserData);
+            
+            const authUser = ensureAuthUser(firebaseUser, basicUserData);
+            setUser(authUser);
+            
+          } else {
+            const authUser = ensureAuthUser(firebaseUser, userData);
+            setUser(authUser);
+          }
+        } catch (error) {
+          console.error('AuthContext: Error fetching user data:', error);
+          // Still set the basic Firebase user even if Firestore fails
+          const fallbackUser = ensureAuthUser(firebaseUser);
+          setUser(fallbackUser);
+          console.log('AuthContext: Fallback AuthUser created');
+        }
       } else {
+        console.log('AuthContext: No Firebase user, setting user to null');
         setUser(null);
       }
       setLoading(false);

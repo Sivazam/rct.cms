@@ -22,6 +22,19 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!loading) {
+      console.log('ProtectedRoute: Checking access', {
+        user: user ? {
+          uid: user.uid,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          displayName: user.displayName
+        } : null,
+        requiredRole,
+        requireActive,
+        fallback
+      });
+
       if (!user) {
         console.log('ProtectedRoute: No user found, redirecting to:', fallback);
         router.push(fallback);
@@ -34,7 +47,8 @@ export function ProtectedRoute({
         console.log('ProtectedRoute: User not active and not admin, redirecting to /pending-approval', {
           user: user.email,
           role: user.role,
-          isActive: user.isActive
+          isActive: user.isActive,
+          requireActive
         });
         router.push('/pending-approval');
         return;
