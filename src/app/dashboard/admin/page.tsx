@@ -13,6 +13,7 @@ import LocationManagement from '@/components/admin/LocationManagement';
 import OperatorManagement from '@/components/admin/OperatorManagement';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
+import DeliverySystem from '@/components/delivery/DeliverySystem';
 import { 
   Users, 
   MapPin, 
@@ -22,7 +23,8 @@ import {
   TrendingUp,
   DollarSign,
   Calendar,
-  Package
+  Package,
+  Truck
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -93,12 +95,13 @@ export default function AdminDashboard() {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="locations">Locations</TabsTrigger>
               <TabsTrigger value="operators">Operators</TabsTrigger>
               <TabsTrigger value="entries">Entries</TabsTrigger>
               <TabsTrigger value="renewals">Renewals</TabsTrigger>
+              <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
 
@@ -252,6 +255,11 @@ export default function AdminDashboard() {
             {/* Renewals Tab */}
             <TabsContent value="renewals" className="space-y-6">
               <RenewalSystem />
+            </TabsContent>
+
+            {/* Deliveries Tab */}
+            <TabsContent value="deliveries" className="space-y-6">
+              <DeliverySystem />
             </TabsContent>
 
             {/* Analytics Tab */}

@@ -11,6 +11,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
+import DeliverySystem from '@/components/delivery/DeliverySystem';
 import { 
   Search, 
   Plus, 
@@ -275,20 +276,7 @@ export default function OperatorDashboard() {
 
             {/* Deliveries Tab */}
             <TabsContent value="deliveries" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Delivery Management</CardTitle>
-                  <CardDescription>
-                    Manage ash pot deliveries and collections
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-gray-500 py-8">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>Delivery management interface coming soon</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <DeliverySystem />
             </TabsContent>
           </Tabs>
         </main>

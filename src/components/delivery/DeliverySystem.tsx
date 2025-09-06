@@ -1,0 +1,325 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
+import { 
+  Search, 
+  Shield, 
+  CheckCircle, 
+  Calendar,
+  Package,
+  ArrowLeft,
+  RotateCcw
+} from 'lucide-react';
+
+import DeliverySearch from './DeliverySearch';
+import DeliveryOTP from './DeliveryOTP';
+import DeliveryConfirmation from './DeliveryConfirmation';
+import DeliveryHistory from './DeliveryHistory';
+
+interface Customer {
+  id: string;
+  name: string;
+  mobile: string;
+  city: string;
+}
+
+interface Entry {
+  id: string;
+  customerId: string;
+  customer: Customer;
+  entryDate: string;
+  expiryDate: string;
+  pots: number;
+  status: 'active' | 'expired' | 'delivered';
+  locationId: string;
+  locationName: string;
+  renewalCount: number;
+  lastRenewalDate?: string;
+}
+
+type DeliveryStep = 'search' | 'otp' | 'confirmation' | 'history';
+
+export default function DeliverySystem() {
+  const [currentStep, setCurrentStep] = useState<DeliveryStep>('search');
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
+  const [deliveryData, setDeliveryData] = useState<{
+    otp: string;
+    deliveryDate: string;
+    operatorName: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const steps = [
+    { id: 'search', name: 'Search Entry', icon: Search },
+    { id: 'otp', name: 'OTP Verification', icon: Shield },
+    { id: 'confirmation', name: 'Confirmation', icon: CheckCircle },
+  ];
+
+  const currentStepIndex = steps.findIndex(step => step.id === currentStep);
+
+  const handleEntrySelect = (entry: Entry) => {
+    setSelectedEntry(entry);
+    setCurrentStep('otp');
+  };
+
+  const handleOTPVerified = (otp: string) => {
+    if (selectedEntry) {
+      const deliveryDate = new Date().toISOString();
+      const operatorName = 'Current Operator'; // This would come from auth context
+      
+      setDeliveryData({
+        otp,
+        deliveryDate,
+        operatorName
+      });
+      
+      // Simulate processing delivery
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        setCurrentStep('confirmation');
+      }, 2000);
+    }
+  };
+
+  const handleBack = () => {
+    switch (currentStep) {
+      case 'otp':
+        setCurrentStep('search');
+        break;
+      case 'confirmation':
+        setCurrentStep('otp');
+        break;
+      case 'history':
+        setCurrentStep('search');
+        break;
+    }
+  };
+
+  const handleNewDelivery = () => {
+    setSelectedEntry(null);
+    setDeliveryData(null);
+    setCurrentStep('search');
+  };
+
+  const handleViewHistory = () => {
+    setCurrentStep('history');
+  };
+
+  const getStepProgress = () => {
+    switch (currentStep) {
+      case 'search':
+        return 0;
+      case 'otp':
+        return 50;
+      case 'confirmation':
+        return 100;
+      default:
+        return 0;
+    }
+  };
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 'search':
+        return (
+          <DeliverySearch
+            onEntrySelect={handleEntrySelect}
+            loading={loading}
+          />
+        );
+      
+      case 'otp':
+        return selectedEntry ? (
+          <DeliveryOTP
+            entry={selectedEntry}
+            onOTPVerified={handleOTPVerified}
+            onBack={handleBack}
+            loading={loading}
+          />
+        ) : null;
+      
+      case 'confirmation':
+        return selectedEntry && deliveryData ? (
+          <DeliveryConfirmation
+            entry={selectedEntry}
+            deliveryData={deliveryData}
+            onNewDelivery={handleNewDelivery}
+            onViewHistory={handleViewHistory}
+            loading={loading}
+          />
+        ) : null;
+      
+      case 'history':
+        return (
+          <DeliveryHistory
+            onClose={handleBack}
+            loading={loading}
+          />
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-blue-900 flex items-center justify-center space-x-2">
+                <Package className="h-8 w-8" />
+                <span>Delivery Management System</span>
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Secure delivery process with OTP verification for Rotary Charitable Trust
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
+
+        {/* Progress Bar */}
+        {currentStep !== 'history' && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                {/* Progress Steps */}
+                <div className="flex items-center justify-between">
+                  {steps.map((step, index) => {
+                    const isCompleted = index < currentStepIndex;
+                    const isCurrent = index === currentStepIndex;
+                    
+                    return (
+                      <div key={step.id} className="flex items-center space-x-2">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            isCompleted
+                              ? 'bg-green-100 text-green-600'
+                              : isCurrent
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-gray-100 text-gray-400'
+                          }`}
+                        >
+                          <step.icon className="h-5 w-5" />
+                        </div>
+                        <span
+                          className={`text-sm font-medium transition-colors duration-300 ${
+                            isCompleted
+                              ? 'text-green-600'
+                              : isCurrent
+                              ? 'text-blue-600'
+                              : 'text-gray-400'
+                          }`}
+                        >
+                          {step.name}
+                        </span>
+                        {index < steps.length - 1 && (
+                          <div
+                            className={`w-16 h-1 mx-2 transition-colors duration-300 ${
+                              index < currentStepIndex ? 'bg-green-400' : 'bg-gray-200'
+                            }`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Progress Bar */}
+                <Progress value={getStepProgress()} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Current Step Content */}
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {renderStepContent()}
+        </motion.div>
+
+        {/* Quick Actions */}
+        {currentStep === 'search' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-8"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common delivery-related tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setCurrentStep('history')}
+                    className="p-4 border rounded-lg hover:shadow-md transition-all duration-200 text-left"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="h-6 w-6 text-blue-600" />
+                      <div>
+                        <h3 className="font-semibold">Delivery History</h3>
+                        <p className="text-sm text-gray-600">View all past deliveries</p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button className="p-4 border rounded-lg hover:shadow-md transition-all duration-200 text-left opacity-50 cursor-not-allowed">
+                    <div className="flex items-center space-x-3">
+                      <RotateCcw className="h-6 w-6 text-gray-400" />
+                      <div>
+                        <h3 className="font-semibold">Bulk Delivery</h3>
+                        <p className="text-sm text-gray-600">Process multiple deliveries (Coming Soon)</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Back Navigation */}
+        {currentStep !== 'search' && currentStep !== 'history' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mt-6"
+          >
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={loading}
+              className="w-full"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to {currentStep === 'otp' ? 'Search' : 'OTP Verification'}
+            </Button>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
