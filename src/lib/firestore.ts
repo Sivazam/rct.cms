@@ -87,6 +87,100 @@ export const getUsers = async (role?: string, isActive?: boolean) => {
   }
 };
 
+export const getPendingOperators = async () => {
+  try {
+    const q = query(
+      collection(db, 'users'), 
+      where('role', '==', 'operator'),
+      where('isActive', '==', false),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting pending operators:', error);
+    throw error;
+  }
+};
+
+export const getActiveOperators = async () => {
+  try {
+    const q = query(
+      collection(db, 'users'), 
+      where('role', '==', 'operator'),
+      where('isActive', '==', true),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting active operators:', error);
+    throw error;
+  }
+};
+
+export const getAdminUser = async () => {
+  try {
+    const q = query(
+      collection(db, 'users'), 
+      where('role', '==', 'admin'),
+      where('isActive', '==', true),
+      limit(1)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      return null;
+    }
+    
+    const doc = querySnapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
+  } catch (error) {
+    console.error('Error getting admin user:', error);
+    throw error;
+  }
+};
+
+export const approveOperator = async (operatorId: string, locationIds: string[], approvedBy: string) => {
+  try {
+    await updateDoc(doc(db, 'users', operatorId), {
+      isActive: true,
+      locationIds: locationIds,
+      approvedBy: approvedBy,
+      approvedAt: serverTimestamp(),
+      lastLogin: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error approving operator:', error);
+    throw error;
+  }
+};
+
+export const rejectOperator = async (operatorId: string, rejectionReason: string) => {
+  try {
+    await updateDoc(doc(db, 'users', operatorId), {
+      isActive: false,
+      isRejected: true,
+      rejectionReason: rejectionReason,
+      rejectedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error rejecting operator:', error);
+    throw error;
+  }
+};
+
 export const updateUser = async (userId: string, updateData: any) => {
   try {
     await updateDoc(doc(db, 'users', userId), updateData);

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Users, Check, X, MapPin, Phone, Mail, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getUsers, updateUser, getLocations } from '@/lib/firestore';
+import { getUsers, updateUser, getLocations, getPendingOperators, getActiveOperators, approveOperator, rejectOperator } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Operator {
@@ -53,8 +53,8 @@ export default function OperatorManagement() {
       setLoading(true);
       console.log('Fetching operator data...');
       const [pendingOps, activeOps, locs] = await Promise.all([
-        getUsers('operator', false),
-        getUsers('operator', true),
+        getPendingOperators(),
+        getActiveOperators(),
         getLocations()
       ]);
       
@@ -86,11 +86,7 @@ export default function OperatorManagement() {
     }
 
     try {
-      await updateUser(selectedOperator.id, {
-        isActive: true,
-        locationIds: selectedLocations,
-        lastLogin: new Date()
-      });
+      await approveOperator(selectedOperator.id, selectedLocations, user.uid);
       
       setIsApproveDialogOpen(false);
       setSelectedOperator(null);
@@ -107,12 +103,7 @@ export default function OperatorManagement() {
     }
 
     try {
-      // For now, we'll just deactivate the operator
-      // In a real system, you might want to delete the account
-      await updateUser(operatorId, {
-        isActive: false,
-        rejectionReason: 'Rejected by admin'
-      });
+      await rejectOperator(operatorId, 'Rejected by admin');
       fetchData();
     } catch (error: any) {
       setError(error.message || 'Failed to reject operator');
