@@ -191,8 +191,8 @@ export default function EntriesList() {
           </div>
         </div>
 
-        {/* Entries Table */}
-        <div className="rounded-md border">
+        {/* Entries Table - Desktop View */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -284,6 +284,86 @@ export default function EntriesList() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden space-y-4">
+          {filteredEntries.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-500">No entries found</p>
+              <p className="text-sm text-gray-400">Try adjusting your filters</p>
+            </div>
+          ) : (
+            filteredEntries.map((entry, index) => (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white border rounded-lg p-4 shadow-sm"
+              >
+                {/* Customer Info */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <h3 className="font-medium text-gray-900">{entry.customerName}</h3>
+                      <Badge className={getStatusColor(entry.status)}>
+                        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-1 text-sm text-gray-600 mb-1">
+                      <Phone className="h-3 w-3" />
+                      <span>{entry.customerMobile}</span>
+                    </div>
+                    <div className="text-sm text-gray-500">{entry.customerCity}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
+                      <Package className="h-3 w-3" />
+                      <span>{entry.numberOfPots}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
+                  <MapPin className="h-3 w-3" />
+                  <span>{entry.locationName}</span>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Entry Date</div>
+                    <div className="flex items-center space-x-1 text-sm">
+                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <span>{formatDate(entry.entryDate)}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Expiry Date</div>
+                    <div className={`flex items-center space-x-1 text-sm ${isExpiringSoon(entry.expiryDate) ? 'text-red-600 font-medium' : ''}`}>
+                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <span>{formatDate(entry.expiryDate)}</span>
+                      {isExpiringSoon(entry.expiryDate) && (
+                        <Badge variant="destructive" className="text-xs">Soon</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Info */}
+                <div className="flex items-center justify-between pt-3 border-t">
+                  <div className="text-sm">
+                    <div className="font-medium">₹{entry.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0}</div>
+                    <div className="text-gray-500">{entry.renewals?.length || 0} renewals</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
 
         {/* Summary Stats */}

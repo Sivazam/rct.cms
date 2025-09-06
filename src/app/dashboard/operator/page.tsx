@@ -405,6 +405,15 @@ export default function OperatorDashboard() {
           </Tabs>
           )}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        {user && (
+          <MobileBottomNav 
+            userRole={user.role} 
+            userName={user.name || 'Operator'} 
+            onLogout={handleLogout} 
+          />
+        )}
       </div>
     </ProtectedRoute>
   );

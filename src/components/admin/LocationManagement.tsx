@@ -22,7 +22,11 @@ interface Location {
   createdAt: any;
 }
 
-export default function LocationManagement() {
+interface LocationManagementProps {
+  onLocationsUpdated?: () => void;
+}
+
+export default function LocationManagement({ onLocationsUpdated }: LocationManagementProps) {
   const { user } = useAuth();
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +82,10 @@ export default function LocationManagement() {
       setEditingLocation(null);
       setFormData({ venueName: '', address: '', contactNumber: '' });
       fetchLocations();
+      // Notify parent component that locations were updated
+      if (onLocationsUpdated) {
+        onLocationsUpdated();
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to save location');
     }
@@ -101,6 +109,10 @@ export default function LocationManagement() {
     try {
       await deleteLocation(locationId);
       fetchLocations();
+      // Notify parent component that locations were updated
+      if (onLocationsUpdated) {
+        onLocationsUpdated();
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to delete location');
     }

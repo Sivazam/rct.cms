@@ -458,7 +458,7 @@ export default function AdminDashboard() {
 
               {/* Locations Tab */}
               <TabsContent value="locations" className="space-y-6">
-                <LocationManagement />
+                <LocationManagement onLocationsUpdated={fetchDashboardData} />
               </TabsContent>
 
               {/* Operators Tab */}

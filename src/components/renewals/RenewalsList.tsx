@@ -222,8 +222,8 @@ export default function RenewalsList() {
           </div>
         </div>
 
-        {/* Renewals Table */}
-        <div className="rounded-md border">
+        {/* Renewals Table - Desktop View */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -316,6 +316,97 @@ export default function RenewalsList() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden space-y-4">
+          {filteredRenewals.length === 0 ? (
+            <div className="text-center py-8">
+              <RefreshCw className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-500">No renewals found</p>
+              <p className="text-sm text-gray-400">Try adjusting your filters</p>
+            </div>
+          ) : (
+            filteredRenewals.map((renewal, index) => (
+              <motion.div
+                key={renewal.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white border rounded-lg p-4 shadow-sm"
+              >
+                {/* Customer Info */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <h3 className="font-medium text-gray-900">{renewal.customerName}</h3>
+                      {isRecent(renewal.renewalDate) && (
+                        <Badge variant="default" className="text-xs">Recent</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-1 text-sm text-gray-600 mb-1">
+                      <Phone className="h-3 w-3" />
+                      <span>{renewal.customerMobile}</span>
+                    </div>
+                    <div className="text-sm text-gray-500">{renewal.customerCity}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
+                      <RefreshCw className="h-3 w-3" />
+                      <span>{renewal.numberOfPots}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
+                  <MapPin className="h-3 w-3" />
+                  <span>{renewal.locationName}</span>
+                </div>
+
+                {/* Renewal Details */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Renewal Date</div>
+                    <div className="flex items-center space-x-1 text-sm">
+                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <span>{formatDate(renewal.renewalDate)}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Duration</div>
+                    <Badge variant="outline" className="text-xs">
+                      {renewal.months} {renewal.months === 1 ? 'month' : 'months'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Payment & New Expiry */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Amount</div>
+                    <div className="font-medium text-green-600">₹{renewal.amount}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Payment</div>
+                    <Badge className={getPaymentMethodColor(renewal.method)}>
+                      {renewal.method.toUpperCase()}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* New Expiry Date */}
+                <div className="pt-3 border-t">
+                  <div className="text-xs text-gray-500 mb-1">New Expiry Date</div>
+                  <div className="flex items-center space-x-1 text-sm">
+                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <span>{formatDate(renewal.newExpiryDate)}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
 
         {/* Summary Stats */}

@@ -72,7 +72,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       id: 'entries',
       label: 'Entries',
       icon: <Package className="h-5 w-5" />,
-      href: '/dashboard/admin?tab=entries'
+      href: '/dashboard/admin?tab=entries',
+      isMain: true
     },
     {
       id: 'renewals',
@@ -125,7 +126,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : operatorNavItems;
-  const mainItems = navItems.filter(item => item.isMain).slice(0, 3);
+  const mainItems = navItems.filter(item => item.isMain).slice(0, 4);
   const moreItems = navItems.filter(item => !item.isMain);
 
   console.log('MobileBottomNav: Navigation items calculated', {
@@ -157,12 +158,9 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
   return (
     <>
-      {/* Mobile Bottom Navigation - TEMPORARILY VISIBLE ON ALL DEVICES */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" 
-           style={{ 
-             backgroundColor: 'red !important' // Temporary red background for testing
-           }}>
-        <div className="flex justify-around items-center h-16" style={{ backgroundColor: 'orange' }}>
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex justify-around items-center h-16">
           {mainItems.map((item) => (
             <Button
               key={item.id}
@@ -280,8 +278,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
         </div>
       </div>
 
-      {/* Spacer for bottom nav - TEMPORARILY VISIBLE ON ALL DEVICES */}
-      <div className="h-16"></div>
+      {/* Spacer for bottom nav */}
+      <div className="md:hidden h-16"></div>
     </>
   );
 }
