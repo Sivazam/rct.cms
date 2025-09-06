@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { 
   Search, 
@@ -39,10 +40,20 @@ export default function OperatorDashboard() {
   });
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchOperatorData();
   }, [selectedLocation]);
+
+  useEffect(() => {
+    // Handle tab changes from URL parameters
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab') || 'overview';
+      setActiveTab(tab);
+    }
+  }, []);
 
   const fetchOperatorData = async () => {
     try {
@@ -87,6 +98,11 @@ export default function OperatorDashboard() {
         
         const statsData = await getSystemStats(selectedLocation);
         
+        // Fetch recent entries for this location
+        const recentEntriesData = await getEntries({
+          locationId: selectedLocation
+        });
+        
         setStats({
           totalEntries: entries.length,
           totalRenewals: renewals.length,
@@ -95,10 +111,6 @@ export default function OperatorDashboard() {
           monthlyRevenue: statsData.monthlyRevenue || 0
         });
         
-        // Fetch recent entries for this location
-        const recentEntriesData = await getEntries({
-          locationId: selectedLocation
-        });
         setRecentEntries(recentEntriesData.slice(0, 5)); // Show last 5 entries
       }
       
@@ -106,6 +118,16 @@ export default function OperatorDashboard() {
       console.error('Error fetching operator data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Update URL without page reload
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.pushState({}, '', url.toString());
     }
   };
 
@@ -134,7 +156,7 @@ export default function OperatorDashboard() {
                   <SelectContent>
                     {locations.map((location) => (
                       <SelectItem key={location.id} value={location.id}>
-                        {location.name}
+                        {location.venueName}
                       </SelectItem>
                     ))}
                   </SelectContent>

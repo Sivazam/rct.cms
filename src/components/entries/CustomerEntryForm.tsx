@@ -310,13 +310,14 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                   <span className="font-medium">Payment Summary</span>
                 </div>
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  ₹{500 * formData.numberOfPots}
+                  ₹500
                 </Badge>
               </div>
               <div className="mt-2 text-sm text-blue-800">
-                <p>Entry Fee: ₹500 per pot</p>
+                <p>Entry Fee: ₹500 (flat rate)</p>
+                <p>Number of Pots: {formData.numberOfPots}</p>
                 <p>Storage Period: 30 days</p>
-                <p>Total Amount: ₹{500 * formData.numberOfPots}</p>
+                <p>Total Amount: ₹500</p>
               </div>
             </div>
           </div>

@@ -251,7 +251,7 @@ export const addEntry = async (entryData: {
       expiryDate: expiryDate,
       status: 'active',
       payments: [{
-        amount: 500,
+        amount: 500, // Fixed amount regardless of number of pots
         date: entryDate,
         type: 'entry',
         method: entryData.paymentMethod,
