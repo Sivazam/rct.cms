@@ -708,11 +708,18 @@ export default function AdminDashboard() {
 
         {/* Mobile Bottom Navigation */}
         {user && (
-          <MobileBottomNav 
-            userRole={user.role as 'admin' | 'operator'} 
-            userName={user.name || 'User'} 
-            onLogout={handleLogout}
-          />
+          <div>
+            {console.log('AdminDashboard: About to render MobileBottomNav', {
+              user: user.email,
+              userRole: user.role,
+              userName: user.name
+            })}
+            <MobileBottomNav 
+              userRole={user.role as 'admin' | 'operator'} 
+              userName={user.name || 'User'} 
+              onLogout={handleLogout}
+            />
+          </div>
         )}
       </div>
     </ProtectedRoute>

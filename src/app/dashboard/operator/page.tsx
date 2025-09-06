@@ -61,17 +61,15 @@ export default function OperatorDashboard() {
       
       // Get operator's assigned locations
       const operatorLocations = user?.locationIds || [];
-      if (operatorLocations.length === 0) {
-        console.log('No locations assigned to operator');
-        setLoading(false);
-        return;
-      }
+      console.log('Operator locations:', operatorLocations);
       
       // Fetch all available locations
       const allLocations = await getLocations();
       const assignedLocations = allLocations.filter(loc => 
         operatorLocations.includes(loc.id) && loc.isActive
       );
+      
+      console.log('Assigned locations:', assignedLocations);
       setLocations(assignedLocations);
       
       // Set default selected location
@@ -79,7 +77,18 @@ export default function OperatorDashboard() {
         setSelectedLocation(assignedLocations[0].id);
       }
       
-      if (selectedLocation) {
+      if (assignedLocations.length === 0) {
+        console.log('No locations assigned to operator - showing empty state');
+        // Set empty stats for operators with no locations
+        setStats({
+          totalEntries: 0,
+          totalRenewals: 0,
+          totalDeliveries: 0,
+          expiringIn7Days: 0,
+          monthlyRevenue: 0
+        });
+        setRecentEntries([]);
+      } else if (selectedLocation) {
         // Fetch statistics for selected location
         const entries = await getEntries({
           locationId: selectedLocation,
@@ -174,13 +183,46 @@ export default function OperatorDashboard() {
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="entries">Entries</TabsTrigger>
-              <TabsTrigger value="renewals">Renewals</TabsTrigger>
-              <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
-            </TabsList>
+          {locations.length === 0 ? (
+            // No locations assigned state
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center space-x-2">
+                  <MapPin className="h-5 w-5" />
+                  <span>No Locations Assigned</span>
+                </CardTitle>
+                <CardDescription>
+                  You haven't been assigned to any locations yet. Please contact your administrator to get location access.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                    <MapPin className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      Your account is active but you need to be assigned to at least one location to perform operations.
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Please ask your administrator to assign you to a location in the Admin Dashboard.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            // Normal dashboard with locations
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="entries">Entries</TabsTrigger>
+                <TabsTrigger value="renewals">Renewals</TabsTrigger>
+                <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
+              </TabsList>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
@@ -361,6 +403,7 @@ export default function OperatorDashboard() {
               <DeliverySystem />
             </TabsContent>
           </Tabs>
+          )}
         </main>
       </div>
     </ProtectedRoute>

@@ -23,12 +23,21 @@ export const addLocation = async (locationData: {
 
 export const getLocations = async () => {
   try {
-    const q = query(collection(db, 'locations'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'locations'));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const locations = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Sort manually to avoid orderBy index requirements
+    locations.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(0);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
+    
+    return locations;
   } catch (error) {
     console.error('Error getting locations:', error);
     throw error;
@@ -53,31 +62,45 @@ export const deleteLocation = async (locationId: string) => {
   }
 };
 
-// User Management
+// User Management - simplified to avoid index requirements
 export const getUsers = async (role?: string, isActive?: boolean) => {
   try {
-    let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    
     console.log('getUsers called with:', { role, isActive });
     
-    if (role) {
-      q = query(q, where('role', '==', role));
-      console.log('Added role filter:', role);
+    let querySnapshot;
+    
+    if (role && isActive !== undefined) {
+      // Use a simpler query approach to avoid composite index requirements
+      const q = query(
+        collection(db, 'users'), 
+        where('role', '==', role),
+        where('isActive', '==', isActive)
+      );
+      querySnapshot = await getDocs(q);
+    } else if (role) {
+      const q = query(collection(db, 'users'), where('role', '==', role));
+      querySnapshot = await getDocs(q);
+    } else if (isActive !== undefined) {
+      const q = query(collection(db, 'users'), where('isActive', '==', isActive));
+      querySnapshot = await getDocs(q);
+    } else {
+      const q = query(collection(db, 'users'));
+      querySnapshot = await getDocs(q);
     }
     
-    if (isActive !== undefined) {
-      q = query(q, where('isActive', '==', isActive));
-      console.log('Added isActive filter:', isActive);
-    }
-    
-    console.log('Executing query...');
-    const querySnapshot = await getDocs(q);
     console.log('Query snapshot size:', querySnapshot.size);
     
     const users = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Sort manually to avoid orderBy index requirements
+    users.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(0);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
     
     console.log('Users found:', users);
     return users;
@@ -267,6 +290,7 @@ export const addEntry = async (entryData: {
   }
 };
 
+// Entry Management - simplified to avoid index requirements
 export const getEntries = async (filters?: {
   locationId?: string;
   status?: string;
@@ -274,25 +298,45 @@ export const getEntries = async (filters?: {
   expiringSoon?: boolean;
 }) => {
   try {
-    let q = query(collection(db, 'entries'), orderBy('createdAt', 'desc'));
+    console.log('getEntries called with:', filters);
     
-    if (filters?.locationId) {
-      q = query(q, where('locationId', '==', filters.locationId));
+    let querySnapshot;
+    
+    // Build query based on filters - avoid composite indexes
+    if (filters?.locationId && filters?.status) {
+      const q = query(
+        collection(db, 'entries'), 
+        where('locationId', '==', filters.locationId),
+        where('status', '==', filters.status)
+      );
+      querySnapshot = await getDocs(q);
+    } else if (filters?.locationId) {
+      const q = query(collection(db, 'entries'), where('locationId', '==', filters.locationId));
+      querySnapshot = await getDocs(q);
+    } else if (filters?.status) {
+      const q = query(collection(db, 'entries'), where('status', '==', filters.status));
+      querySnapshot = await getDocs(q);
+    } else if (filters?.operatorId) {
+      const q = query(collection(db, 'entries'), where('operatorId', '==', filters.operatorId));
+      querySnapshot = await getDocs(q);
+    } else {
+      const q = query(collection(db, 'entries'));
+      querySnapshot = await getDocs(q);
     }
     
-    if (filters?.status) {
-      q = query(q, where('status', '==', filters.status));
-    }
-    
-    if (filters?.operatorId) {
-      q = query(q, where('operatorId', '==', filters.operatorId));
-    }
-    
-    const querySnapshot = await getDocs(q);
     let entries = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+    
+    // Sort manually to avoid orderBy index requirements
+    entries.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(0);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
+    
+    console.log('Entries found:', entries.length);
     
     // Filter for expiring soon entries (client-side filter for now)
     if (filters?.expiringSoon) {
@@ -302,6 +346,7 @@ export const getEntries = async (filters?: {
         const expiryDate = entry.expiryDate?.toDate();
         return expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now;
       });
+      console.log('Expiring soon entries after filter:', entries.length);
     }
     
     return entries;

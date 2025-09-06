@@ -39,6 +39,13 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
   const router = useRouter();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
+  console.log('MobileBottomNav: Component rendered', {
+    userRole,
+    userName,
+    pathname,
+    isMobile: typeof window !== 'undefined' ? window.innerWidth < 768 : 'unknown'
+  });
+
   const adminNavItems: NavItem[] = [
     {
       id: 'overview',
@@ -121,6 +128,13 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
   const mainItems = navItems.filter(item => item.isMain).slice(0, 3);
   const moreItems = navItems.filter(item => !item.isMain);
 
+  console.log('MobileBottomNav: Navigation items calculated', {
+    totalItems: navItems.length,
+    mainItems: mainItems.length,
+    moreItems: moreItems.length,
+    mainItems: mainItems.map(item => item.id)
+  });
+
   const handleNavClick = (href: string) => {
     router.push(href);
   };
@@ -135,11 +149,20 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
   const currentTab = getCurrentTab();
 
+  console.log('MobileBottomNav: About to render JSX', {
+    currentTab,
+    mainItemsCount: mainItems.length,
+    isMobileView: typeof window !== 'undefined' ? window.innerWidth < 768 : 'unknown'
+  });
+
   return (
     <>
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex justify-around items-center h-16">
+      {/* Mobile Bottom Navigation - TEMPORARILY VISIBLE ON ALL DEVICES */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" 
+           style={{ 
+             backgroundColor: 'red !important' // Temporary red background for testing
+           }}>
+        <div className="flex justify-around items-center h-16" style={{ backgroundColor: 'orange' }}>
           {mainItems.map((item) => (
             <Button
               key={item.id}
@@ -257,8 +280,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
         </div>
       </div>
 
-      {/* Spacer for bottom nav */}
-      <div className="md:hidden h-16"></div>
+      {/* Spacer for bottom nav - TEMPORARILY VISIBLE ON ALL DEVICES */}
+      <div className="h-16"></div>
     </>
   );
 }
