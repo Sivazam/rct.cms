@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import LocationManagement from '@/components/admin/LocationManagement';
@@ -187,21 +186,173 @@ export default function AdminDashboard() {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-8">
           {/* Desktop Tabs */}
-          <div className="hidden md:block">
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-7">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="locations">Locations</TabsTrigger>
-                <TabsTrigger value="operators">Operators</TabsTrigger>
-                <TabsTrigger value="entries">Entries</TabsTrigger>
-                <TabsTrigger value="renewals">Renewals</TabsTrigger>
-                <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              </TabsList>
+          <div className="hidden md:block mb-6">
+            <div className="w-full overflow-x-auto">
+              <div className="grid w-full min-w-max grid-cols-7 gap-1 p-1 bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => handleTabChange('overview')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'overview' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => handleTabChange('locations')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'locations' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Locations
+                </button>
+                <button
+                  onClick={() => handleTabChange('operators')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'operators' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Operators
+                </button>
+                <button
+                  onClick={() => handleTabChange('entries')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'entries' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Entries
+                </button>
+                <button
+                  onClick={() => handleTabChange('renewals')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'renewals' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Renewals
+                </button>
+                <button
+                  onClick={() => handleTabChange('deliveries')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'deliveries' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Deliveries
+                </button>
+                <button
+                  onClick={() => handleTabChange('analytics')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'analytics' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Analytics
+                </button>
+              </div>
+            </div>
+          </div>
 
-              {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-6">
-                {/* Stats Cards */}
+          {/* Mobile Tabs */}
+          <div className="md:hidden mb-6">
+            <div className="space-y-2">
+              <div className="w-full overflow-x-auto">
+                <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
+                  <button
+                    onClick={() => handleTabChange('overview')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'overview' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('locations')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'locations' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Locations
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('operators')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'operators' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Operators
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('entries')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'entries' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Entries
+                  </button>
+                </div>
+              </div>
+              {/* Secondary row for mobile */}
+              <div className="w-full overflow-x-auto">
+                <div className="grid w-full min-w-max grid-cols-3 gap-1 p-1 bg-gray-100 rounded-lg">
+                  <button
+                    onClick={() => handleTabChange('renewals')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'renewals' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Renewals
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('deliveries')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'deliveries' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Deliveries
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('analytics')}
+                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === 'analytics' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Analytics
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="space-y-6">
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -454,35 +605,26 @@ export default function AdminDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+                </div>
+              )}
 
               {/* Locations Tab */}
-              <TabsContent value="locations" className="space-y-6">
-                <LocationManagement onLocationsUpdated={fetchDashboardData} />
-              </TabsContent>
+              {activeTab === 'locations' && <LocationManagement onLocationsUpdated={fetchDashboardData} />}
 
               {/* Operators Tab */}
-              <TabsContent value="operators" className="space-y-6">
-                <OperatorManagement />
-              </TabsContent>
+              {activeTab === 'operators' && <OperatorManagement />}
 
               {/* Entries Tab */}
-              <TabsContent value="entries" className="space-y-6">
-                <CustomerEntrySystem />
-              </TabsContent>
+              {activeTab === 'entries' && <CustomerEntrySystem />}
 
               {/* Renewals Tab */}
-              <TabsContent value="renewals" className="space-y-6">
-                <RenewalSystem />
-              </TabsContent>
+              {activeTab === 'renewals' && <RenewalSystem />}
 
               {/* Deliveries Tab */}
-              <TabsContent value="deliveries" className="space-y-6">
-                <DeliverySystem />
-              </TabsContent>
+              {activeTab === 'deliveries' && <DeliverySystem />}
 
               {/* Analytics Tab */}
-              <TabsContent value="analytics" className="space-y-6">
+              {activeTab === 'analytics' && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
@@ -500,8 +642,7 @@ export default function AdminDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              )}
           </div>
 
           {/* Mobile Content */}

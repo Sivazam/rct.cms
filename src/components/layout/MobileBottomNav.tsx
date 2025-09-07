@@ -79,13 +79,15 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       id: 'renewals',
       label: 'Renewals',
       icon: <RefreshCw className="h-5 w-5" />,
-      href: '/dashboard/admin?tab=renewals'
+      href: '/dashboard/admin?tab=renewals',
+      isMain: true
     },
     {
       id: 'deliveries',
       label: 'Deliveries',
       icon: <Truck className="h-5 w-5" />,
-      href: '/dashboard/admin?tab=deliveries'
+      href: '/dashboard/admin?tab=deliveries',
+      isMain: true
     },
     {
       id: 'analytics',
@@ -121,19 +123,22 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       id: 'deliveries',
       label: 'Deliveries',
       icon: <Truck className="h-5 w-5" />,
-      href: '/dashboard/operator?tab=deliveries'
+      href: '/dashboard/operator?tab=deliveries',
+      isMain: true
     }
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : operatorNavItems;
-  const mainItems = navItems.filter(item => item.isMain).slice(0, 4);
-  const moreItems = navItems.filter(item => !item.isMain);
+  const mainItems = navItems.filter(item => item.isMain);
+  const visibleItems = mainItems.slice(0, 5); // Show max 5 items in bottom nav
+  const remainingItems = [...mainItems.slice(5), ...moreItems]; // Put remaining main items and non-main items in More
 
   console.log('MobileBottomNav: Navigation items calculated', {
     totalItems: navItems.length,
     mainItems: mainItems.length,
-    moreItems: moreItems.length,
-    mainItems: mainItems.map(item => item.id)
+    visibleItems: visibleItems.length,
+    remainingItems: remainingItems.length,
+    visibleItems: visibleItems.map(item => item.id)
   });
 
   const handleNavClick = (href: string) => {
@@ -161,7 +166,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex justify-around items-center h-16">
-          {mainItems.map((item) => (
+          {visibleItems.map((item) => (
             <Button
               key={item.id}
               variant="ghost"
@@ -222,7 +227,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
                 {/* Navigation Items */}
                 <div className="space-y-2">
-                  {moreItems.map((item) => (
+                  {remainingItems.map((item) => (
                     <Button
                       key={item.id}
                       variant="ghost"

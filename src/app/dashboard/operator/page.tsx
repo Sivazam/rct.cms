@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
@@ -184,8 +183,9 @@ export default function OperatorDashboard() {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {locations.length === 0 ? (
-            // No locations assigned state
-            <Card>
+            <div>
+              {/* No locations assigned state */}
+              <Card>
               <CardHeader className="text-center">
                 <CardTitle className="flex items-center justify-center space-x-2">
                   <MapPin className="h-5 w-5" />
@@ -214,18 +214,112 @@ export default function OperatorDashboard() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           ) : (
-            // Normal dashboard with locations
-            <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="entries">Entries</TabsTrigger>
-                <TabsTrigger value="renewals">Renewals</TabsTrigger>
-                <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
-              </TabsList>
+            <div>
+              {/* Normal dashboard with locations */}
+              <div className="space-y-6">
+              {/* Desktop Tabs */}
+              <div className="hidden md:block">
+                <div className="w-full overflow-x-auto">
+                  <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'overview' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Overview
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('entries')}
+                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'entries' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Entries
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('renewals')}
+                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'renewals' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Renewals
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('deliveries')}
+                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'deliveries' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Deliveries
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
+              {/* Mobile Tabs */}
+              <div className="md:hidden">
+                <div className="w-full overflow-x-auto">
+                  <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                        activeTab === 'overview' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Overview
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('entries')}
+                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                        activeTab === 'entries' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Entries
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('renewals')}
+                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                        activeTab === 'renewals' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Renewals
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('deliveries')}
+                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                        activeTab === 'deliveries' 
+                          ? 'bg-white text-blue-600 shadow-sm' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      Deliveries
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              <div className="space-y-6">
+                {/* Overview Tab */}
+                {activeTab === 'overview' && (
+                  <div className="space-y-6">
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <motion.div
@@ -386,24 +480,19 @@ export default function OperatorDashboard() {
                   </CardContent>
                 </Card>
               )}
-            </TabsContent>
+                </div>
+                )}
 
-            {/* Entries Tab */}
-            <TabsContent value="entries" className="space-y-6">
-              <CustomerEntrySystem />
-            </TabsContent>
+                {/* Entries Tab */}
+                {activeTab === 'entries' && <CustomerEntrySystem />}
 
-            {/* Renewals Tab */}
-            <TabsContent value="renewals" className="space-y-6">
-              <RenewalSystem />
-            </TabsContent>
+                {/* Renewals Tab */}
+                {activeTab === 'renewals' && <RenewalSystem />}
 
-            {/* Deliveries Tab */}
-            <TabsContent value="deliveries" className="space-y-6">
-              <DeliverySystem />
-            </TabsContent>
-          </Tabs>
-          )}
+                {/* Deliveries Tab */}
+                {activeTab === 'deliveries' && <DeliverySystem />}
+              </div>
+            )}
         </main>
 
         {/* Mobile Bottom Navigation */}
