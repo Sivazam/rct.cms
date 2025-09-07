@@ -130,8 +130,9 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
   const navItems = userRole === 'admin' ? adminNavItems : operatorNavItems;
   const mainItems = navItems.filter(item => item.isMain);
+  const nonMainItems = navItems.filter(item => !item.isMain);
   const visibleItems = mainItems.slice(0, 5); // Show max 5 items in bottom nav
-  const remainingItems = [...mainItems.slice(5), ...moreItems]; // Put remaining main items and non-main items in More
+  const remainingItems = [...mainItems.slice(5), ...nonMainItems]; // Put remaining main items and non-main items in More
 
   console.log('MobileBottomNav: Navigation items calculated', {
     totalItems: navItems.length,
