@@ -46,7 +46,7 @@ export default function OperatorDashboard() {
 
   useEffect(() => {
     fetchOperatorData();
-  }, [selectedLocation]);
+  }, [selectedLocation, user]);
 
   useEffect(() => {
     // Handle tab changes from URL parameters
@@ -75,6 +75,11 @@ export default function OperatorDashboard() {
   }, []);
 
   const fetchOperatorData = async () => {
+    if (!user) {
+      console.log('User not loaded yet, skipping data fetch');
+      return;
+    }
+
     try {
       setLoading(true);
       

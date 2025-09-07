@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateEntry } from '@/lib/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,8 +53,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current entry data first
-    // Note: In a real implementation, you'd get the entry first, then update it
-    // For now, we'll assume the entry exists and update it directly
+    const entryRef = doc(db, 'entries', entryId);
+    const entryDoc = await getDoc(entryRef);
+    
+    if (!entryDoc.exists()) {
+      return NextResponse.json(
+        { error: 'Entry not found' },
+        { status: 404 }
+      );
+    }
+
+    const entryData = entryDoc.data();
+    const existingRenewals = entryData.renewals || [];
 
     const renewalRecord = {
       date: new Date(),
@@ -64,11 +75,12 @@ export async function POST(request: NextRequest) {
       newExpiryDate: new Date(newExpiryDate)
     };
 
-    // Update the entry with renewal data
-    await updateEntry(entryId, {
+    // Update the entry with renewal data - merge with existing renewals
+    await updateDoc(entryRef, {
       expiryDate: new Date(newExpiryDate),
       status: 'active', // Reactivate if expired
-      renewals: [renewalRecord] // This will be merged with existing renewals in the actual implementation
+      renewals: [...existingRenewals, renewalRecord],
+      lastModifiedAt: serverTimestamp()
     });
 
     return NextResponse.json({ 

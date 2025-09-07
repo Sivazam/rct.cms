@@ -588,6 +588,14 @@ export const getOperatorTransactions = async (
       ...doc.data()
     }));
     
+    // Get all deliveries for this operator
+    const deliveriesQuery = query(collection(db, 'deliveries'), where('operatorId', '==', operatorId));
+    const deliveriesSnapshot = await getDocs(deliveriesQuery);
+    const deliveries = deliveriesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
     // Get location names and operator names for better display
     const locationsSnapshot = await getDocs(collection(db, 'locations'));
     const locationsMap = new Map();
@@ -665,6 +673,24 @@ export const getOperatorTransactions = async (
           date: entryDate,
           customerName: entry.customerName || 'Unknown',
           operatorName: usersMap.get(entry.operatorId)?.name || 'Unknown Operator',
+          locationName: location?.venueName || 'Unknown Location'
+        });
+      }
+    });
+    
+    // Process deliveries
+    deliveries.forEach(delivery => {
+      const deliveryDate = delivery.deliveryDate?.toDate();
+      if (deliveryDate && deliveryDate >= fromDate && deliveryDate <= toDate) {
+        const location = locationsMap.get(delivery.locationId);
+        
+        transactions.push({
+          id: delivery.id,
+          type: 'delivery',
+          amount: 0, // Deliveries don't have associated payments
+          date: deliveryDate,
+          customerName: delivery.customerName || 'Unknown',
+          operatorName: usersMap.get(delivery.operatorId)?.name || 'Unknown Operator',
           locationName: location?.venueName || 'Unknown Location'
         });
       }
