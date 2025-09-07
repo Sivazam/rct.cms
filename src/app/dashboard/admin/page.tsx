@@ -28,7 +28,8 @@ import {
   Truck,
   Clock,
   User,
-  Phone
+  Phone,
+  LogOut
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -151,16 +152,17 @@ export default function AdminDashboard() {
         {/* Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center h-auto sm:h-16 py-4 sm:py-0 gap-4">
+            {/* Desktop Header */}
+            <div className="hidden sm:flex justify-between items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Smart Cremation Management
                 </h1>
                 <Badge variant="outline" className="ml-3">Admin</Badge>
               </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+              <div className="flex items-center gap-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-full sm:w-48">
+                  <SelectTrigger className="w-48">
                     <SelectValue placeholder="Select Location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -180,12 +182,40 @@ export default function AdminDashboard() {
                 </Button>
               </div>
             </div>
+
+            {/* Mobile Header - Compact Navbar */}
+            <div className="flex sm:hidden justify-between items-center h-14">
+              <div className="flex items-center">
+                <h1 className="text-base font-semibold text-gray-900 truncate">
+                  SCM
+                </h1>
+                <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.venueName.length > 10 ? location.venueName.substring(0, 10) + '...' : location.venueName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2 text-xs">
+                  <LogOut className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
           </div>
         </header>
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-8">
-          {/* Desktop Tabs */}
+          {/* Desktop Tabs Only - No mobile tabs */}
           <div className="hidden md:block mb-6">
             <div className="w-full overflow-x-auto">
               <div className="grid w-full min-w-max grid-cols-7 gap-1 p-1 bg-gray-100 rounded-lg">
@@ -259,91 +289,6 @@ export default function AdminDashboard() {
                 >
                   Analytics
                 </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Tabs */}
-          <div className="md:hidden mb-6">
-            <div className="space-y-2">
-              <div className="w-full overflow-x-auto">
-                <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
-                  <button
-                    onClick={() => handleTabChange('overview')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'overview' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Overview
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('locations')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'locations' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Locations
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('operators')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'operators' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Operators
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('entries')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'entries' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Entries
-                  </button>
-                </div>
-              </div>
-              {/* Secondary row for mobile */}
-              <div className="w-full overflow-x-auto">
-                <div className="grid w-full min-w-max grid-cols-3 gap-1 p-1 bg-gray-100 rounded-lg">
-                  <button
-                    onClick={() => handleTabChange('renewals')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'renewals' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Renewals
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('deliveries')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'deliveries' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Deliveries
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('analytics')}
-                    className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      activeTab === 'analytics' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Analytics
-                  </button>
-                </div>
               </div>
             </div>
           </div>

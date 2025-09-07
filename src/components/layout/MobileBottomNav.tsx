@@ -129,14 +129,11 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : operatorNavItems;
-  const mainItems = navItems.filter(item => item.isMain);
-  const nonMainItems = navItems.filter(item => !item.isMain);
-  const visibleItems = mainItems.slice(0, 5); // Show max 5 items in bottom nav
-  const remainingItems = [...mainItems.slice(5), ...nonMainItems]; // Put remaining main items and non-main items in More
+  const visibleItems = navItems; // Show ALL items in bottom nav
+  const remainingItems = []; // No remaining items since we show everything
 
   console.log('MobileBottomNav: Navigation items calculated', {
     totalItems: navItems.length,
-    mainItems: mainItems.length,
     visibleItems: visibleItems.length,
     remainingItems: remainingItems.length,
     visibleItems: visibleItems.map(item => item.id)
@@ -171,7 +168,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
             <Button
               key={item.id}
               variant="ghost"
-              className={`flex flex-col items-center justify-center h-full w-full rounded-none border-0 ${
+              className={`flex flex-col items-center justify-center h-full w-full rounded-none border-0 px-1 ${
                 currentTab === item.id ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
               }`}
               onClick={() => handleNavClick(item.href)}
@@ -187,100 +184,9 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                   </Badge>
                 )}
               </div>
-              <span className="text-xs mt-1">{item.label}</span>
+              <span className="text-[10px] mt-1 leading-none">{item.label}</span>
             </Button>
           ))}
-          
-          {/* More Menu */}
-          <Sheet open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                className={`flex flex-col items-center justify-center h-full w-full rounded-none border-0 ${
-                  isMoreMenuOpen ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-                }`}
-              >
-                <Menu className="h-5 w-5" />
-                <span className="text-xs mt-1">More</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[60vh]">
-              <SheetHeader>
-                <SheetTitle>More Options</SheetTitle>
-                <SheetDescription>
-                  Additional features and settings
-                </SheetDescription>
-              </SheetHeader>
-              
-              <div className="space-y-4 mt-6">
-                {/* User Info */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{userName}</p>
-                      <p className="text-sm text-gray-600 capitalize">{userRole}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Navigation Items */}
-                <div className="space-y-2">
-                  {remainingItems.map((item) => (
-                    <Button
-                      key={item.id}
-                      variant="ghost"
-                      className={`w-full justify-start ${
-                        currentTab === item.id ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-                      }`}
-                      onClick={() => {
-                        handleNavClick(item.href);
-                        setIsMoreMenuOpen(false);
-                      }}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {item.icon}
-                        <span>{item.label}</span>
-                        {item.badge && (
-                          <Badge variant="secondary" className="ml-auto">
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-
-                {/* Settings & Logout */}
-                <div className="border-t pt-4 space-y-2">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-gray-600"
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                    }}
-                  >
-                    <Settings className="h-5 w-5 mr-3" />
-                    Settings
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => {
-                      onLogout();
-                      setIsMoreMenuOpen(false);
-                    }}
-                  >
-                    <LogOut className="h-5 w-5 mr-3" />
-                    Logout
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </div>
 

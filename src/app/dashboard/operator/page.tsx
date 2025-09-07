@@ -167,33 +167,31 @@ export default function OperatorDashboard() {
             </div>
 
             {/* Mobile Header */}
-            <div className="md:flex justify-between items-center h-16">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                  <h1 className="text-lg font-semibold text-gray-900">
-                    SCM
-                  </h1>
-                  <Badge variant="outline" className="ml-2 text-xs">Operator</Badge>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger className="w-32 text-xs">
-                      <SelectValue placeholder="Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((location) => (
-                        <SelectItem key={location.id} value={location.id}>
-                          {location.venueName.length > 15 ? location.venueName.substring(0, 15) + '...' : location.venueName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </Button>
-                </div>
+            <div className="flex md:hidden justify-between items-center h-14">
+              <div className="flex items-center">
+                <h1 className="text-base font-semibold text-gray-900 truncate">
+                  SCM
+                </h1>
+                <Badge variant="outline" className="ml-2 text-xs">Operator</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.venueName.length > 10 ? location.venueName.substring(0, 10) + '...' : location.venueName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2 text-xs">
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </Button>
               </div>
             </div>
           </div>
