@@ -187,35 +187,35 @@ export default function OperatorManagement() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <div className="flex items-start space-x-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <Users className="h-6 w-6 text-yellow-600" />
                     </div>
-                    <div>
-                      <h4 className="font-medium">{operator.name}</h4>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{operator.name}</h4>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-1">
-                          <Mail className="h-4 w-4" />
-                          <span>{operator.email}</span>
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.email}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Phone className="h-4 w-4" />
-                          <span>{operator.mobile}</span>
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.mobile}</span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
-                        <Calendar className="h-3 w-3" />
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
                         <span>Applied: {operator.createdAt?.toDate()?.toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 flex-shrink-0">
                     <Button
                       size="sm"
                       onClick={() => handleApproveClick(operator)}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
                     >
                       <Check className="h-4 w-4 mr-1" />
                       Approve
@@ -224,7 +224,7 @@ export default function OperatorManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleReject(operator.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 whitespace-nowrap"
                     >
                       <X className="h-4 w-4 mr-1" />
                       Reject
@@ -262,40 +262,41 @@ export default function OperatorManagement() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <div className="flex items-start space-x-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <Users className="h-6 w-6 text-green-600" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <h4 className="font-medium">{operator.name}</h4>
+                        <h4 className="font-medium truncate">{operator.name}</h4>
                         <Badge variant="default">Active</Badge>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-1">
-                          <Mail className="h-4 w-4" />
-                          <span>{operator.email}</span>
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.email}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Phone className="h-4 w-4" />
-                          <span>{operator.mobile}</span>
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.mobile}</span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
-                        <MapPin className="h-3 w-3" />
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span>
                           {operator.locationIds?.length || 0} location(s) assigned
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleApproveClick(operator)}
+                      className="whitespace-nowrap"
                     >
                       Edit Assignment
                     </Button>
@@ -303,7 +304,7 @@ export default function OperatorManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeactivate(operator.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 whitespace-nowrap"
                     >
                       Deactivate
                     </Button>

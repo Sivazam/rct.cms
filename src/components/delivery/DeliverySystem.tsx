@@ -197,7 +197,7 @@ export default function DeliverySystem() {
             <CardContent className="p-6">
               <div className="space-y-4">
                 {/* Progress Steps */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-6 sm:space-y-0 sm:space-x-4">
                   {steps.map((step, index) => {
                     const isCompleted = index < currentStepIndex;
                     const isCurrent = index === currentStepIndex;
@@ -228,7 +228,7 @@ export default function DeliverySystem() {
                         </span>
                         {index < steps.length - 1 && (
                           <div
-                            className={`w-16 h-1 mx-2 transition-colors duration-300 ${
+                            className={`ml-2 sm:ml-4 w-16 h-1 transition-colors duration-300 hidden sm:block ${
                               index < currentStepIndex ? 'bg-green-400' : 'bg-gray-200'
                             }`}
                           />
@@ -236,6 +236,19 @@ export default function DeliverySystem() {
                       </div>
                     );
                   })}
+                </div>
+                
+                {/* Mobile connector lines */}
+                <div className="sm:hidden flex flex-col items-center space-y-2 ml-4">
+                  {steps.map((step, index) => (
+                    <div key={step.id} className="flex items-center">
+                      {index < steps.length - 1 && (
+                        <div className={`w-0.5 h-8 transition-colors duration-300 ${
+                          index < currentStepIndex ? 'bg-green-400' : 'bg-gray-200'
+                        }`}></div>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Progress Bar */}

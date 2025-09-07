@@ -174,34 +174,50 @@ export default function CustomerEntrySystem() {
           </div>
 
           {/* Progress Indicator */}
-          <div className="flex items-center space-x-4 mt-6">
-            {[
-              { step: 'search', label: 'Search Customer', icon: Users },
-              { step: 'form', label: 'Entry Details', icon: Package },
-              { step: 'confirmation', label: 'Confirmation', icon: Package }
-            ].map((item, index) => (
-              <div key={item.step} className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep === item.step
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
+          <div className="mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+              {[
+                { step: 'search', label: 'Search Customer', icon: Users },
+                { step: 'form', label: 'Entry Details', icon: Package },
+                { step: 'confirmation', label: 'Confirmation', icon: Package }
+              ].map((item, index) => (
+                <div key={item.step} className="flex items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      currentStep === item.step
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                  </div>
+                  <span
+                    className={`ml-2 text-sm font-medium ${
+                      currentStep === item.step ? 'text-blue-600' : 'text-gray-500'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                  {index < 2 && (
+                    <div className="ml-2 sm:ml-4 w-8 h-0.5 bg-gray-300 hidden sm:block"></div>
+                  )}
                 </div>
-                <span
-                  className={`ml-2 text-sm font-medium ${
-                    currentStep === item.step ? 'text-blue-600' : 'text-gray-500'
-                  }`}
-                >
-                  {item.label}
-                </span>
-                {index < 2 && (
-                  <div className="ml-4 w-8 h-0.5 bg-gray-300"></div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+            {/* Mobile connector lines */}
+            <div className="sm:hidden flex flex-col items-center space-y-2 mt-4 ml-4">
+              {[
+                { step: 'search', label: 'Search Customer', icon: Users },
+                { step: 'form', label: 'Entry Details', icon: Package },
+                { step: 'confirmation', label: 'Confirmation', icon: Package }
+              ].map((item, index) => (
+                <div key={item.step} className="flex items-center">
+                  {index < 2 && (
+                    <div className="w-0.5 h-8 bg-gray-300 ml-4"></div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

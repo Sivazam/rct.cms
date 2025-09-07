@@ -58,7 +58,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       id: 'overview',
       label: 'Overview',
       icon: <Home className="h-5 w-5" />,
-      href: '/dashboard/admin',
+      href: '/dashboard/admin?tab=overview',
       isMain: true
     },
     {
@@ -109,7 +109,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       id: 'overview',
       label: 'Overview',
       icon: <Home className="h-5 w-5" />,
-      href: '/dashboard/operator',
+      href: '/dashboard/operator?tab=overview',
       isMain: true
     },
     {
