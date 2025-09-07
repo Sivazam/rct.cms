@@ -152,7 +152,18 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         entryId
       );
 
-      onSuccess();
+      onSuccess({
+        id: entryId,
+        customerName: formData.name,
+        customerMobile: formData.mobile,
+        customerCity: formData.city,
+        numberOfPots: formData.numberOfPots,
+        entryDate: new Date(),
+        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        locationName: location?.venueName || 'Unknown Location',
+        paymentMethod: formData.paymentMethod,
+        amount: 500
+      });
     } catch (error: any) {
       setError(error.message || 'Failed to create entry');
     } finally {

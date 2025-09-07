@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CustomerSearch from './CustomerSearch';
 import CustomerEntryForm from './CustomerEntryForm';
 import EntryConfirmation from './EntryConfirmation';
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Package, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getEntries, getSystemStats } from '@/lib/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
   id: string;
@@ -35,10 +37,16 @@ interface EntryData {
 type Step = 'search' | 'form' | 'confirmation';
 
 export default function CustomerEntrySystem() {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>('search');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [createdEntry, setCreatedEntry] = useState<EntryData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    todayEntries: 0,
+    activeCustomers: 0,
+    monthlyRevenue: 0
+  });
 
   const handleCustomerFound = (customer: Customer | null) => {
     setSelectedCustomer(customer);
@@ -55,21 +63,8 @@ export default function CustomerEntrySystem() {
     setCurrentStep('form');
   };
 
-  const handleEntrySuccess = () => {
-    // Simulate entry creation with mock data
-    const entryData: EntryData = {
-      id: 'ent_' + Date.now(),
-      customerName: selectedCustomer?.name || 'New Customer',
-      customerMobile: selectedCustomer?.mobile || '',
-      customerCity: selectedCustomer?.city || '',
-      numberOfPots: 1,
-      entryDate: new Date(),
-      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      locationName: 'Branch 1',
-      paymentMethod: 'cash',
-      amount: 500
-    };
-    
+  const handleEntrySuccess = (entryData: any) => {
+    // Use real entry data returned from the API
     setCreatedEntry(entryData);
     setCurrentStep('confirmation');
   };
@@ -92,6 +87,56 @@ export default function CustomerEntrySystem() {
     setSelectedCustomer(null);
     setCreatedEntry(null);
   };
+
+  // Fetch statistics data
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      
+      try {
+        // Get today's entries
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const allEntries = await getEntries();
+        const todayEntries = allEntries.filter(entry => {
+          const entryDate = entry.entryDate?.toDate?.() || new Date(entry.entryDate);
+          return entryDate >= today && entryDate < tomorrow;
+        });
+        
+        // Get active customers (customers with active entries)
+        const activeEntries = allEntries.filter(entry => entry.status === 'active');
+        const uniqueCustomers = new Set(activeEntries.map(entry => entry.customerId));
+        
+        // Get monthly revenue
+        const currentMonth = new Date();
+        currentMonth.setDate(1);
+        currentMonth.setHours(0, 0, 0, 0);
+        
+        const monthlyRevenue = allEntries.reduce((sum, entry) => {
+          if (entry.payments && Array.isArray(entry.payments)) {
+            return sum + entry.payments.reduce((paymentSum, payment) => {
+              const paymentDate = payment.date?.toDate?.() || new Date(payment.date);
+              return paymentSum + (paymentDate >= currentMonth ? payment.amount : 0);
+            }, 0);
+          }
+          return sum;
+        }, 0);
+        
+        setStats({
+          todayEntries: todayEntries.length,
+          activeCustomers: uniqueCustomers.size,
+          monthlyRevenue: monthlyRevenue
+        });
+      } catch (error) {
+        console.error('Error fetching statistics:', error);
+      }
+    };
+    
+    fetchStats();
+  }, [user]);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -241,7 +286,7 @@ export default function CustomerEntrySystem() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Today's Entries</p>
-                    <p className="text-2xl font-bold text-blue-600">12</p>
+                    <p className="text-2xl font-bold text-blue-600">{stats.todayEntries}</p>
                   </div>
                   <Package className="h-8 w-8 text-blue-200" />
                 </div>
@@ -252,7 +297,7 @@ export default function CustomerEntrySystem() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Active Customers</p>
-                    <p className="text-2xl font-bold text-green-600">45</p>
+                    <p className="text-2xl font-bold text-green-600">{stats.activeCustomers}</p>
                   </div>
                   <Users className="h-8 w-8 text-green-200" />
                 </div>
@@ -263,7 +308,7 @@ export default function CustomerEntrySystem() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Monthly Revenue</p>
-                    <p className="text-2xl font-bold text-purple-600">₹6,000</p>
+                    <p className="text-2xl font-bold text-purple-600">₹{stats.monthlyRevenue.toLocaleString()}</p>
                   </div>
                   <Package className="h-8 w-8 text-purple-200" />
                 </div>

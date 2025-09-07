@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { Shield, Clock, Phone, MessageSquare, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
   id: string;
@@ -38,6 +39,7 @@ interface DeliveryOTPProps {
 }
 
 export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = false }: DeliveryOTPProps) {
+  const { user } = useAuth();
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
@@ -45,6 +47,7 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [otpId, setOtpId] = useState('');
 
   const maxAttempts = 3;
   const maxResends = 2;
@@ -65,21 +68,42 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
   };
 
   const handleSendOTP = async () => {
+    if (!user) {
+      setError('User not authenticated');
+      return;
+    }
+
     setIsResending(true);
     setError('');
 
     try {
-      // Simulate API call to send OTP
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const response = await fetch('/api/deliveries/otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entryId: entry.id,
+          customerMobile: entry.customer.mobile,
+          operatorId: user.uid,
+          operatorName: user.name || 'Operator'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
+      setOtpId(data.otpId);
       setOtpSent(true);
       setTimeLeft(600);
       setAttempts(0);
       
-      // In real implementation, this would call your SMS service
       console.log(`OTP sent to ${entry.customer.mobile} for entry ${entry.id}`);
-    } catch (error) {
-      setError('Failed to send OTP. Please try again.');
+    } catch (error: any) {
+      setError(error.message || 'Failed to send OTP. Please try again.');
     } finally {
       setIsResending(false);
     }
@@ -88,6 +112,11 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
   const handleVerifyOTP = async () => {
     if (!otp || otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    if (!user) {
+      setError('User not authenticated');
       return;
     }
 
@@ -100,19 +129,32 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
     setError('');
 
     try {
-      // Simulate API call to verify OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, accept "123456" as valid OTP
-      if (otp === '123456') {
-        onOTPVerified(otp);
-      } else {
-        setAttempts(attempts + 1);
-        const remainingAttempts = maxAttempts - attempts - 1;
-        setError(`Invalid OTP. ${remainingAttempts} attempts remaining.`);
+      const response = await fetch('/api/deliveries/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          otpId: otpId,
+          otp: otp,
+          entryId: entry.id,
+          operatorId: user.uid,
+          operatorName: user.name || 'Operator'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify OTP');
       }
-    } catch (error) {
-      setError('Failed to verify OTP. Please try again.');
+
+      // OTP verified successfully
+      onOTPVerified(otp);
+    } catch (error: any) {
+      setAttempts(attempts + 1);
+      const remainingAttempts = maxAttempts - attempts - 1;
+      setError(error.message || `Invalid OTP. ${remainingAttempts} attempts remaining.`);
     } finally {
       setIsVerifying(false);
     }
@@ -238,13 +280,6 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
                   </Button>
                 </div>
               </div>
-
-              {/* Demo Note */}
-              <Alert>
-                <AlertDescription>
-                  <strong>Demo Mode:</strong> Use OTP <code className="bg-gray-100 px-1 rounded">123456</code> for verification
-                </AlertDescription>
-              </Alert>
             </div>
           )}
 

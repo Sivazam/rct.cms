@@ -588,11 +588,18 @@ export const getOperatorTransactions = async (
       ...doc.data()
     }));
     
-    // Get location names for better display
+    // Get location names and operator names for better display
     const locationsSnapshot = await getDocs(collection(db, 'locations'));
     const locationsMap = new Map();
     locationsSnapshot.docs.forEach(doc => {
       locationsMap.set(doc.id, doc.data());
+    });
+    
+    // Get operator names
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const usersMap = new Map();
+    usersSnapshot.docs.forEach(doc => {
+      usersMap.set(doc.id, doc.data());
     });
     
     const transactions: any[] = [];
@@ -639,7 +646,7 @@ export const getOperatorTransactions = async (
               amount: payment.amount || 0,
               date: paymentDate,
               customerName: entry.customerName || 'Unknown',
-              operatorName: 'Operator', // This could be fetched from user collection
+              operatorName: usersMap.get(entry.operatorId)?.name || 'Unknown Operator',
               locationName: location?.venueName || 'Unknown Location'
             });
           }
@@ -657,7 +664,7 @@ export const getOperatorTransactions = async (
           amount: 500, // Default entry amount
           date: entryDate,
           customerName: entry.customerName || 'Unknown',
-          operatorName: 'Operator',
+          operatorName: usersMap.get(entry.operatorId)?.name || 'Unknown Operator',
           locationName: location?.venueName || 'Unknown Location'
         });
       }
