@@ -39,11 +39,12 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
   const router = useRouter();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-  console.log('MobileBottomNav: Component rendered', {
+  console.log('MobileBottomNav: Component initialized', {
     userRole,
     userName,
     pathname,
-    isMobile: typeof window !== 'undefined' ? window.innerWidth < 768 : 'unknown'
+    isMobile: typeof window !== 'undefined' ? window.innerWidth < 768 : 'unknown',
+    windowExists: typeof window !== 'undefined'
   });
 
   const adminNavItems: NavItem[] = [
@@ -156,42 +157,52 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
   console.log('MobileBottomNav: About to render JSX', {
     currentTab,
     visibleItemsCount: visibleItems.length,
+    visibleItems: visibleItems.map(item => item.id),
     isMobileView: typeof window !== 'undefined' ? window.innerWidth < 768 : 'unknown'
   });
 
   return (
     <>
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex justify-around items-center h-16">
-          {visibleItems.map((item) => (
+      {/* Mobile Bottom Navigation - TEST VERSION - Always Visible */}
+      <div className="fixed bottom-0 left-0 right-0 bg-red-500 border-t-4 border-red-700 z-[9999] shadow-2xl">
+        <div className="flex overflow-x-auto whitespace-nowrap h-20 bg-red-400">
+          {visibleItems.map((item, index) => (
             <Button
               key={item.id}
               variant="ghost"
-              className={`flex flex-col items-center justify-center h-full w-full rounded-none border-0 px-1 ${
-                currentTab === item.id ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
+              className={`flex flex-col items-center justify-center h-full min-w-[80px] max-w-[100px] rounded-none border-0 px-1 flex-shrink-0 ${
+                currentTab === item.id 
+                  ? 'text-white bg-red-600 border-t-4 border-white' 
+                  : 'text-white hover:bg-red-500'
               }`}
-              onClick={() => handleNavClick(item.href)}
+              onClick={() => {
+                console.log('MobileBottomNav: Clicked item', { id: item.id, label: item.label, href: item.href });
+                handleNavClick(item.href);
+              }}
             >
               <div className="relative">
-                {item.icon}
+                <div className="text-white">
+                  {item.icon}
+                </div>
                 {item.badge && (
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-yellow-400 text-black"
                   >
                     {item.badge}
                   </Badge>
                 )}
               </div>
-              <span className="text-[10px] mt-1 leading-none">{item.label}</span>
+              <span className="text-[10px] mt-1 leading-none text-center px-1 font-bold truncate w-full text-white">
+                {item.label}
+              </span>
             </Button>
           ))}
         </div>
       </div>
 
       {/* Spacer for bottom nav */}
-      <div className="md:hidden h-16"></div>
+      <div className="h-20"></div>
     </>
   );
 }
