@@ -76,6 +76,13 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       isMain: true
     },
     {
+      id: 'operator-performance',
+      label: 'Performance',
+      icon: <TrendingUp className="h-5 w-5" />,
+      href: '/dashboard/admin?tab=operator-performance',
+      isMain: true
+    },
+    {
       id: 'entries',
       label: 'Entries',
       icon: <Package className="h-5 w-5" />,

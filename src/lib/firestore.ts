@@ -484,3 +484,196 @@ export const updateSystemStats = async (locationId?: string, updates?: any) => {
     throw error;
   }
 };
+
+// Operator Performance Tracking
+export const getOperatorStats = async (operatorId: string) => {
+  try {
+    console.log('Getting operator stats for:', operatorId);
+    
+    // Get all entries for this operator
+    const entriesQuery = query(collection(db, 'entries'), where('operatorId', '==', operatorId));
+    const entriesSnapshot = await getDocs(entriesQuery);
+    const entries = entriesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Calculate statistics
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    let totalRevenue = 0;
+    let todayRevenue = 0;
+    let thisWeekRevenue = 0;
+    let thisMonthRevenue = 0;
+    let todayEntries = 0;
+    let thisWeekEntries = 0;
+    let thisMonthEntries = 0;
+    let totalRenewals = 0;
+    let totalDeliveries = 0;
+    
+    entries.forEach(entry => {
+      // Process payments
+      if (entry.payments && Array.isArray(entry.payments)) {
+        entry.payments.forEach((payment: any) => {
+          const paymentDate = payment.date?.toDate();
+          const amount = payment.amount || 0;
+          
+          totalRevenue += amount;
+          
+          if (paymentDate) {
+            if (paymentDate >= today) {
+              todayRevenue += amount;
+              todayEntries += 1;
+            }
+            if (paymentDate >= weekStart) {
+              thisWeekRevenue += amount;
+              thisWeekEntries += 1;
+            }
+            if (paymentDate >= monthStart) {
+              thisMonthRevenue += amount;
+              thisMonthEntries += 1;
+            }
+          }
+          
+          // Count by payment type
+          if (payment.type === 'renewal') {
+            totalRenewals += 1;
+          }
+        });
+      }
+      
+      // Count deliveries
+      if (entry.status === 'delivered') {
+        totalDeliveries += 1;
+      }
+    });
+    
+    const stats = {
+      totalEntries: entries.length,
+      totalRenewals,
+      totalDeliveries,
+      totalRevenue,
+      todayEntries,
+      todayRevenue,
+      thisWeekEntries,
+      thisWeekRevenue,
+      thisMonthEntries,
+      thisMonthRevenue
+    };
+    
+    console.log('Operator stats calculated:', stats);
+    return stats;
+  } catch (error) {
+    console.error('Error getting operator stats:', error);
+    throw error;
+  }
+};
+
+export const getOperatorTransactions = async (
+  operatorId: string, 
+  timeRange: 'today' | 'week' | 'month' | 'custom',
+  dateRange?: { from: Date; to: Date }
+) => {
+  try {
+    console.log('Getting operator transactions for:', operatorId, timeRange, dateRange);
+    
+    // Get all entries for this operator
+    const entriesQuery = query(collection(db, 'entries'), where('operatorId', '==', operatorId));
+    const entriesSnapshot = await getDocs(entriesQuery);
+    const entries = entriesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Get location names for better display
+    const locationsSnapshot = await getDocs(collection(db, 'locations'));
+    const locationsMap = new Map();
+    locationsSnapshot.docs.forEach(doc => {
+      locationsMap.set(doc.id, doc.data());
+    });
+    
+    const transactions: any[] = [];
+    
+    // Calculate date range
+    let fromDate: Date, toDate: Date;
+    const now = new Date();
+    
+    switch (timeRange) {
+      case 'today':
+        fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        toDate = new Date(fromDate.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case 'week':
+        fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        toDate = now;
+        break;
+      case 'month':
+        fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        toDate = now;
+        break;
+      case 'custom':
+        fromDate = dateRange?.from || new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        toDate = dateRange?.to || now;
+        break;
+      default:
+        fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        toDate = now;
+    }
+    
+    // Process each entry's payments as transactions
+    entries.forEach(entry => {
+      if (entry.payments && Array.isArray(entry.payments)) {
+        entry.payments.forEach((payment: any, index: number) => {
+          const paymentDate = payment.date?.toDate();
+          
+          // Check if payment is within the specified date range
+          if (paymentDate && paymentDate >= fromDate && paymentDate <= toDate) {
+            const location = locationsMap.get(entry.locationId);
+            
+            transactions.push({
+              id: `${entry.id}_payment_${index}`,
+              type: payment.type || 'entry',
+              amount: payment.amount || 0,
+              date: paymentDate,
+              customerName: entry.customerName || 'Unknown',
+              operatorName: 'Operator', // This could be fetched from user collection
+              locationName: location?.venueName || 'Unknown Location'
+            });
+          }
+        });
+      }
+      
+      // Also add the entry itself as a transaction
+      const entryDate = entry.entryDate?.toDate();
+      if (entryDate && entryDate >= fromDate && entryDate <= toDate) {
+        const location = locationsMap.get(entry.locationId);
+        
+        transactions.push({
+          id: entry.id,
+          type: 'entry',
+          amount: 500, // Default entry amount
+          date: entryDate,
+          customerName: entry.customerName || 'Unknown',
+          operatorName: 'Operator',
+          locationName: location?.venueName || 'Unknown Location'
+        });
+      }
+    });
+    
+    // Sort transactions by date (newest first)
+    transactions.sort((a, b) => {
+      const aTime = a.date?.getTime() || 0;
+      const bTime = b.date?.getTime() || 0;
+      return bTime - aTime;
+    });
+    
+    console.log('Operator transactions found:', transactions.length);
+    return transactions;
+  } catch (error) {
+    console.error('Error getting operator transactions:', error);
+    throw error;
+  }
+};

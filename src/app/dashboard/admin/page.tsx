@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import LocationManagement from '@/components/admin/LocationManagement';
 import OperatorManagement from '@/components/admin/OperatorManagement';
+import OperatorPerformance from '@/components/admin/OperatorPerformance';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
@@ -241,7 +242,7 @@ export default function AdminDashboard() {
           {/* Desktop Tabs Only - No mobile tabs */}
           <div className="hidden md:block mb-6">
             <div className="w-full overflow-x-auto">
-              <div className="grid w-full min-w-max grid-cols-7 gap-1 p-1 bg-gray-100 rounded-lg">
+              <div className="grid w-full min-w-max grid-cols-8 gap-1 p-1 bg-gray-100 rounded-lg">
                 <button
                   onClick={() => handleTabChange('overview')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -271,6 +272,16 @@ export default function AdminDashboard() {
                   }`}
                 >
                   Operators
+                </button>
+                <button
+                  onClick={() => handleTabChange('operator-performance')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'operator-performance' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  Operator Performance
                 </button>
                 <button
                   onClick={() => handleTabChange('entries')}
@@ -581,6 +592,9 @@ export default function AdminDashboard() {
 
               {/* Operators Tab */}
               {activeTab === 'operators' && <OperatorManagement />}
+
+              {/* Operator Performance Tab */}
+              {activeTab === 'operator-performance' && <OperatorPerformance />}
 
               {/* Entries Tab */}
               {activeTab === 'entries' && <CustomerEntrySystem />}
