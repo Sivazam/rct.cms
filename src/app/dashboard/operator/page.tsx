@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { 
   MapPin
@@ -135,7 +136,8 @@ export default function OperatorDashboard() {
         {/* Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
+            {/* Desktop Header */}
+            <div className="hidden md:flex justify-between items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-xl font-semibold text-gray-900">
                   Smart Cremation Management
@@ -163,11 +165,42 @@ export default function OperatorDashboard() {
                 </Button>
               </div>
             </div>
+
+            {/* Mobile Header */}
+            <div className="md:flex justify-between items-center h-16">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <h1 className="text-lg font-semibold text-gray-900">
+                    SCM
+                  </h1>
+                  <Badge variant="outline" className="ml-2 text-xs">Operator</Badge>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                    <SelectTrigger className="w-32 text-xs">
+                      <SelectValue placeholder="Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.venueName.length > 15 ? location.venueName.substring(0, 15) + '...' : location.venueName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
           {locations.length === 0 ? (
             <div>
               {/* No locations assigned state */}
@@ -236,6 +269,13 @@ export default function OperatorDashboard() {
             </div>
           )}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav 
+          userRole="operator" 
+          userName={user?.name || 'Operator'} 
+          onLogout={handleLogout} 
+        />
       </div>
     </ProtectedRoute>
   );
