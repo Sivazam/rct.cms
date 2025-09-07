@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import LocationManagement from '@/components/admin/LocationManagement';
 import OperatorManagement from '@/components/admin/OperatorManagement';

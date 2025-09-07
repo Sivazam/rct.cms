@@ -6,23 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { motion } from 'framer-motion';
-import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
-import RenewalSystem from '@/components/renewals/RenewalSystem';
-import DeliverySystem from '@/components/delivery/DeliverySystem';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { 
-  Search, 
-  Plus, 
-  RefreshCw, 
-  AlertTriangle,
-  TrendingUp,
-  DollarSign,
-  Calendar,
-  Package,
-  Users,
   MapPin
 } from 'lucide-react';
 
@@ -219,290 +205,37 @@ export default function OperatorDashboard() {
             <div>
               {/* Normal dashboard with locations */}
               <div className="space-y-6">
-              {/* Desktop Tabs */}
-              <div className="hidden md:block">
-                <div className="w-full overflow-x-auto">
-                  <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
-                    <button
-                      onClick={() => setActiveTab('overview')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'overview' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Overview
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('entries')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'entries' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Entries
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('renewals')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'renewals' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Renewals
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('deliveries')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'deliveries' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Deliveries
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile Tabs */}
-              <div className="md:hidden">
-                <div className="w-full overflow-x-auto">
-                  <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-gray-100 rounded-lg">
-                    <button
-                      onClick={() => setActiveTab('overview')}
-                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                        activeTab === 'overview' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Overview
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('entries')}
-                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                        activeTab === 'entries' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Entries
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('renewals')}
-                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                        activeTab === 'renewals' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Renewals
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('deliveries')}
-                      className={`whitespace-nowrap px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                        activeTab === 'deliveries' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      Deliveries
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tab Content */}
-              <div className="space-y-6">
-                {/* Overview Tab */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.totalEntries}</div>
-                      <p className="text-xs text-muted-foreground">
-                        This location
-                      </p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Renewals</CardTitle>
-                      <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.totalRenewals}</div>
-                      <p className="text-xs text-muted-foreground">
-                        This month
-                      </p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Deliveries</CardTitle>
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.totalDeliveries}</div>
-                      <p className="text-xs text-muted-foreground">
-                        This month
-                      </p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">₹{stats.monthlyRevenue.toLocaleString()}</div>
-                      <p className="text-xs text-muted-foreground">
-                        This month
-                      </p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </div>
-
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                  <CardDescription>
-                    Common tasks you can perform
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button className="h-20 flex-col space-y-2">
-                      <Plus className="h-6 w-6" />
-                      <span>New Entry</span>
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col space-y-2">
-                      <RefreshCw className="h-6 w-6" />
-                      <span>Renewal</span>
-                    </Button>
-                    <Button variant="outline" className="h-20 flex-col space-y-2">
-                      <Calendar className="h-6 w-6" />
-                      <span>Delivery</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Entries */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Entries</CardTitle>
-                  <CardDescription>
-                    Latest customer entries at your location
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentEntries.map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{entry.customerName}</h4>
-                            <p className="text-sm text-gray-600">{entry.mobile}</p>
-                            <p className="text-xs text-gray-500">{entry.pots} pot(s) • {entry.date}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={entry.status === 'active' ? 'default' : 'destructive'}>
-                            {entry.status === 'active' ? 'Active' : 'Expiring'}
-                          </Badge>
-                          <Button variant="outline" size="sm">
-                            <Search className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Expiring Soon */}
-              {stats.expiringIn7Days > 0 && (
-                <Card className="border-orange-200 bg-orange-50">
+                {/* Simple Overview */}
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-orange-800">
-                      <AlertTriangle className="h-5 w-5" />
-                      <span>Expiring Soon</span>
-                    </CardTitle>
-                    <CardDescription className="text-orange-700">
-                      {stats.expiringIn7Days} entries expiring in the next 7 days
-                    </CardDescription>
+                    <CardTitle>Operator Dashboard</CardTitle>
+                    <CardDescription>Welcome to the operator dashboard</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="text-orange-800 border-orange-300 hover:bg-orange-100">
-                      View Expiring Entries
-                    </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{stats.totalEntries}</div>
+                        <div className="text-sm text-gray-600">Total Entries</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{stats.totalRenewals}</div>
+                        <div className="text-sm text-gray-600">Renewals</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{stats.totalDeliveries}</div>
+                        <div className="text-sm text-gray-600">Deliveries</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">₹{stats.monthlyRevenue}</div>
+                        <div className="text-sm text-gray-600">Revenue</div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
-                </div>
-                )}
-
-                {/* Entries Tab */}
-                {activeTab === 'entries' && <CustomerEntrySystem />}
-
-                {/* Renewals Tab */}
-                {activeTab === 'renewals' && <RenewalSystem />}
-
-                {/* Deliveries Tab */}
-                {activeTab === 'deliveries' && <DeliverySystem />}
               </div>
-            )}
+            </div>
+          )}
         </main>
-
-        {/* Mobile Bottom Navigation */}
-        {user && (
-          <MobileBottomNav 
-            userRole={user.role} 
-            userName={user.name || 'Operator'} 
-            onLogout={handleLogout} 
-          />
-        )}
       </div>
     </ProtectedRoute>
   );
