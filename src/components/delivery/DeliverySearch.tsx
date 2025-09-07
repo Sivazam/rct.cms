@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion } from 'framer-motion';
 import { Search, Calendar, User, Phone, MapPin, Package } from 'lucide-react';
+import { getEntries, getLocations } from '@/lib/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
   id: string;
@@ -38,50 +40,28 @@ interface DeliverySearchProps {
 }
 
 export default function DeliverySearch({ onEntrySelect, loading = false }: DeliverySearchProps) {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'mobile' | 'entryId' | 'name'>('mobile');
   const [searchResults, setSearchResults] = useState<Entry[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
+  const [locations, setLocations] = useState<any[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState('all');
 
-  // Mock data - replace with actual API calls
-  const mockEntries: Entry[] = [
-    {
-      id: 'entry1',
-      customerId: 'cust1',
-      customer: {
-        id: 'cust1',
-        name: 'Rajesh Kumar',
-        mobile: '+919876543210',
-        city: 'Chennai'
-      },
-      entryDate: '2024-01-15',
-      expiryDate: '2024-07-15',
-      pots: 2,
-      status: 'active',
-      locationId: 'loc1',
-      locationName: 'Branch 1',
-      renewalCount: 1,
-      lastRenewalDate: '2024-04-15'
-    },
-    {
-      id: 'entry2',
-      customerId: 'cust2',
-      customer: {
-        id: 'cust2',
-        name: 'Priya Sharma',
-        mobile: '+919876543211',
-        city: 'Mumbai'
-      },
-      entryDate: '2024-02-01',
-      expiryDate: '2024-08-01',
-      pots: 1,
-      status: 'active',
-      locationId: 'loc2',
-      locationName: 'Branch 2',
-      renewalCount: 0
-    }
-  ];
+  // Fetch locations on component mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationsData = await getLocations();
+        const activeLocations = locationsData.filter(loc => loc.isActive);
+        setLocations(activeLocations);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -93,26 +73,50 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Filter mock data based on search type
-      let filtered = mockEntries.filter(entry => {
+      // Fetch entries from Firestore based on filters
+      const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
+      const entries = await getEntries({
+        locationId: locationId,
+        status: 'active' // Only show active entries for delivery
+      });
+
+      // Filter entries based on search type
+      let filtered = entries.filter(entry => {
         if (searchType === 'mobile') {
-          return entry.customer.mobile.includes(searchTerm);
+          return entry.customerMobile?.includes(searchTerm);
         } else if (searchType === 'entryId') {
-          return entry.id.toLowerCase().includes(searchTerm.toLowerCase());
+          return entry.id?.toLowerCase().includes(searchTerm.toLowerCase());
         } else if (searchType === 'name') {
-          return entry.customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+          return entry.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
         }
         return false;
       });
 
-      // Only show active entries for delivery
-      filtered = filtered.filter(entry => entry.status === 'active');
+      // Transform entries to match the expected interface
+      const transformedResults: Entry[] = filtered.map(entry => ({
+        id: entry.id,
+        customerId: entry.customerId || '',
+        customer: {
+          id: entry.customerId || '',
+          name: entry.customerName || '',
+          mobile: entry.customerMobile || '',
+          city: entry.customerCity || ''
+        },
+        entryDate: entry.entryDate?.toDate?.().toISOString().split('T')[0] || '',
+        expiryDate: entry.expiryDate?.toDate?.().toISOString().split('T')[0] || '',
+        pots: entry.numberOfPots || 0,
+        status: entry.status || 'active',
+        locationId: entry.locationId || '',
+        locationName: locations.find(loc => loc.id === entry.locationId)?.venueName || '',
+        renewalCount: entry.renewals?.length || 0,
+        lastRenewalDate: entry.renewals?.length > 0 
+          ? entry.renewals[entry.renewals.length - 1].date?.toDate?.().toISOString().split('T')[0]
+          : undefined
+      }));
 
-      setSearchResults(filtered);
+      setSearchResults(transformedResults);
     } catch (error) {
+      console.error('Error searching entries:', error);
       setError('Failed to search entries. Please try again.');
     } finally {
       setIsSearching(false);
@@ -159,9 +163,22 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.venueName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

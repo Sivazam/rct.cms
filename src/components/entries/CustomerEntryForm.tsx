@@ -53,16 +53,11 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
 
   const fetchLocations = async () => {
     try {
-      const { getLocations } = await import('@/lib/firestore');
       const locationsData = await getLocations();
       setLocations(locationsData.filter(loc => loc.isActive));
     } catch (error) {
       console.error('Error fetching locations:', error);
-      // Fallback to mock data if Firestore fails
-      setLocations([
-        { id: 'loc1', venueName: 'Branch 1', address: '123 Main St' },
-        { id: 'loc2', venueName: 'Branch 2', address: '456 Oak Ave' },
-      ]);
+      setLocations([]); // Set empty array instead of fallback data
     }
   };
 
