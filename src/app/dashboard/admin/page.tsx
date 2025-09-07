@@ -49,16 +49,37 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
+    console.log('AdminDashboard: activeTab changed to:', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
     fetchDashboardData();
   }, [selectedLocation]);
 
   useEffect(() => {
     // Handle tab changes from URL parameters
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tab = urlParams.get('tab') || 'overview';
-      setActiveTab(tab);
-    }
+    const handleUrlChange = () => {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab') || 'overview';
+        console.log('AdminDashboard: URL changed, updating tab to:', tab);
+        setActiveTab(tab);
+      }
+    };
+
+    // Initial load
+    handleUrlChange();
+
+    // Listen for popstate events (browser back/forward)
+    window.addEventListener('popstate', handleUrlChange);
+    
+    // Custom event for URL changes
+    window.addEventListener('urlchange', handleUrlChange);
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('urlchange', handleUrlChange);
+    };
   }, []);
 
   const fetchDashboardData = async () => {
@@ -133,12 +154,14 @@ export default function AdminDashboard() {
   };
 
   const handleTabChange = (tab: string) => {
+    console.log('AdminDashboard: handleTabChange called', { tab });
     setActiveTab(tab);
     // Update URL without page reload
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('tab', tab);
       window.history.pushState({}, '', url.toString());
+      console.log('AdminDashboard: URL updated to:', url.toString());
     }
   };
 

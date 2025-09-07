@@ -155,6 +155,9 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
       const url = new URL(window.location.href);
       url.searchParams.set('tab', navId);
       window.history.pushState({}, '', url.toString());
+      
+      // Dispatch custom event to notify dashboard of URL change
+      window.dispatchEvent(new Event('urlchange'));
     }
     
     // Navigate to the href
