@@ -273,16 +273,7 @@ export default function AdminDashboard() {
                 >
                   Operators
                 </button>
-                <button
-                  onClick={() => handleTabChange('operator-performance')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'operator-performance' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  Operator Performance
-                </button>
+  
                 <button
                   onClick={() => handleTabChange('entries')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -593,8 +584,7 @@ export default function AdminDashboard() {
               {/* Operators Tab */}
               {activeTab === 'operators' && <OperatorManagement />}
 
-              {/* Operator Performance Tab */}
-              {activeTab === 'operator-performance' && <OperatorPerformance />}
+  
 
               {/* Entries Tab */}
               {activeTab === 'entries' && <CustomerEntrySystem />}
@@ -606,25 +596,7 @@ export default function AdminDashboard() {
               {activeTab === 'deliveries' && <DeliverySystem />}
 
               {/* Analytics Tab */}
-              {activeTab === 'analytics' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <TrendingUp className="h-5 w-5" />
-                      <span>System Analytics</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Comprehensive system performance metrics
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center text-gray-500 py-8">
-                      <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Analytics dashboard coming soon</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {activeTab === 'analytics' && <OperatorPerformance />}
           </div>
 
         </main>

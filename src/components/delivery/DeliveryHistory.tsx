@@ -22,7 +22,8 @@ import {
   MapPin, 
   Package,
   CheckCircle,
-  Clock
+  Clock,
+  Users
 } from 'lucide-react';
 
 interface Customer {
@@ -39,7 +40,9 @@ interface DeliveryRecord {
   customer: Customer;
   deliveryDate: string;
   operatorName: string;
+  operatorId: string;
   locationName: string;
+  locationId: string;
   pots: number;
   otpVerified: boolean;
   smsSent: boolean;
@@ -56,94 +59,74 @@ interface DeliveryHistoryProps {
 export default function DeliveryHistory({ onClose, loading = false }: DeliveryHistoryProps) {
   const [deliveries, setDeliveries] = useState<DeliveryRecord[]>([]);
   const [filteredDeliveries, setFilteredDeliveries] = useState<DeliveryRecord[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLocation, setFilterLocation] = useState('all');
   const [filterDateRange, setFilterDateRange] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data - replace with actual API calls
-  const mockDeliveries: DeliveryRecord[] = [
-    {
-      id: 'del1',
-      entryId: 'entry1',
-      customerId: 'cust1',
-      customer: {
-        id: 'cust1',
-        name: 'Rajesh Kumar',
-        mobile: '+919876543210',
-        city: 'Chennai'
-      },
-      deliveryDate: '2024-06-15T10:30:00Z',
-      operatorName: 'Operator A',
-      locationName: 'Branch 1',
-      pots: 2,
-      otpVerified: true,
-      smsSent: true,
-      entryDate: '2024-01-15',
-      expiryDate: '2024-07-15',
-      renewalCount: 1
-    },
-    {
-      id: 'del2',
-      entryId: 'entry2',
-      customerId: 'cust2',
-      customer: {
-        id: 'cust2',
-        name: 'Priya Sharma',
-        mobile: '+919876543211',
-        city: 'Mumbai'
-      },
-      deliveryDate: '2024-06-10T14:45:00Z',
-      operatorName: 'Operator B',
-      locationName: 'Branch 2',
-      pots: 1,
-      otpVerified: true,
-      smsSent: true,
-      entryDate: '2024-02-01',
-      expiryDate: '2024-08-01',
-      renewalCount: 0
-    },
-    {
-      id: 'del3',
-      entryId: 'entry3',
-      customerId: 'cust3',
-      customer: {
-        id: 'cust3',
-        name: 'Suresh Patel',
-        mobile: '+919876543212',
-        city: 'Delhi'
-      },
-      deliveryDate: '2024-06-05T09:15:00Z',
-      operatorName: 'Operator A',
-      locationName: 'Branch 1',
-      pots: 3,
-      otpVerified: true,
-      smsSent: true,
-      entryDate: '2024-01-20',
-      expiryDate: '2024-07-20',
-      renewalCount: 2
-    }
-  ];
-
-  const locations = ['Branch 1', 'Branch 2'];
-
   useEffect(() => {
     loadDeliveries();
+    loadLocations();
   }, []);
 
   useEffect(() => {
     filterAndSearchDeliveries();
   }, [deliveries, searchTerm, filterLocation, filterDateRange]);
 
+  const loadLocations = async () => {
+    try {
+      const response = await fetch('/api/locations');
+      if (response.ok) {
+        const locationsData = await response.json();
+        setLocations(locationsData.filter(loc => loc.isActive));
+      }
+    } catch (error) {
+      console.error('Failed to load locations:', error);
+    }
+  };
+
   const loadDeliveries = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setDeliveries(mockDeliveries);
+      const response = await fetch('/api/deliveries');
+      if (response.ok) {
+        const data = await response.json();
+        const deliveriesData = data.deliveries || [];
+        
+        // Transform API data to match our interface
+        const transformedDeliveries: DeliveryRecord[] = deliveriesData.map((delivery: any) => ({
+          id: delivery.id,
+          entryId: delivery.entryId,
+          customerId: delivery.customerId,
+          customer: {
+            id: delivery.customerId,
+            name: delivery.customerName,
+            mobile: delivery.customerMobile,
+            city: delivery.customerCity || ''
+          },
+          deliveryDate: delivery.deliveryDate,
+          operatorName: delivery.operatorName,
+          operatorId: delivery.operatorId,
+          locationName: delivery.locationName,
+          locationId: delivery.locationId,
+          pots: delivery.pots || 0,
+          otpVerified: delivery.otpVerified || false,
+          smsSent: delivery.smsSent || false,
+          entryDate: delivery.entryDate,
+          expiryDate: delivery.expiryDate,
+          renewalCount: delivery.renewalCount || 0
+        }));
+        
+        setDeliveries(transformedDeliveries);
+      } else {
+        console.error('Failed to load deliveries:', response.statusText);
+        setDeliveries([]);
+      }
     } catch (error) {
       console.error('Failed to load deliveries:', error);
+      setDeliveries([]);
     } finally {
       setIsLoading(false);
     }
@@ -278,8 +261,8 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                 <SelectContent>
                   <SelectItem value="all">All Locations</SelectItem>
                   {locations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
+                    <SelectItem key={location.id} value={location.venueName}>
+                      {location.venueName}
                     </SelectItem>
                   ))}
                 </SelectContent>

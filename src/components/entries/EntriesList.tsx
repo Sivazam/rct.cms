@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Package, Phone, User, MapPin, Search, Filter } from 'lucide-react';
+import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getEntries, getLocations } from '@/lib/firestore';
+import { getEntries, getLocations, getUsers } from '@/lib/firestore';
 
 interface Entry {
   id: string;
@@ -23,6 +23,7 @@ interface Entry {
   locationId: string;
   locationName?: string;
   operatorId: string;
+  operatorName?: string;
   payments: Array<{
     amount: number;
     date: any;
@@ -64,13 +65,15 @@ export default function EntriesList() {
       setLoading(true);
       console.log('Fetching entries...');
       
-      const [entriesData, locationsData] = await Promise.all([
+      const [entriesData, locationsData, usersData] = await Promise.all([
         getEntries(),
-        getLocations()
+        getLocations(),
+        getUsers()
       ]);
       
       console.log('Entries found:', entriesData.length);
       console.log('Locations found:', locationsData.length);
+      console.log('Users found:', usersData.length);
       
       // Create location mapping
       const locationMap = new Map();
@@ -78,13 +81,20 @@ export default function EntriesList() {
         locationMap.set(loc.id, loc.venueName);
       });
       
-      // Add location names to entries
-      const entriesWithLocationNames = entriesData.map(entry => ({
+      // Create operator mapping
+      const operatorMap = new Map();
+      usersData.forEach(user => {
+        operatorMap.set(user.id, user.name);
+      });
+      
+      // Add location names and operator names to entries
+      const entriesWithDetails = entriesData.map(entry => ({
         ...entry,
-        locationName: locationMap.get(entry.locationId) || 'Unknown Location'
+        locationName: locationMap.get(entry.locationId) || 'Unknown Location',
+        operatorName: operatorMap.get(entry.operatorId) || 'Unknown Operator'
       }));
       
-      setEntries(entriesWithLocationNames);
+      setEntries(entriesWithDetails);
       setLocations(locationsData.filter(loc => loc.isActive));
     } catch (error) {
       console.error('Error fetching entries:', error);
@@ -199,6 +209,7 @@ export default function EntriesList() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Operator</TableHead>
                 <TableHead>Pots</TableHead>
                 <TableHead>Entry Date</TableHead>
                 <TableHead>Expiry Date</TableHead>
@@ -209,7 +220,7 @@ export default function EntriesList() {
             <TableBody>
               {filteredEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <div className="flex flex-col items-center space-y-2">
                       <Package className="h-12 w-12 text-gray-400" />
                       <p className="text-gray-500">No entries found</p>
@@ -245,6 +256,12 @@ export default function EntriesList() {
                       <div className="flex items-center space-x-1">
                         <MapPin className="h-4 w-4 text-gray-400" />
                         <span>{entry.locationName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span>{entry.operatorName}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -328,9 +345,15 @@ export default function EntriesList() {
                 </div>
 
                 {/* Location */}
-                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
+                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-2">
                   <MapPin className="h-3 w-3" />
                   <span>{entry.locationName}</span>
+                </div>
+
+                {/* Operator */}
+                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
+                  <Users className="h-3 w-3" />
+                  <span>By {entry.operatorName}</span>
                 </div>
 
                 {/* Dates */}

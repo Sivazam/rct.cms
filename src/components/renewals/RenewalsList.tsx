@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, RefreshCw, Phone, User, MapPin, Search, Filter, AlertTriangle } from 'lucide-react';
+import { Calendar, RefreshCw, Phone, User, MapPin, Search, Filter, AlertTriangle, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getEntries, getLocations } from '@/lib/firestore';
+import { getEntries, getLocations, getUsers } from '@/lib/firestore';
 
 interface Renewal {
   id: string;
@@ -25,6 +25,7 @@ interface Renewal {
   newExpiryDate: any;
   locationName?: string;
   operatorId: string;
+  operatorName?: string;
 }
 
 interface Entry {
@@ -72,18 +73,26 @@ export default function RenewalsList() {
       setLoading(true);
       console.log('Fetching renewals...');
       
-      const [entriesData, locationsData] = await Promise.all([
+      const [entriesData, locationsData, usersData] = await Promise.all([
         getEntries(),
-        getLocations()
+        getLocations(),
+        getUsers()
       ]);
       
       console.log('Entries found:', entriesData.length);
       console.log('Locations found:', locationsData.length);
+      console.log('Users found:', usersData.length);
       
       // Create location mapping
       const locationMap = new Map();
       locationsData.forEach(loc => {
         locationMap.set(loc.id, loc.venueName);
+      });
+      
+      // Create operator mapping
+      const operatorMap = new Map();
+      usersData.forEach(user => {
+        operatorMap.set(user.id, user.name);
       });
       
       // Extract renewals from entries
@@ -104,7 +113,8 @@ export default function RenewalsList() {
               method: renewal.method,
               newExpiryDate: renewal.newExpiryDate,
               locationName: locationMap.get(entry.locationId) || 'Unknown Location',
-              operatorId: renewal.operatorId
+              operatorId: renewal.operatorId,
+              operatorName: operatorMap.get(renewal.operatorId) || 'Unknown Operator'
             });
           });
         }
@@ -230,6 +240,7 @@ export default function RenewalsList() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Operator</TableHead>
                 <TableHead>Pots</TableHead>
                 <TableHead>Renewal Date</TableHead>
                 <TableHead>Months</TableHead>
@@ -241,7 +252,7 @@ export default function RenewalsList() {
             <TableBody>
               {filteredRenewals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={10} className="text-center py-8">
                     <div className="flex flex-col items-center space-y-2">
                       <RefreshCw className="h-12 w-12 text-gray-400" />
                       <p className="text-gray-500">No renewals found</p>
@@ -277,6 +288,12 @@ export default function RenewalsList() {
                       <div className="flex items-center space-x-1">
                         <MapPin className="h-4 w-4 text-gray-400" />
                         <span>{renewal.locationName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span>{renewal.operatorName}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -360,9 +377,15 @@ export default function RenewalsList() {
                 </div>
 
                 {/* Location */}
-                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
+                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-2">
                   <MapPin className="h-3 w-3" />
                   <span>{renewal.locationName}</span>
+                </div>
+
+                {/* Operator */}
+                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
+                  <Users className="h-3 w-3" />
+                  <span>By {renewal.operatorName}</span>
                 </div>
 
                 {/* Renewal Details */}
