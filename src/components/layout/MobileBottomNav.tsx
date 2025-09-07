@@ -155,7 +155,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
   console.log('MobileBottomNav: About to render JSX', {
     currentTab,
-    mainItemsCount: mainItems.length,
+    visibleItemsCount: visibleItems.length,
     isMobileView: typeof window !== 'undefined' ? window.innerWidth < 768 : 'unknown'
   });
 
