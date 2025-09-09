@@ -240,7 +240,7 @@ export default function OperatorDashboard() {
             <div className="hidden md:flex justify-between items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-xl font-semibold text-gray-900">
-                  Smart Cremation Management
+                  Cremation Management System
                 </h1>
                 <Badge variant="outline" className="ml-3">Operator</Badge>
               </div>
@@ -270,7 +270,7 @@ export default function OperatorDashboard() {
             <div className="flex md:hidden justify-between items-center h-14">
               <div className="flex items-center">
                 <h1 className="text-base font-semibold text-gray-900 truncate">
-                  SCM
+                  Cremation Management System
                 </h1>
                 <Badge variant="outline" className="ml-2 text-xs">Operator</Badge>
               </div>

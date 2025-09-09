@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import PageTransitionLoader from "@/components/ui/page-transition-loader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,20 +17,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Smart Cremation Management - Rotary Charitable Trust",
+  title: "Cremation Management System - Rotary Charitable Trust",
   description: "Comprehensive cremation management system for Rotary Charitable Trust with ash pot storage, renewals, and delivery management.",
   keywords: ["Cremation Management", "Rotary Charitable Trust", "Ash Pot Storage", "SCM System", "Funeral Management"],
   authors: [{ name: "Rotary Charitable Trust" }],
   openGraph: {
-    title: "Smart Cremation Management",
+    title: "Cremation Management System",
     description: "Rotary Charitable Trust - Comprehensive cremation management system",
     url: "https://rctscm01.firebaseapp.com",
-    siteName: "SCM System",
+    siteName: "Cremation Management System",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Smart Cremation Management",
+    title: "Cremation Management System",
     description: "Rotary Charitable Trust - Comprehensive cremation management system",
   },
 };
@@ -43,10 +45,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <LoadingProvider>
+          <AuthProvider>
+            {children}
+            <Toaster />
+            <PageTransitionLoader />
+          </AuthProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

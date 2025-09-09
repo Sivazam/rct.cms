@@ -45,16 +45,18 @@ export default function Home() {
   if (loading) {
     return (
       <SpiritualLoading 
-        message="Connecting to sacred space..."
-        mantra="ॐ शान्ति: शान्ति: शान्ति:"
+        message="Connecting to Cremation Management System..."
+        mantra="ॐ శాంతిః శాంతిః శాంతిః"
+        teluguOnly={true}
       />
     );
   }
 
   return (
     <SpiritualLoading 
-      message="Preparing your spiritual journey..."
-      mantra="ॐ भूर्भुवः स्वः"
+      message="Loading Cremation Management System..."
+      mantra="ॐ భూర్భువః స్వః"
+      teluguOnly={true}
     />
   );
 }

@@ -51,34 +51,34 @@ export default function LoginPage() {
       >
         <SpiritualCard
           variant="sacred"
-          title="Sacred Portal"
-          description="Enter the spiritual realm of service"
-          mantra="ॐ गं गणपतये नमः"
+          title="Login"
+          description="Access the Cremation Management System"
+          mantra=""
           showOm={true}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <SpiritualInput
               id="email"
-              label="Divine Email"
+              label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               icon="mail"
-              mantra="ॐ सह नाववतु"
-              placeholder="Enter your sacred email"
+              mantra=""
+              placeholder="Enter your email"
             />
 
             <SpiritualInput
               id="password"
-              label="Sacred Password"
+              label="Password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               icon="lock"
-              mantra="ॐ भूर्भुवः स्वः"
-              placeholder="Enter your sacred password"
+              mantra=""
+              placeholder="Enter your password"
             />
 
             {error && (
@@ -93,12 +93,12 @@ export default function LoginPage() {
               type="submit"
               variant="sacred"
               size="lg"
-              mantra="ॐ श्रीं ह्रीं क्लीं"
+              mantra=""
               showOm={true}
               className="w-full"
               disabled={loading}
             >
-              {loading ? 'Entering Sacred Space...' : 'Enter Sacred Portal'}
+              {loading ? 'Signing in...' : 'Login'}
             </SpiritualButton>
           </form>
 
@@ -109,18 +109,18 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-orange-50 text-orange-600 rounded-full">
-                  ॐ Sacred Journey ॐ
+                  ॐ Cremation Management System ॐ
                 </span>
               </div>
             </div>
 
             <p className="text-sm text-orange-700">
-              New to this sacred service?{' '}
+              New to the system?{' '}
               <Link 
                 href="/signup" 
                 className="text-orange-600 hover:text-orange-800 underline font-medium"
               >
-                Begin your spiritual journey
+                Create an account
               </Link>
             </p>
 
@@ -134,7 +134,7 @@ export default function LoginPage() {
         <div className="mt-8 text-center">
           <div className="text-2xl text-orange-600 animate-pulse">ॐ</div>
           <div className="text-xs text-orange-500 mt-2">
-            Rotary Charitable Trust - Serving with Divine Purpose
+            Cremation Management System - Rotary Charitable Trust
           </div>
         </div>
       </motion.div>

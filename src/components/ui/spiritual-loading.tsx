@@ -1,19 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getTeluguLoadingMantra } from '@/lib/spiritual-texts';
 
 interface SpiritualLoadingProps {
   message?: string;
-  mantra?: string;
   showOm?: boolean;
+  teluguOnly?: boolean;
 }
 
 export default function SpiritualLoading({ 
-  message = "Preparing sacred space...", 
-  mantra = "ॐ भूर्भुवः स्वः",
-  showOm = true 
+  message = "Loading...", 
+  showOm = true,
+  teluguOnly = false
 }: SpiritualLoadingProps) {
   const [rotation, setRotation] = useState(0);
+  const [currentMantra, setCurrentMantra] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -22,6 +24,19 @@ export default function SpiritualLoading({
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (teluguOnly) {
+      const mantras = [
+        "నైనం ఛిన్దన్తి శస్త్రాణి నైనం దహతి పావకః",
+        "న జాయతే మ్రియతే వా కదాచిన్",
+        "జాతస్య హి ధ్రువో మృత్యుర్ధ్రువం జన్మ మృతస్య చ",
+        "తస్మాద్వేధి మహాబాహో నైవం శోచితుమర్హసి",
+        "అవినాశి తు వద్ధి నైనం నిత్యం యః అజః శాశ్వతోఽయం పురాణో"
+      ];
+      setCurrentMantra(mantras[Math.floor(Math.random() * mantras.length)]);
+    }
+  }, [teluguOnly]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50">
@@ -65,11 +80,11 @@ export default function SpiritualLoading({
         </div>
 
         {/* Sacred Text */}
-        {showOm && (
+        {showOm && currentMantra && (
           <div className="text-center space-y-4">
             <div className="text-6xl text-orange-600 animate-pulse">ॐ</div>
-            <div className="text-xl text-sanskrit text-orange-700 font-medium">
-              {mantra}
+            <div className="text-xl text-telugu text-orange-700 font-medium">
+              {currentMantra}
             </div>
           </div>
         )}
@@ -77,9 +92,6 @@ export default function SpiritualLoading({
         {/* Loading Message */}
         <div className="text-center space-y-2">
           <div className="text-lg text-orange-800 font-medium">{message}</div>
-          <div className="text-sm text-orange-600 italic">
-            "The soul is neither born, and nor does it die" - Bhagavad Gita 2.20
-          </div>
         </div>
 
         {/* Animated dots */}
@@ -95,8 +107,8 @@ export default function SpiritualLoading({
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        .text-sanskrit {
-          font-family: 'Noto Sans Devanagari', serif;
+        .text-telugu {
+          font-family: 'Noto Sans Telugu', serif;
         }
       `}</style>
     </div>

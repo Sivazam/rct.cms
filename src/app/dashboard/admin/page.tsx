@@ -181,7 +181,7 @@ export default function AdminDashboard() {
             <div className="hidden sm:flex justify-between items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Smart Cremation Management
+                  Cremation Management System
                 </h1>
                 <Badge variant="outline" className="ml-3">Admin</Badge>
               </div>
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
             <div className="flex sm:hidden justify-between items-center h-14">
               <div className="flex items-center">
                 <h1 className="text-base font-semibold text-gray-900 truncate">
-                  SCM
+                  Cremation Management System
                 </h1>
                 <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
               </div>

@@ -35,13 +35,13 @@ export default function SignupPage() {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Sacred passwords must match');
+      setError('Passwords must match');
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Sacred password must be at least 6 characters');
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
@@ -56,7 +56,7 @@ export default function SignupPage() {
       );
       router.push('/pending-approval');
     } catch (error: any) {
-      setError(error.message || 'Failed to create sacred account');
+      setError(error.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -80,51 +80,51 @@ export default function SignupPage() {
       >
         <SpiritualCard
           variant="ritual"
-          title="Sacred Initiation"
-          description="Begin your journey of spiritual service"
-          mantra="ॐ असतो मा सद्गमय"
+          title="Sign Up"
+          description="Create your account for the Cremation Management System"
+          mantra=""
           showOm={true}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <SpiritualInput
               id="name"
-              label="Sacred Name"
+              label="Full Name"
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               required
               icon="user"
-              mantra="ॐ नमः शिवाय"
-              placeholder="Enter your divine name"
+              mantra=""
+              placeholder="Enter your full name"
             />
 
             <SpiritualInput
               id="email"
-              label="Divine Email"
+              label="Email"
               type="email"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
               required
               icon="mail"
-              mantra="ॐ सह नाववतु"
-              placeholder="Enter your sacred email"
+              mantra=""
+              placeholder="Enter your email"
             />
 
             <SpiritualInput
               id="mobile"
-              label="Sacred Mobile"
+              label="Mobile Number"
               type="tel"
               value={formData.mobile}
               onChange={(e) => handleChange('mobile', e.target.value)}
               required
               icon="phone"
-              mantra="ॐ भूर्भुवः स्वः"
+              mantra=""
               placeholder="+91XXXXXXXXXX"
             />
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-orange-700">
-                Sacred Role <span className="text-red-500">*</span>
+                Role <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -136,11 +136,11 @@ export default function SignupPage() {
                 </div>
                 <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
                   <SelectTrigger className="pl-10 pr-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400 bg-orange-50/50 focus:bg-orange-50">
-                    <SelectValue placeholder="Choose your sacred role" />
+                    <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="operator" className="text-orange-700">Sacred Operator</SelectItem>
-                    <SelectItem value="admin" className="text-red-700">Divine Administrator</SelectItem>
+                    <SelectItem value="operator" className="text-orange-700">Operator</SelectItem>
+                    <SelectItem value="admin" className="text-red-700">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -154,26 +154,26 @@ export default function SignupPage() {
 
             <SpiritualInput
               id="password"
-              label="Sacred Password"
+              label="Password"
               type="password"
               value={formData.password}
               onChange={(e) => handleChange('password', e.target.value)}
               required
               icon="lock"
-              mantra="ॐ भूर्भुवः स्वः"
-              placeholder="Create your sacred password"
+              mantra=""
+              placeholder="Create your password"
             />
 
             <SpiritualInput
               id="confirmPassword"
-              label="Confirm Sacred Password"
+              label="Confirm Password"
               type="password"
               value={formData.confirmPassword}
               onChange={(e) => handleChange('confirmPassword', e.target.value)}
               required
               icon="lock"
-              mantra="ॐ तत्सत्"
-              placeholder="Confirm your sacred password"
+              mantra=""
+              placeholder="Confirm your password"
             />
 
             {error && (
@@ -188,12 +188,12 @@ export default function SignupPage() {
               type="submit"
               variant="ritual"
               size="lg"
-              mantra="ॐ श्रीं ह्रीं क्लीं"
+              mantra=""
               showOm={true}
               className="w-full"
               disabled={loading}
             >
-              {loading ? 'Creating Sacred Account...' : 'Begin Sacred Journey'}
+              {loading ? 'Creating Account...' : 'Sign Up'}
             </SpiritualButton>
           </form>
 
@@ -204,18 +204,18 @@ export default function SignupPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-orange-50 text-orange-600 rounded-full">
-                  ॐ Sacred Service ॐ
+                  ॐ Cremation Management System ॐ
                 </span>
               </div>
             </div>
 
             <p className="text-sm text-orange-700">
-              Already walking this sacred path?{' '}
+              Already have an account?{' '}
               <Link 
                 href="/login" 
                 className="text-orange-600 hover:text-orange-800 underline font-medium"
               >
-                Return to sacred portal
+                Login here
               </Link>
             </p>
 
@@ -229,7 +229,7 @@ export default function SignupPage() {
         <div className="mt-8 text-center">
           <div className="text-2xl text-red-600 animate-pulse">ॐ</div>
           <div className="text-xs text-orange-500 mt-2">
-            Rotary Charitable Trust - Sacred Service to Humanity
+            Cremation Management System - Rotary Charitable Trust
           </div>
         </div>
       </motion.div>
