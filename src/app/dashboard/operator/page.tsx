@@ -246,7 +246,7 @@ export default function OperatorDashboard() {
               </div>
               <div className="flex items-center space-x-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-56">
                     <SelectValue placeholder="Select Location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -276,13 +276,13 @@ export default function OperatorDashboard() {
               </div>
               <div className="flex items-center gap-2">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-32 h-8 text-xs">
+                  <SelectTrigger className="w-40 h-8 text-xs">
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((location) => (
                       <SelectItem key={location.id} value={location.id}>
-                        {location.venueName.length > 10 ? location.venueName.substring(0, 10) + '...' : location.venueName}
+                        {location.venueName}
                       </SelectItem>
                     ))}
                   </SelectContent>

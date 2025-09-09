@@ -246,7 +246,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
             </div>
             <div className="flex gap-2">
               <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Location" />
                 </SelectTrigger>
                 <SelectContent>

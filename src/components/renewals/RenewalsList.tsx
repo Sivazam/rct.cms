@@ -206,7 +206,7 @@ export default function RenewalsList() {
           </div>
           <div className="flex gap-2">
             <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>

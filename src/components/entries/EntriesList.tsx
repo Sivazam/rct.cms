@@ -187,7 +187,7 @@ export default function EntriesList() {
               </SelectContent>
             </Select>
             <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>

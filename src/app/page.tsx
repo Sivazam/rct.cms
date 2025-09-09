@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import SpiritualLoading from '@/components/ui/spiritual-loading';
 
 export default function Home() {
   const router = useRouter();
@@ -41,16 +42,19 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
+  if (loading) {
+    return (
+      <SpiritualLoading 
+        message="Connecting to sacred space..."
+        mantra="ॐ शान्ति: शान्ति: शान्ति:"
+      />
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-8 p-4">
-      <div className="relative w-24 h-24 md:w-32 md:h-32">
-        <img
-          src="/logo.svg"
-          alt="Z.ai Logo"
-          className="w-full h-full object-contain"
-        />
-      </div>
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-    </div>
+    <SpiritualLoading 
+      message="Preparing your spiritual journey..."
+      mantra="ॐ भूर्भुवः स्वः"
+    />
   );
 }
