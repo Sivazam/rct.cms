@@ -518,7 +518,7 @@ export const getOperatorStats = async (operatorId: string) => {
       // Process payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
-          const paymentDate = payment.date?.toDate();
+          const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
           const amount = payment.amount || 0;
           
           totalRevenue += amount;
@@ -642,7 +642,7 @@ export const getOperatorTransactions = async (
     entries.forEach(entry => {
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any, index: number) => {
-          const paymentDate = payment.date?.toDate();
+          const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
           
           // Check if payment is within the specified date range
           if (paymentDate && paymentDate >= fromDate && paymentDate <= toDate) {
@@ -662,7 +662,7 @@ export const getOperatorTransactions = async (
       }
       
       // Also add the entry itself as a transaction
-      const entryDate = entry.entryDate?.toDate();
+      const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
       if (entryDate && entryDate >= fromDate && entryDate <= toDate) {
         const location = locationsMap.get(entry.locationId);
         
@@ -680,7 +680,7 @@ export const getOperatorTransactions = async (
     
     // Process deliveries
     deliveries.forEach(delivery => {
-      const deliveryDate = delivery.deliveryDate?.toDate();
+      const deliveryDate = delivery.deliveryDate?.toDate ? delivery.deliveryDate.toDate() : null;
       if (deliveryDate && deliveryDate >= fromDate && deliveryDate <= toDate) {
         const location = locationsMap.get(delivery.locationId);
         

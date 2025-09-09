@@ -313,7 +313,7 @@ export default function CustomerEntrySystem() {
                     <Label className="text-sm font-medium text-gray-600">Customer Since</Label>
                     <p className="font-medium flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />
-                      {searchResult.createdAt?.toDate()?.toLocaleDateString()}
+                      {searchResult.createdAt?.toDate ? searchResult.createdAt.toDate().toLocaleDateString() : 'Unknown'}
                     </p>
                   </div>
                 </div>

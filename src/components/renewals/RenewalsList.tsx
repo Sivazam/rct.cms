@@ -165,7 +165,7 @@ export default function RenewalsList() {
   const isRecent = (renewalDate: any) => {
     if (!renewalDate) return false;
     const now = new Date();
-    const renewal = renewalDate.toDate();
+    const renewal = renewalDate.toDate ? renewalDate.toDate() : new Date(renewalDate);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     return renewal >= sevenDaysAgo && renewal <= now;
   };

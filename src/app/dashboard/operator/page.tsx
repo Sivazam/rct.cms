@@ -148,13 +148,13 @@ export default function OperatorDashboard() {
         tomorrow.setDate(tomorrow.getDate() + 1);
         
         const todayEntries = allEntries.filter(entry => {
-          const entryDate = entry.entryDate?.toDate();
+          const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
           return entryDate && entryDate >= today && entryDate < tomorrow;
         });
         
         const todayRevenue = todayEntries.reduce((sum, entry) => {
           return sum + (entry.payments?.reduce((paymentSum: number, payment: any) => {
-            const paymentDate = payment.date?.toDate();
+            const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
             return paymentSum + (paymentDate && paymentDate >= today && paymentDate < tomorrow ? payment.amount : 0);
           }, 0) || 0);
         }, 0);
@@ -166,14 +166,14 @@ export default function OperatorDashboard() {
         
         const monthlyRevenue = allEntries.reduce((sum, entry) => {
           return sum + (entry.payments?.reduce((paymentSum: number, payment: any) => {
-            const paymentDate = payment.date?.toDate();
+            const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
             return paymentSum + (paymentDate && paymentDate >= currentMonth ? payment.amount : 0);
           }, 0) || 0);
         }, 0);
         
         // Calculate pending tasks (expiring entries + entries needing delivery)
         const pendingTasks = expiringSoonEntries.length + activeEntries.filter(entry => {
-          const expiryDate = entry.expiryDate?.toDate();
+          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
           return expiryDate && expiryDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         }).length;
         
@@ -578,7 +578,7 @@ export default function OperatorDashboard() {
                             {expiringEntries
                               .slice(0, 3) // Show top 3 expiring entries
                               .map((entry) => {
-                                const expiryDate = entry.expiryDate?.toDate();
+                                const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
                                 const daysUntilExpiry = expiryDate ? 
                                   Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
                                 
@@ -643,8 +643,8 @@ export default function OperatorDashboard() {
                         <CardContent>
                           <div className="space-y-3">
                             {recentEntries.map((entry) => {
-                              const entryDate = entry.entryDate?.toDate();
-                              const expiryDate = entry.expiryDate?.toDate();
+                              const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
+                              const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
                               
                               return (
                                 <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">

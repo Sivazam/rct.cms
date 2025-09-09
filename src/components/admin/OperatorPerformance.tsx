@@ -43,7 +43,7 @@ interface Transaction {
   id: string;
   type: 'entry' | 'renewal' | 'delivery';
   amount: number;
-  date: any;
+  date: Date | null;
   customerName: string;
   operatorName: string;
   locationName: string;
@@ -168,7 +168,7 @@ export default function OperatorPerformance() {
     const csvContent = [
       ['Date', 'Type', 'Customer', 'Amount', 'Location'],
       ...transactions.map(t => [
-        format(t.date.toDate(), 'yyyy-MM-dd'),
+        t.date ? format(t.date, 'yyyy-MM-dd') : 'Unknown',
         t.type,
         t.customerName,
         t.amount.toString(),
@@ -412,7 +412,7 @@ export default function OperatorPerformance() {
                     transactions.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell className="font-medium">
-                          {format(transaction.date.toDate(), 'MMM dd, yyyy')}
+                          {transaction.date ? format(transaction.date, 'MMM dd, yyyy') : 'Unknown'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={

@@ -134,7 +134,7 @@ export default function EntriesList() {
   const isExpiringSoon = (expiryDate: any) => {
     if (!expiryDate) return false;
     const now = new Date();
-    const expiry = expiryDate.toDate();
+    const expiry = expiryDate.toDate ? expiryDate.toDate() : new Date(expiryDate);
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     return expiry <= sevenDaysFromNow && expiry > now;
   };

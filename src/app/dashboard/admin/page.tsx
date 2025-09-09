@@ -450,14 +450,14 @@ export default function AdminDashboard() {
                       {expiringEntries.length > 0 ? (
                         expiringEntries
                           .sort((a, b) => {
-                            const dateA = a.expiryDate?.toDate();
-                            const dateB = b.expiryDate?.toDate();
+                            const dateA = a.expiryDate?.toDate ? a.expiryDate.toDate() : null;
+                            const dateB = b.expiryDate?.toDate ? b.expiryDate.toDate() : null;
                             if (!dateA || !dateB) return 0;
                             return dateA.getTime() - dateB.getTime(); // Sort by earliest first
                           })
                           .slice(0, 5) // Show top 5 expiring entries
                           .map((entry) => {
-                            const expiryDate = entry.expiryDate?.toDate();
+                            const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
                             const daysUntilExpiry = expiryDate ? 
                               Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
                             
@@ -528,8 +528,8 @@ export default function AdminDashboard() {
                     <div className="space-y-3">
                       {recentEntries.length > 0 ? (
                         recentEntries.map((entry) => {
-                          const entryDate = entry.entryDate?.toDate();
-                          const expiryDate = entry.expiryDate?.toDate();
+                          const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
+                          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
                           
                           return (
                             <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
