@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, RefreshCw, Phone, User, MapPin, Search, Filter, AlertTriangle, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers } from '@/lib/firestore';
+import { formatFirestoreDate } from '@/lib/date-utils';
 
 interface Renewal {
   id: string;
@@ -158,7 +159,7 @@ export default function RenewalsList() {
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
-    return date.toDate().toLocaleDateString();
+    return formatFirestoreDate(date);
   };
 
   const isRecent = (renewalDate: any) => {

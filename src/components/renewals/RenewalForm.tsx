@@ -14,6 +14,7 @@ import { updateEntry } from '@/lib/firestore';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/lib/date-utils';
 
 interface Entry {
   id: string;
@@ -141,13 +142,13 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         entry.customerMobile,
         SMSTemplates.customerRenewalConfirmation(
           entry.id,
-          renewalSummary.newExpiryDate.toLocaleDateString(),
+          formatDate(renewalSummary.newExpiryDate),
           renewalSummary.amount
         ),
         'customerRenewalConfirmation',
         {
           entryId: entry.id,
-          newExpiryDate: renewalSummary.newExpiryDate.toLocaleDateString(),
+          newExpiryDate: formatDate(renewalSummary.newExpiryDate),
           amount: renewalSummary.amount
         },
         entry.id
@@ -236,7 +237,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Current Expiry:</span>
                 <span className="text-sm font-medium">
-                  {new Date(entry.expiryDate?.toDate?.() || entry.expiryDate).toLocaleDateString()}
+                  {formatDate(new Date(entry.expiryDate?.toDate?.() || entry.expiryDate))}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -343,7 +344,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
             </h4>
             <div className="space-y-1">
               <p className="text-sm font-medium text-green-800">
-                {renewalSummary.newExpiryDate.toLocaleDateString()}
+                {formatDate(renewalSummary.newExpiryDate)}
               </p>
               <p className="text-xs text-green-600">
                 Total storage period: {renewalSummary.totalMonths} months from original entry

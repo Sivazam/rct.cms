@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Search, Plus, User, Phone, MapPin, Calendar, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getCustomerByMobile } from '@/lib/firestore';
+import { formatFirestoreDate } from '@/lib/date-utils';
 
 interface Customer {
   id: string;
@@ -172,7 +173,7 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-gray-500" />
                       <span>
-                        Customer since: {customer.createdAt?.toDate()?.toLocaleDateString()}
+                        Customer since: {formatFirestoreDate(customer.createdAt)}
                       </span>
                     </div>
                     {customer.additionalDetails && (

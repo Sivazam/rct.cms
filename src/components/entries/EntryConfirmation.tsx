@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, User, Phone, MapPin, Package, Calendar, DollarSign, Map } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDate } from '@/lib/date-utils';
 
 interface EntryData {
   id: string;
@@ -111,13 +112,13 @@ export default function EntryConfirmation({ entryData, onNewEntry, onViewEntries
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  Entry: {entryData.entryDate.toLocaleDateString()}
+                  Entry: {formatDate(entryData.entryDate)}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  Expiry: {entryData.expiryDate.toLocaleDateString()}
+                  Expiry: {formatDate(entryData.expiryDate)}
                 </span>
               </div>
             </div>

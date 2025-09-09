@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, RefreshCw, User, Phone, MapPin, Calendar, AlertTriangle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries } from '@/lib/firestore';
+import { formatFirestoreDate } from '@/lib/date-utils';
 
 interface Entry {
   id: string;
@@ -303,12 +304,12 @@ export default function RenewalSearch({ onEntrySelected, loading = false }: Rene
                           <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
                             <div className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3" />
-                              <span>Entry: {entry.entryDate?.toDate?.()?.toLocaleDateString()}</span>
+                              <span>Entry: {formatFirestoreDate(entry.entryDate)}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
                               <span>
-                                Expiry: {entry.expiryDate?.toDate?.()?.toLocaleDateString()}
+                                Expiry: {formatFirestoreDate(entry.expiryDate)}
                                 {daysUntil >= 0 && ` (${daysUntil} days)`}
                               </span>
                             </div>
@@ -366,7 +367,7 @@ export default function RenewalSearch({ onEntrySelected, loading = false }: Rene
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-gray-500" />
                       <span>
-                        {selectedEntry.expiryDate?.toDate?.()?.toLocaleDateString()}
+                        {formatFirestoreDate(selectedEntry.expiryDate)}
                       </span>
                     </div>
                   </div>

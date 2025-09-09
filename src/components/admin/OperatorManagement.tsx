@@ -14,6 +14,7 @@ import { Users, Check, X, MapPin, Phone, Mail, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getUsers, updateUser, getLocations, getPendingOperators, getActiveOperators, approveOperator, rejectOperator } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatFirestoreDate } from '@/lib/date-utils';
 
 interface Operator {
   id: string;
@@ -207,7 +208,7 @@ export default function OperatorManagement() {
                       </div>
                       <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
                         <Calendar className="h-3 w-3 flex-shrink-0" />
-                        <span>Applied: {operator.createdAt?.toDate()?.toLocaleDateString()}</span>
+                        <span>Applied: {formatFirestoreDate(operator.createdAt)}</span>
                       </div>
                     </div>
                   </div>

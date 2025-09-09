@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
+import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,11 +92,7 @@ export async function POST(request: NextRequest) {
     // Send confirmation SMS to customer
     const customerMobile = entryData.customerMobile;
     const customerName = entryData.customerName;
-    const formattedDate = new Date(deliveryDate).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    const formattedDate = formatDate(deliveryDate);
 
     const smsMessage = SMSTemplates.customerDeliveryConfirmation(
       entryId, 

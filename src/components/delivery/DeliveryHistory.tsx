@@ -25,6 +25,7 @@ import {
   Clock,
   Users
 } from 'lucide-react';
+import { formatDateTime, formatDate } from '@/lib/date-utils';
 
 interface Customer {
   id: string;
@@ -180,21 +181,11 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTime(dateString);
   };
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+    return formatDate(dateString);
   };
 
   const handleExport = async () => {

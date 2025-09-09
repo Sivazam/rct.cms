@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateEntry } from '@/lib/firestore';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
+import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
       console.log('SMS would be sent to customer:', '+91XXXXXXXXXX'); // This should come from entry data
       console.log('Message:', SMSTemplates.customerRenewalConfirmation(
         entryId,
-        newExpiryDate.toLocaleDateString(),
+        formatDate(newExpiryDate),
         amount
       ));
 
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
         '+91XXXXXXXXXX', // This should come from entry data
         SMSTemplates.customerRenewalConfirmation(
           entryId,
-          newExpiryDate.toLocaleDateString(),
+          formatDate(newExpiryDate),
           amount
         ),
         entryId

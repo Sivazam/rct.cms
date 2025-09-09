@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import { Search, Calendar, User, Phone, MapPin, Package } from 'lucide-react';
 import { getEntries, getLocations } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/lib/date-utils';
 
 interface Customer {
   id: string;
@@ -123,12 +124,8 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+  const formatLocalDate = (dateString: string) => {
+    return formatDate(dateString);
   };
 
   const getExpiryStatus = (expiryDate: string) => {
@@ -262,11 +259,11 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2 text-sm">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>Entry: {formatDate(entry.entryDate)}</span>
+                          <span>Entry: {formatLocalDate(entry.entryDate)}</span>
                         </div>
                         <div className="flex items-center space-x-2 text-sm">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>Expiry: {formatDate(entry.expiryDate)}</span>
+                          <span>Expiry: {formatLocalDate(entry.expiryDate)}</span>
                         </div>
                         <div className="flex items-center space-x-2 text-sm">
                           <MapPin className="h-4 w-4 text-gray-500" />
@@ -279,7 +276,7 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
                       <div className="text-sm text-gray-600">
                         Renewals: {entry.renewalCount}
                         {entry.lastRenewalDate && (
-                          <span className="ml-2">Last: {formatDate(entry.lastRenewalDate)}</span>
+                          <span className="ml-2">Last: {formatLocalDate(entry.lastRenewalDate)}</span>
                         )}
                       </div>
                       <Button 

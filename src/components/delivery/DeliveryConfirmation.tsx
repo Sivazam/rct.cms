@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { CheckCircle, Calendar, MapPin, Phone, Package, User, Download, Home } from 'lucide-react';
+import { formatDateTime } from '@/lib/date-utils';
 
 interface Customer {
   id: string;
@@ -52,13 +53,7 @@ export default function DeliveryConfirmation({
   const [downloadReceipt, setDownloadReceipt] = useState(false);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTime(dateString);
   };
 
   const handleDownloadReceipt = async () => {

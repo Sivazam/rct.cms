@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Calendar, DollarSign, User, Phone, RefreshCw, MapPin, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDate } from '@/lib/date-utils';
 
 interface RenewalData {
   entryId: string;
@@ -108,13 +109,13 @@ export default function RenewalConfirmation({
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  Renewed on: {renewalData.date.toLocaleDateString()}
+                  Renewed on: {formatDate(renewalData.date)}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  New expiry: {renewalData.newExpiryDate.toLocaleDateString()}
+                  New expiry: {formatDate(renewalData.newExpiryDate)}
                 </span>
               </div>
             </div>
@@ -150,7 +151,7 @@ export default function RenewalConfirmation({
             <h4 className="font-medium text-yellow-800 mb-2">Important Information</h4>
             <div className="space-y-1 text-sm text-yellow-700">
               <p>• The entry has been extended by {renewalData.months} month(s)</p>
-              <p>• New expiry date is {renewalData.newExpiryDate.toLocaleDateString()}</p>
+              <p>• New expiry date is {formatDate(renewalData.newExpiryDate)}</p>
               <p>• Customer will receive automated reminders before expiry</p>
               <p>• This renewal has been recorded in the entry history</p>
             </div>

@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { User, Phone, MapPin, Package, DollarSign, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { addCustomer, addEntry } from '@/lib/firestore';
+import { addCustomer, addEntry, getLocations } from '@/lib/firestore';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/lib/date-utils';
 
 interface Customer {
   id?: string;
@@ -137,12 +138,12 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         formData.mobile,
         SMSTemplates.customerEntryConfirmation(
           entryId,
-          expiryDate.toLocaleDateString()
+          formatDate(expiryDate)
         ),
         'customerEntryConfirmation',
         {
           entryId: entryId,
-          expiryDate: expiryDate.toLocaleDateString()
+          expiryDate: formatDate(expiryDate)
         },
         entryId
       );

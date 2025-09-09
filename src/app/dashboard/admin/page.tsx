@@ -16,6 +16,7 @@ import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
+import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
   Users, 
   MapPin, 
@@ -488,7 +489,7 @@ export default function AdminDashboard() {
                                     {daysUntilExpiry <= 0 ? 'Expired' : `${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`}
                                   </Badge>
                                   <div className="text-xs text-gray-500">
-                                    {expiryDate?.toLocaleDateString()}
+                                    {formatFirestoreDate(expiryDate)}
                                   </div>
                                 </div>
                               </div>
@@ -555,11 +556,11 @@ export default function AdminDashboard() {
                                   {entry.status === 'active' ? 'Active' : entry.status}
                                 </Badge>
                                 <div className="text-xs text-gray-500 mt-1">
-                                  {entryDate?.toLocaleDateString()}
+                                  {formatFirestoreDate(entryDate)}
                                 </div>
                                 {expiryDate && (
                                   <div className="text-xs text-gray-400">
-                                    Expires: {expiryDate.toLocaleDateString()}
+                                    Expires: {formatFirestoreDate(expiryDate)}
                                   </div>
                                 )}
                               </div>

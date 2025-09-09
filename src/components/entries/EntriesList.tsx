@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers } from '@/lib/firestore';
+import { formatFirestoreDate } from '@/lib/date-utils';
 
 interface Entry {
   id: string;
@@ -127,7 +128,7 @@ export default function EntriesList() {
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
-    return date.toDate().toLocaleDateString();
+    return formatFirestoreDate(date);
   };
 
   const isExpiringSoon = (expiryDate: any) => {
