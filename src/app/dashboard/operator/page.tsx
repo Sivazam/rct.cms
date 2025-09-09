@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import SpiritualCard from '@/components/ui/spiritual-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -232,17 +233,24 @@ export default function OperatorDashboard() {
 
   return (
     <ProtectedRoute requiredRole="operator">
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 relative">
+        {/* Background spiritual elements */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
+          <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
+          <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
+          <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
+        </div>
         {/* Header */}
-        <header className="bg-white shadow-sm border-b">
+        <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-orange-200 relative z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden md:flex justify-between items-center h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Cremation Management System
+                <h1 className="text-xl font-semibold text-orange-900">
+                  ॐ Cremation Management System ॐ
                 </h1>
-                <Badge variant="outline" className="ml-3">Operator</Badge>
+                <Badge variant="outline" className="ml-3 border-orange-200 text-orange-700">Operator</Badge>
               </div>
               <div className="flex items-center space-x-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -257,7 +265,7 @@ export default function OperatorDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-orange-700">
                   Welcome, {user?.name}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
@@ -269,10 +277,10 @@ export default function OperatorDashboard() {
             {/* Mobile Header */}
             <div className="flex md:hidden justify-between items-center h-14">
               <div className="flex items-center">
-                <h1 className="text-base font-semibold text-gray-900 truncate">
-                  Cremation Management System
+                <h1 className="text-base font-semibold text-orange-900 truncate">
+                  ॐ CMS ॐ
                 </h1>
-                <Badge variant="outline" className="ml-2 text-xs">Operator</Badge>
+                <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700 text-xs">Operator</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -302,48 +310,43 @@ export default function OperatorDashboard() {
           {locations.length === 0 ? (
             <div>
               {/* No locations assigned state */}
-              <Card>
-              <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center space-x-2">
-                  <MapPin className="h-5 w-5" />
-                  <span>No Locations Assigned</span>
-                </CardTitle>
-                <CardDescription>
-                  You haven't been assigned to any locations yet. Please contact your administrator to get location access.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
+              <SpiritualCard
+                variant="ritual"
+                title="No Locations Assigned"
+                description="You haven't been assigned to any locations yet. Please contact your administrator to get location access."
+                showOm={true}
+                className="text-center"
+              >
                 <div className="space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-                    <MapPin className="h-8 w-8 text-gray-400" />
+                  <div className="w-16 h-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center">
+                    <MapPin className="h-8 w-8 text-orange-600" />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-orange-700">
                       Your account is active but you need to be assigned to at least one location to perform operations.
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-orange-600">
                       Please ask your administrator to assign you to a location in the Admin Dashboard.
                     </p>
                   </div>
-                  <Button variant="outline" onClick={handleLogout}>
+                  <Button variant="outline" onClick={handleLogout} className="border-orange-200 text-orange-700 hover:bg-orange-50">
                     Logout
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </SpiritualCard>
             </div>
           ) : (
             <div>
               {/* Desktop Tabs */}
               <div className="hidden md:block mb-6">
                 <div className="w-full overflow-x-auto">
-                  <div className="flex flex-wrap gap-1 p-1 bg-gray-100 rounded-lg min-w-max">
+                  <div className="flex flex-wrap gap-1 p-1 bg-orange-100 rounded-lg min-w-max">
                     <button
                       onClick={() => handleTabChange('overview')}
                       className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'overview' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'bg-orange-500 text-white shadow-sm' 
+                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                       }`}
                     >
                       Overview
@@ -352,8 +355,8 @@ export default function OperatorDashboard() {
                       onClick={() => handleTabChange('entries')}
                       className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'entries' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'bg-orange-500 text-white shadow-sm' 
+                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                       }`}
                     >
                       Customer Entries
@@ -362,8 +365,8 @@ export default function OperatorDashboard() {
                       onClick={() => handleTabChange('renewals')}
                       className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'renewals' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'bg-orange-500 text-white shadow-sm' 
+                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                       }`}
                     >
                       Renewals
@@ -372,8 +375,8 @@ export default function OperatorDashboard() {
                       onClick={() => handleTabChange('deliveries')}
                       className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeTab === 'deliveries' 
-                          ? 'bg-white text-blue-600 shadow-sm' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'bg-orange-500 text-white shadow-sm' 
+                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                       }`}
                     >
                       Deliveries
@@ -394,15 +397,22 @@ export default function OperatorDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
                       >
-                        <Card className="border-l-4 border-l-blue-500">
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
-                            <Package className="h-4 w-4 text-blue-600" />
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold text-blue-600">{stats.totalEntries}</div>
-                            <p className="text-xs text-muted-foreground">
-                              +12% from last month
+                        <SpiritualCard
+                          variant="sacred"
+                          title="Total Entries"
+                          showOm={true}
+                          className="h-full"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-3xl font-bold text-orange-800">{stats.totalEntries}</div>
+                              <p className="text-sm text-orange-600 mt-1">
+                                +12% from last month
+                              </p>
+                            </div>
+                            <Package className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </SpiritualCard>
                             </p>
                             <div className="mt-2 text-xs text-gray-500">
                               Active customers
@@ -523,43 +533,67 @@ export default function OperatorDashboard() {
 
                     {/* Today's Summary */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card>
+                      <SpiritualCard
+                        variant="ritual"
+                        title="Today's Entries"
+                        showOm={true}
+                        className="h-full"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-3xl font-bold text-red-800">{stats.todayEntries || 0}</div>
+                            <p className="text-sm text-red-600 mt-1">Active today</p>
+                          </div>
+                          <Package className="h-8 w-8 text-red-600" />
+                        </div>
+                      </SpiritualCard>
+                      <SpiritualCard
+                        variant="memorial"
+                        title="Today's Revenue"
+                        showOm={true}
+                        className="h-full"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-3xl font-bold text-amber-800">₹{stats.todayRevenue?.toLocaleString() || 0}</div>
+                            <p className="text-sm text-amber-600 mt-1">Collected today</p>
+                          </div>
+                          <DollarSign className="h-8 w-8 text-amber-600" />
+                        </div>
+                      </SpiritualCard>
+                      <SpiritualCard
+                        variant="sacred"
+                        title="Pending Tasks"
+                        showOm={true}
+                        className="h-full"
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-600">Today's Entries</p>
-                              <p className="text-2xl font-bold text-blue-600">{stats.todayEntries || 0}</p>
-                              <p className="text-xs text-green-600">Active today</p>
+                              <div className="text-3xl font-bold text-orange-800">{stats.pendingTasks || 0}</div>
+                              <p className="text-sm text-orange-600 mt-1">Need attention</p>
                             </div>
-                            <Package className="h-8 w-8 text-blue-200" />
+                            <Clock className="h-8 w-8 text-orange-600" />
                           </div>
                         </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-gray-600">Today's Revenue</p>
-                              <p className="text-2xl font-bold text-green-600">₹{stats.todayRevenue?.toLocaleString() || 0}</p>
-                              <p className="text-xs text-green-600">Collected today</p>
-                            </div>
-                            <DollarSign className="h-8 w-8 text-green-200" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-gray-600">Pending Tasks</p>
-                              <p className="text-2xl font-bold text-orange-600">{stats.pendingTasks || 0}</p>
-                              <p className="text-xs text-gray-500">Need attention</p>
-                            </div>
-                            <Clock className="h-8 w-8 text-orange-200" />
-                          </div>
-                        </CardContent>
-                      </Card>
+                      </SpiritualCard>
                     </div>
+
+                    {/* Spiritual Quote */}
+                    <SpiritualCard
+                      variant="ritual"
+                      title="Daily Wisdom"
+                      mantra=""The soul is unborn, eternal, ever-existing, undying and primeval." - Bhagavad Gita 2.20"
+                      showOm={true}
+                      className="text-center"
+                    >
+                      <div className="text-orange-700 italic">
+                        "Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure."
+                      </div>
+                      <div className="text-sm text-orange-600 mt-2">
+                        - Bhagavad Gita 2.38
+                      </div>
+                    </SpiritualCard>
 
                     {/* Expiring Soon */}
                     {expiringEntries.length > 0 && (

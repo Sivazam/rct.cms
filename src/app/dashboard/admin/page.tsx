@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import SpiritualCard from '@/components/ui/spiritual-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -173,17 +174,24 @@ export default function AdminDashboard() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 relative">
+        {/* Background spiritual elements */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
+          <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
+          <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
+          <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
+        </div>
         {/* Header */}
-        <header className="bg-white shadow-sm border-b">
+        <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-orange-200 relative z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden sm:flex justify-between items-center h-16">
               <div className="flex items-center">
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Cremation Management System
+                <h1 className="text-lg sm:text-xl font-semibold text-orange-900">
+                  ॐ Cremation Management System ॐ
                 </h1>
-                <Badge variant="outline" className="ml-3">Admin</Badge>
+                <Badge variant="outline" className="ml-3 border-orange-200 text-orange-700">Admin</Badge>
               </div>
               <div className="flex items-center gap-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -199,7 +207,7 @@ export default function AdminDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-orange-700">
                   Welcome, {user?.name}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
@@ -211,10 +219,10 @@ export default function AdminDashboard() {
             {/* Mobile Header - Compact Navbar */}
             <div className="flex sm:hidden justify-between items-center h-14">
               <div className="flex items-center">
-                <h1 className="text-base font-semibold text-gray-900 truncate">
-                  Cremation Management System
+                <h1 className="text-base font-semibold text-orange-900 truncate">
+                  ॐ CMS ॐ
                 </h1>
-                <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
+                <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700 text-xs">Admin</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -243,13 +251,13 @@ export default function AdminDashboard() {
           {/* Desktop Tabs Only - No mobile tabs */}
           <div className="hidden md:block mb-6">
             <div className="w-full overflow-x-auto">
-              <div className="grid w-full min-w-max grid-cols-8 gap-1 p-1 bg-gray-100 rounded-lg">
+              <div className="grid w-full min-w-max grid-cols-8 gap-1 p-1 bg-orange-100 rounded-lg">
                 <button
                   onClick={() => handleTabChange('overview')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'overview' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Overview
@@ -258,8 +266,8 @@ export default function AdminDashboard() {
                   onClick={() => handleTabChange('locations')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'locations' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Locations
@@ -268,8 +276,8 @@ export default function AdminDashboard() {
                   onClick={() => handleTabChange('operators')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'operators' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Operators
@@ -279,8 +287,8 @@ export default function AdminDashboard() {
                   onClick={() => handleTabChange('entries')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'entries' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Entries
@@ -289,8 +297,8 @@ export default function AdminDashboard() {
                   onClick={() => handleTabChange('renewals')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'renewals' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Renewals
@@ -299,8 +307,8 @@ export default function AdminDashboard() {
                   onClick={() => handleTabChange('deliveries')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'deliveries' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Deliveries
@@ -309,8 +317,8 @@ export default function AdminDashboard() {
                   onClick={() => handleTabChange('analytics')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'analytics' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
                   Analytics
@@ -330,18 +338,22 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                   >
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalEntries}</div>
-                        <p className="text-xs text-muted-foreground">
-                          +12% from last month
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <SpiritualCard
+                      variant="sacred"
+                      title="Total Entries"
+                      showOm={true}
+                      className="h-full"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-3xl font-bold text-orange-800">{stats.totalEntries}</div>
+                          <p className="text-sm text-orange-600 mt-1">
+                            +12% from last month
+                          </p>
+                        </div>
+                        <Package className="h-8 w-8 text-orange-600" />
+                      </div>
+                    </SpiritualCard>
                   </motion.div>
 
                   <motion.div
@@ -349,18 +361,22 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Renewals</CardTitle>
-                        <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalRenewals}</div>
-                        <p className="text-xs text-muted-foreground">
-                          +8% from last month
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <SpiritualCard
+                      variant="ritual"
+                      title="Renewals"
+                      showOm={true}
+                      className="h-full"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-3xl font-bold text-red-800">{stats.totalRenewals}</div>
+                          <p className="text-sm text-red-600 mt-1">
+                            +8% from last month
+                          </p>
+                        </div>
+                        <RefreshCw className="h-8 w-8 text-red-600" />
+                      </div>
+                    </SpiritualCard>
                   </motion.div>
 
                   <motion.div
@@ -368,18 +384,22 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Deliveries</CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalDeliveries}</div>
-                        <p className="text-xs text-muted-foreground">
-                          +5% from last month
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <SpiritualCard
+                      variant="memorial"
+                      title="Deliveries"
+                      showOm={true}
+                      className="h-full"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-3xl font-bold text-amber-800">{stats.totalDeliveries}</div>
+                          <p className="text-sm text-amber-600 mt-1">
+                            +5% from last month
+                          </p>
+                        </div>
+                        <Calendar className="h-8 w-8 text-amber-600" />
+                      </div>
+                    </SpiritualCard>
                   </motion.div>
 
                   <motion.div
@@ -387,23 +407,40 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                   >
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">₹{stats.monthlyRevenue.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground">
-                          +15% from last month
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <SpiritualCard
+                      variant="sacred"
+                      title="Revenue"
+                      showOm={true}
+                      className="h-full"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-3xl font-bold text-orange-800">₹{stats.monthlyRevenue.toLocaleString()}</div>
+                          <p className="text-sm text-orange-600 mt-1">
+                            +15% from last month
+                          </p>
+                        </div>
+                        <DollarSign className="h-8 w-8 text-orange-600" />
+                      </div>
+                    </SpiritualCard>
                   </motion.div>
                 </div>
 
-                {/* Quick Actions */}
-                <Card>
+                {/* Spiritual Quote */}
+                <SpiritualCard
+                  variant="ritual"
+                  title="Daily Wisdom"
+                  mantra=""The soul is unborn, eternal, ever-existing, undying and primeval." - Bhagavad Gita 2.20"
+                  showOm={true}
+                  className="text-center"
+                >
+                  <div className="text-orange-700 italic">
+                    "Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure."
+                  </div>
+                  <div className="text-sm text-orange-600 mt-2">
+                    - Bhagavad Gita 2.38
+                  </div>
+                </SpiritualCard>
                   <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
                     <CardDescription>
