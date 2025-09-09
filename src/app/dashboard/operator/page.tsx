@@ -413,12 +413,6 @@ export default function OperatorDashboard() {
                             <Package className="h-8 w-8 text-orange-600" />
                           </div>
                         </SpiritualCard>
-                            </p>
-                            <div className="mt-2 text-xs text-gray-500">
-                              Active customers
-                            </div>
-                          </CardContent>
-                        </Card>
                       </motion.div>
 
                       <motion.div
@@ -583,7 +577,7 @@ export default function OperatorDashboard() {
                     <SpiritualCard
                       variant="ritual"
                       title="Daily Wisdom"
-                      mantra=""The soul is unborn, eternal, ever-existing, undying and primeval." - Bhagavad Gita 2.20"
+                      mantra="The soul is unborn, eternal, ever-existing, undying and primeval. - Bhagavad Gita 2.20"
                       showOm={true}
                       className="text-center"
                     >

@@ -430,7 +430,7 @@ export default function AdminDashboard() {
                 <SpiritualCard
                   variant="ritual"
                   title="Daily Wisdom"
-                  mantra=""The soul is unborn, eternal, ever-existing, undying and primeval." - Bhagavad Gita 2.20"
+                  mantra="The soul is unborn, eternal, ever-existing, undying and primeval. - Bhagavad Gita 2.20"
                   showOm={true}
                   className="text-center"
                 >
@@ -441,6 +441,9 @@ export default function AdminDashboard() {
                     - Bhagavad Gita 2.38
                   </div>
                 </SpiritualCard>
+
+                {/* Quick Actions */}
+                <Card>
                   <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
                     <CardDescription>
