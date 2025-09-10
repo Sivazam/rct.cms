@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import WheelLoading from '@/components/ui/wheel-loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -76,9 +77,11 @@ export default function ProtectedRoute({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
+      <WheelLoading 
+        message="Verifying access..."
+        showMantra={true}
+        size="lg"
+      />
     );
   }
 

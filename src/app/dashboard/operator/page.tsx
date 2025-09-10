@@ -420,21 +420,25 @@ export default function OperatorDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        <Card className="border-l-4 border-l-green-500">
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Renewals</CardTitle>
-                            <RefreshCw className="h-4 w-4 text-green-600" />
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{stats.totalRenewals}</div>
-                            <p className="text-xs text-muted-foreground">
-                              +8% from last month
-                            </p>
-                            <div className="mt-2 text-xs text-gray-500">
-                              This month
+                        <SpiritualCard
+                          variant="sacred"
+                          title="Renewals"
+                          showOm={true}
+                          className="h-full"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-3xl font-bold text-orange-800">{stats.totalRenewals}</div>
+                              <p className="text-sm text-orange-600 mt-1">
+                                +8% from last month
+                              </p>
+                              <div className="mt-2 text-xs text-orange-500">
+                                This month
+                              </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                            <RefreshCw className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </SpiritualCard>
                       </motion.div>
 
                       <motion.div
@@ -442,21 +446,25 @@ export default function OperatorDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                       >
-                        <Card className="border-l-4 border-l-purple-500">
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Deliveries</CardTitle>
-                            <Truck className="h-4 w-4 text-purple-600" />
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold text-purple-600">{stats.totalDeliveries}</div>
-                            <p className="text-xs text-muted-foreground">
-                              +5% from last month
-                            </p>
-                            <div className="mt-2 text-xs text-gray-500">
-                              Completed
+                        <SpiritualCard
+                          variant="sacred"
+                          title="Deliveries"
+                          showOm={true}
+                          className="h-full"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-3xl font-bold text-orange-800">{stats.totalDeliveries}</div>
+                              <p className="text-sm text-orange-600 mt-1">
+                                +5% from last month
+                              </p>
+                              <div className="mt-2 text-xs text-orange-500">
+                                Completed
+                              </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                            <Truck className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </SpiritualCard>
                       </motion.div>
 
                       <motion.div
@@ -464,66 +472,64 @@ export default function OperatorDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
                       >
-                        <Card className="border-l-4 border-l-orange-500">
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                            <DollarSign className="h-4 w-4 text-orange-600" />
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">₹{stats.monthlyRevenue.toLocaleString()}</div>
-                            <p className="text-xs text-muted-foreground">
-                              +15% from last month
-                            </p>
-                            <div className="mt-2 text-xs text-gray-500">
-                              Monthly collection
+                        <SpiritualCard
+                          variant="sacred"
+                          title="Revenue"
+                          showOm={true}
+                          className="h-full"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-3xl font-bold text-orange-800">₹{stats.monthlyRevenue.toLocaleString()}</div>
+                              <p className="text-sm text-orange-600 mt-1">
+                                +15% from last month
+                              </p>
+                              <div className="mt-2 text-xs text-orange-500">
+                                Monthly collection
+                              </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                            <DollarSign className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </SpiritualCard>
                       </motion.div>
                     </div>
 
                     {/* Quick Actions */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                          <Plus className="h-5 w-5" />
-                          <span>Quick Actions</span>
-                        </CardTitle>
-                        <CardDescription>
-                          Perform common tasks quickly
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <Button 
-                            className="h-20 flex-col space-y-2 bg-blue-600 hover:bg-blue-700" 
-                            onClick={() => handleTabChange('entries')}
-                          >
-                            {/* <Plus className="h-6 w-6" /> */}
-                            <span className="font-medium">New Entry</span>
-                            {/* <span className="text-xs opacity-80">Register customer</span> */}
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="h-20 flex-col space-y-2 border-green-200 text-green-700 hover:bg-green-50" 
-                            onClick={() => handleTabChange('renewals')}
-                          >
-                            {/* <RefreshCw className="h-6 w-6" /> */}
-                            <span className="font-medium">Renewal</span>
-                            {/* <span className="text-xs">Extend period</span> */}
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="h-20 flex-col space-y-2 border-purple-200 text-purple-700 hover:bg-purple-50" 
-                            onClick={() => handleTabChange('deliveries')}
-                          >
-                            {/* <Truck className="h-6 w-6" /> */}
-                            <span className="font-medium">Delivery</span>
-                            {/* <span className="text-xs">Complete process</span> */}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <SpiritualCard
+                      variant="sacred"
+                      title="Quick Actions"
+                      description="Perform common tasks quickly"
+                      showOm={true}
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Button 
+                          className="h-20 flex-col space-y-2 bg-orange-600 hover:bg-orange-700" 
+                          onClick={() => handleTabChange('entries')}
+                        >
+                          {/* <Plus className="h-6 w-6" /> */}
+                          <span className="font-medium">New Entry</span>
+                          {/* <span className="text-xs opacity-80">Register customer</span> */}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="h-20 flex-col space-y-2 border-orange-200 text-orange-700 hover:bg-orange-50" 
+                          onClick={() => handleTabChange('renewals')}
+                        >
+                          {/* <RefreshCw className="h-6 w-6" /> */}
+                          <span className="font-medium">Renewal</span>
+                          {/* <span className="text-xs">Extend period</span> */}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="h-20 flex-col space-y-2 border-orange-200 text-orange-700 hover:bg-orange-50" 
+                          onClick={() => handleTabChange('deliveries')}
+                        >
+                          {/* <Truck className="h-6 w-6" /> */}
+                          <span className="font-medium">Delivery</span>
+                          {/* <span className="text-xs">Complete process</span> */}
+                        </Button>
+                      </div>
+                    </SpiritualCard>
 
                     {/* Today's Summary */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

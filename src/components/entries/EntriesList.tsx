@@ -118,11 +118,11 @@ export default function EntriesList() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      case 'delivered': return 'bg-blue-100 text-blue-800';
-      case 'disposed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'expired': return 'bg-red-100 text-red-800 border-red-200';
+      case 'delivered': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'disposed': return 'bg-stone-100 text-stone-800 border-stone-200';
+      default: return 'bg-stone-100 text-stone-800 border-stone-200';
     }
   };
 
@@ -142,7 +142,7 @@ export default function EntriesList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
       </div>
     );
   }

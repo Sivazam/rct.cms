@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import SpiritualLoading from '@/components/ui/spiritual-loading';
+import SplashScreen from '@/components/ui/splash-screen';
 
 export default function Home() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     console.log('Home page: useEffect triggered', {
@@ -15,7 +17,7 @@ export default function Home() {
       loading
     });
 
-    if (!loading) {
+    if (!loading && !showSplash) {
       if (user) {
         // Admin users should always have access, operators need approval
         const shouldHaveAccess = user.role === 'admin' || user.isActive;
@@ -40,7 +42,15 @@ export default function Home() {
         router.push('/login');
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, showSplash]);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
+  if (showSplash) {
+    return <SplashScreen onSplashComplete={handleSplashComplete} />;
+  }
 
   if (loading) {
     return (

@@ -148,7 +148,7 @@ export default function OperatorManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -157,7 +157,7 @@ export default function OperatorManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Operator Management</h2>
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+        <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
           {pendingOperators.length} Pending Approval
         </Badge>
       </div>

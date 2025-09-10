@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import WheelLoading from '@/components/ui/wheel-loading';
 
 export default function AuthTestPage() {
   const { user, loading, logout } = useAuth();
@@ -14,9 +15,11 @@ export default function AuthTestPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
+      <WheelLoading 
+        message="Loading authentication test..."
+        showMantra={true}
+        size="lg"
+      />
     );
   }
 

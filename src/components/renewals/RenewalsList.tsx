@@ -151,9 +151,9 @@ export default function RenewalsList() {
 
   const getPaymentMethodColor = (method: string) => {
     switch (method) {
-      case 'cash': return 'bg-green-100 text-green-800';
-      case 'upi': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'cash': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'upi': return 'bg-amber-100 text-amber-800 border-amber-200';
+      default: return 'bg-stone-100 text-stone-800 border-stone-200';
     }
   };
 
@@ -173,7 +173,7 @@ export default function RenewalsList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
       </div>
     );
   }

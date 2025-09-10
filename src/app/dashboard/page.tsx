@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import WheelLoading from '@/components/ui/wheel-loading';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -28,8 +29,10 @@ export default function DashboardPage() {
   }, [user, loading, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-    </div>
+    <WheelLoading 
+      message="Redirecting to dashboard..."
+      showMantra={true}
+      size="lg"
+    />
   );
 }

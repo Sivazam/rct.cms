@@ -208,7 +208,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -355,7 +355,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                     <TableCell>{delivery.operatorName}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <Badge className="bg-green-100 text-green-800">
+                        <Badge className="bg-orange-100 text-orange-800 border-orange-200">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Delivered
                         </Badge>
