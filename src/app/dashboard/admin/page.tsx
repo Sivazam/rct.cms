@@ -230,10 +230,10 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all" className="text-wrap leading-tight py-3">All Locations</SelectItem>
                     {locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.venueName.length > 10 ? location.venueName.substring(0, 10) + '...' : location.venueName}
+                      <SelectItem key={location.id} value={location.id} className="text-wrap leading-tight py-3">
+                        {location.venueName}
                       </SelectItem>
                     ))}
                   </SelectContent>

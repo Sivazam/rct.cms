@@ -392,29 +392,29 @@ export default function EntriesList() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-3 bg-orange-50 rounded-lg">
+            <div className="text-2xl font-bold text-orange-600">
               {entries.filter(e => e.status === 'active').length}
             </div>
-            <div className="text-sm text-green-700">Active</div>
+            <div className="text-sm text-orange-700">Active</div>
           </div>
-          <div className="text-center p-3 bg-red-50 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center p-3 bg-amber-50 rounded-lg">
+            <div className="text-2xl font-bold text-amber-600">
               {entries.filter(e => e.status === 'expired').length}
             </div>
-            <div className="text-sm text-red-700">Expired</div>
+            <div className="text-sm text-amber-700">Expired</div>
           </div>
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-3 bg-orange-50 rounded-lg">
+            <div className="text-2xl font-bold text-orange-600">
               {entries.filter(e => e.status === 'delivered').length}
             </div>
-            <div className="text-sm text-blue-700">Delivered</div>
+            <div className="text-sm text-orange-700">Delivered</div>
           </div>
-          <div className="text-center p-3 bg-yellow-50 rounded-lg">
-            <div className="text-2xl font-bold text-yellow-600">
+          <div className="text-center p-3 bg-orange-100 rounded-lg">
+            <div className="text-2xl font-bold text-orange-700">
               {entries.filter(e => isExpiringSoon(e.expiryDate)).length}
             </div>
-            <div className="text-sm text-yellow-700">Expiring Soon</div>
+            <div className="text-sm text-orange-800">Expiring Soon</div>
           </div>
         </div>
       </CardContent>

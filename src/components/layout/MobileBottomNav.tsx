@@ -182,7 +182,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
     <>
       {/* Mobile Bottom Navigation - Professional Style */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
-        <div className="bg-white border-t border-gray-200 shadow-lg">
+        <div className="bg-white border-t border-orange-200 shadow-lg">
           <nav className="flex justify-around items-center py-2" aria-label="Mobile navigation">
             {/* First 3 navigation items */}
             {navItems.slice(0, 3).map((item) => {
@@ -196,15 +196,15 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                     flex flex-col items-center justify-center px-4 py-2 min-w-[60px] max-w-[80px]
                     transition-all duration-200 rounded-lg
                     ${isActive 
-                      ? 'text-blue-600 bg-blue-50' 
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      ? 'text-orange-600 bg-orange-50' 
+                      : 'text-gray-500 hover:text-orange-700 hover:bg-orange-50'
                     }
                   `}
                 >
                   <div className="relative flex-shrink-0">
                     <div className={`
                       h-5 w-5 mb-1
-                      ${isActive ? 'text-blue-600' : 'text-gray-400'}
+                      ${isActive ? 'text-orange-600' : 'text-gray-400'}
                       transition-colors duration-200
                     `}>
                       {item.icon}
@@ -220,7 +220,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                   </div>
                   <span className={`
                     text-xs font-medium text-center leading-tight w-full
-                    ${isActive ? 'text-blue-600' : 'text-gray-600'}
+                    ${isActive ? 'text-orange-600' : 'text-gray-600'}
                     transition-colors duration-200
                   `}>
                     {item.label}
@@ -237,21 +237,21 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                   flex flex-col items-center justify-center px-4 py-2 min-w-[60px] max-w-[80px]
                   transition-all duration-200 rounded-lg
                   ${showMoreMenu 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    ? 'text-orange-600 bg-orange-50' 
+                    : 'text-gray-500 hover:text-orange-700 hover:bg-orange-50'
                   }
                 `}
               >
                 <div className="relative flex-shrink-0">
                   <MoreHorizontal className={`
                     h-5 w-5 mb-1
-                    ${showMoreMenu ? 'text-blue-600' : 'text-gray-400'}
+                    ${showMoreMenu ? 'text-orange-600' : 'text-gray-400'}
                     transition-colors duration-200
                   `} />
                 </div>
                 <span className={`
                   text-xs font-medium text-center leading-tight w-full
-                  ${showMoreMenu ? 'text-blue-600' : 'text-gray-600'}
+                  ${showMoreMenu ? 'text-orange-600' : 'text-gray-600'}
                   transition-colors duration-200
                 `}>
                   More
@@ -267,13 +267,13 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                     <div className="absolute top-full right-4 sm:right-auto sm:left-1/2 sm:transform sm:-translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
                     
                     {/* Menu header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-t-lg border-b border-blue-800">
+                    <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-4 py-3 rounded-t-lg border-b border-orange-800">
                       <h3 className="text-sm font-semibold">More Options</h3>
-                      <p className="text-xs text-blue-100 mt-0.5">Additional navigation</p>
+                      <p className="text-xs text-orange-100 mt-0.5">Additional navigation</p>
                     </div>
                     
                     {/* Menu items list */}
-                    <div className="bg-white rounded-b-lg shadow-2xl border border-gray-200 min-w-[240px] max-h-[70vh] overflow-y-auto">
+                    <div className="bg-white rounded-b-lg shadow-2xl border border-orange-200 min-w-[240px] max-h-[70vh] overflow-y-auto">
                       <div className="p-1">
                         {navItems.slice(3).map((item, index) => {
                           const isActive = activeNav === item.id;
@@ -289,8 +289,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                                 w-full flex items-center px-3 py-3 rounded-lg text-sm mb-1 last:mb-0
                                 transition-all duration-200 group relative overflow-hidden
                                 ${isActive 
-                                  ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-l-4 border-blue-600 shadow-sm' 
-                                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:shadow-md'
+                                  ? 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-l-4 border-orange-600 shadow-sm' 
+                                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 hover:text-gray-900 hover:shadow-md'
                                 }
                               `}
                             >
@@ -299,8 +299,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                                 flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mr-3
                                 transition-all duration-200
                                 ${isActive 
-                                  ? 'bg-blue-600 text-white' 
-                                  : 'bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600'
+                                  ? 'bg-orange-600 text-white' 
+                                  : 'bg-gray-100 text-gray-500 group-hover:bg-orange-100 group-hover:text-orange-600'
                                 }
                               `}>
                                 <div className="h-4 w-4">
@@ -310,10 +310,10 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                               
                               {/* Text content */}
                               <div className="flex-1 text-left">
-                                <div className={`font-medium ${isActive ? 'text-blue-700' : 'text-gray-800 group-hover:text-gray-900'}`}>
+                                <div className={`font-medium ${isActive ? 'text-orange-700' : 'text-gray-800 group-hover:text-gray-900'}`}>
                                   {item.label}
                                 </div>
-                                <div className={`text-xs mt-0.5 ${isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-600'}`}>
+                                <div className={`text-xs mt-0.5 ${isActive ? 'text-orange-600' : 'text-gray-500 group-hover:text-orange-600'}`}>
                                   Navigate to {item.label.toLowerCase()}
                                 </div>
                               </div>
@@ -325,8 +325,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                                   className={`
                                     ml-2 px-2 py-1 text-xs font-medium rounded-full
                                     ${isActive 
-                                      ? 'bg-blue-600 text-white' 
-                                      : 'bg-gray-200 text-gray-700 group-hover:bg-blue-200 group-hover:text-blue-700'
+                                      ? 'bg-orange-600 text-white' 
+                                      : 'bg-gray-200 text-gray-700 group-hover:bg-orange-200 group-hover:text-orange-700'
                                     }
                                   `}
                                 >
@@ -337,7 +337,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                               {/* Active indicator */}
                               {isActive && (
                                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                                  <div className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></div>
                                 </div>
                               )}
                             </button>
@@ -346,8 +346,8 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                       </div>
                       
                       {/* Menu footer */}
-                      <div className="border-t border-gray-200 bg-gray-50 px-4 py-2 rounded-b-lg">
-                        <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="border-t border-orange-200 bg-orange-50 px-4 py-2 rounded-b-lg">
+                        <div className="flex items-center justify-between text-xs text-orange-600">
                           <span>{navItems.length - 3} items</span>
                           <span>Tap to close</span>
                         </div>

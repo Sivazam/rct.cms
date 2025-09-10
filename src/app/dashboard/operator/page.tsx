@@ -289,7 +289,7 @@ export default function OperatorDashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
+                      <SelectItem key={location.id} value={location.id} className="text-wrap leading-tight py-3">
                         {location.venueName}
                       </SelectItem>
                     ))}
