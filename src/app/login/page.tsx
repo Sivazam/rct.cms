@@ -34,13 +34,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 p-4">
-      {/* Background spiritual elements */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
-        <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
-        <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
-        <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
+    <div className="min-h-screen flex items-center justify-center bg-amber-50 p-4">
+      {/* Subtle background element */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-10 right-10 text-4xl text-amber-300">ॐ</div>
       </div>
 
       <motion.div
@@ -53,8 +50,7 @@ export default function LoginPage() {
           variant="sacred"
           title="Login"
           description="Access the Cremation Management System"
-          mantra=""
-          showOm={true}
+          showOm={false}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <SpiritualInput
@@ -65,7 +61,6 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               icon="mail"
-              mantra=""
               placeholder="Enter your email"
             />
 
@@ -77,7 +72,6 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               icon="lock"
-              mantra=""
               placeholder="Enter your password"
             />
 
@@ -93,8 +87,6 @@ export default function LoginPage() {
               type="submit"
               variant="sacred"
               size="lg"
-              mantra=""
-              showOm={true}
               className="w-full"
               disabled={loading}
             >
@@ -105,45 +97,38 @@ export default function LoginPage() {
           <div className="mt-8 text-center space-y-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-orange-200"></div>
+                <div className="w-full border-t border-amber-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-orange-50 text-orange-600 rounded-full">
-                  ॐ Cremation Management System ॐ
+                <span className="px-4 bg-white text-amber-700 rounded-full">
+                  Cremation Management System
                 </span>
               </div>
             </div>
 
-            <p className="text-sm text-orange-700">
+            <p className="text-sm text-amber-700">
               New to the system?{' '}
               <Link 
                 href="/signup" 
-                className="text-orange-600 hover:text-orange-800 underline font-medium"
+                className="text-amber-800 hover:text-amber-900 underline font-medium"
               >
                 Create an account
               </Link>
             </p>
 
-            <div className="text-xs text-orange-600 italic text-sanskrit">
-              "The soul is unborn, eternal, ever-existing" - Bhagavad Gita 2.20
+            <div className="text-xs text-amber-600 italic">
+              Rotary Charitable Trust
             </div>
           </div>
         </SpiritualCard>
 
-        {/* Decorative elements */}
+        {/* Subtle decorative element */}
         <div className="mt-8 text-center">
-          <div className="text-2xl text-orange-600 animate-pulse">ॐ</div>
-          <div className="text-xs text-orange-500 mt-2">
-            Cremation Management System - Rotary Charitable Trust
+          <div className="text-xs text-amber-500">
+            Cremation Management System
           </div>
         </div>
       </motion.div>
-
-      <style jsx>{`
-        .text-sanskrit {
-          font-family: 'Noto Sans Devanagari', serif;
-        }
-      `}</style>
     </div>
   );
 }

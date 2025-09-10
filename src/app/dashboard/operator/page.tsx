@@ -499,27 +499,27 @@ export default function OperatorDashboard() {
                             className="h-20 flex-col space-y-2 bg-blue-600 hover:bg-blue-700" 
                             onClick={() => handleTabChange('entries')}
                           >
-                            <Plus className="h-6 w-6" />
+                            {/* <Plus className="h-6 w-6" /> */}
                             <span className="font-medium">New Entry</span>
-                            <span className="text-xs opacity-80">Register customer</span>
+                            {/* <span className="text-xs opacity-80">Register customer</span> */}
                           </Button>
                           <Button 
                             variant="outline" 
                             className="h-20 flex-col space-y-2 border-green-200 text-green-700 hover:bg-green-50" 
                             onClick={() => handleTabChange('renewals')}
                           >
-                            <RefreshCw className="h-6 w-6" />
+                            {/* <RefreshCw className="h-6 w-6" /> */}
                             <span className="font-medium">Renewal</span>
-                            <span className="text-xs">Extend period</span>
+                            {/* <span className="text-xs">Extend period</span> */}
                           </Button>
                           <Button 
                             variant="outline" 
                             className="h-20 flex-col space-y-2 border-purple-200 text-purple-700 hover:bg-purple-50" 
                             onClick={() => handleTabChange('deliveries')}
                           >
-                            <Truck className="h-6 w-6" />
+                            {/* <Truck className="h-6 w-6" /> */}
                             <span className="font-medium">Delivery</span>
-                            <span className="text-xs">Complete process</span>
+                            {/* <span className="text-xs">Complete process</span> */}
                           </Button>
                         </div>
                       </CardContent>

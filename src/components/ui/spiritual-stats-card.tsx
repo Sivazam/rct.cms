@@ -39,10 +39,10 @@ export default function SpiritualStatsCard({
 
   const getIconColor = () => {
     switch (variant) {
-      case 'sacred': return 'text-orange-600';
-      case 'ritual': return 'text-red-600';
-      case 'memorial': return 'text-amber-600';
-      default: return 'text-orange-600';
+      case 'sacred': return 'text-amber-600';
+      case 'ritual': return 'text-stone-600';
+      case 'memorial': return 'text-amber-700';
+      default: return 'text-amber-600';
     }
   };
 
@@ -55,14 +55,14 @@ export default function SpiritualStatsCard({
     >
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <div className="text-sm font-medium text-gray-700">
+          <div className="text-sm font-medium text-amber-800">
             {title}
           </div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-2xl font-bold text-amber-900">
             {value}
           </div>
           {description && (
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-amber-600">
               {description}
             </div>
           )}
@@ -76,7 +76,7 @@ export default function SpiritualStatsCard({
           )}
         </div>
         
-        <div className={`p-3 rounded-full bg-orange-100 ${getIconColor()}`}>
+        <div className={`p-3 rounded-full bg-amber-100 ${getIconColor()}`}>
           {getIcon()}
         </div>
       </div>

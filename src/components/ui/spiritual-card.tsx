@@ -29,31 +29,31 @@ export default function SpiritualCard({
     switch (variant) {
       case 'sacred':
         return {
-          card: 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 shadow-lg',
-          header: 'border-orange-200 bg-orange-50/50',
-          title: 'text-orange-800',
-          description: 'text-orange-600'
+          card: 'bg-white border-amber-100 shadow-sm',
+          header: 'border-amber-50 bg-amber-50/20',
+          title: 'text-amber-900',
+          description: 'text-amber-700'
         };
       case 'ritual':
         return {
-          card: 'bg-gradient-to-br from-red-50 to-pink-50 border-red-200 shadow-lg',
-          header: 'border-red-200 bg-red-50/50',
-          title: 'text-red-800',
-          description: 'text-red-600'
+          card: 'bg-white border-stone-200 shadow-sm',
+          header: 'border-stone-100 bg-stone-50/20',
+          title: 'text-stone-800',
+          description: 'text-stone-600'
         };
       case 'memorial':
         return {
-          card: 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200 shadow-lg',
-          header: 'border-amber-200 bg-amber-50/50',
+          card: 'bg-white border-amber-50 shadow-sm',
+          header: 'border-amber-50 bg-amber-50/20',
           title: 'text-amber-800',
           description: 'text-amber-600'
         };
       default:
         return {
-          card: 'bg-white border-orange-100 shadow-md',
-          header: 'border-orange-100',
-          title: 'text-gray-800',
-          description: 'text-gray-600'
+          card: 'bg-white border-amber-100 shadow-sm',
+          header: 'border-amber-50',
+          title: 'text-amber-900',
+          description: 'text-amber-700'
         };
     }
   };
@@ -62,31 +62,20 @@ export default function SpiritualCard({
 
   return (
     <Card className={`relative overflow-hidden ${styles.card} ${className}`}>
-      {/* Background spiritual patterns */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <div className="absolute top-2 right-2 text-2xl text-orange-600">ॐ</div>
-        <div className="absolute bottom-2 left-2 text-lg text-red-600">卍</div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl text-orange-200 opacity-30">
-          🔥
+      {/* Subtle background element */}
+      {showOm && (
+        <div className="absolute top-3 right-3 text-amber-200 text-lg opacity-20 pointer-events-none">
+          ॐ
         </div>
-      </div>
+      )}
 
-      {/* Decorative border pattern */}
-      <div className="absolute inset-0 border-2 border-dashed border-orange-200 opacity-30 pointer-events-none m-1"></div>
-
-      {(title || description || showOm) && (
+      {(title || description) && (
         <CardHeader className={`${styles.header} relative z-10`}>
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              {showOm && (
-                <div className="text-2xl text-orange-600 mb-2">ॐ</div>
-              )}
               {title && (
                 <CardTitle className={`${styles.title} flex items-center space-x-2`}>
                   <span>{title}</span>
-                  {variant === 'sacred' && <Badge className="bg-orange-100 text-orange-800">Sacred</Badge>}
-                  {variant === 'ritual' && <Badge className="bg-red-100 text-red-800">Ritual</Badge>}
-                  {variant === 'memorial' && <Badge className="bg-amber-100 text-amber-800">Memorial</Badge>}
                 </CardTitle>
               )}
               {description && (
@@ -98,8 +87,8 @@ export default function SpiritualCard({
           </div>
           
           {mantra && (
-            <div className="mt-3 p-2 bg-orange-100 rounded-md">
-              <div className="text-sm text-sanskrit text-orange-700 italic">
+            <div className="mt-3 p-2 bg-amber-50 rounded-md">
+              <div className="text-sm text-amber-700 italic">
                 {mantra}
               </div>
             </div>
@@ -116,12 +105,6 @@ export default function SpiritualCard({
           {footer}
         </div>
       )}
-
-      <style jsx>{`
-        .text-sanskrit {
-          font-family: 'Noto Sans Devanagari', serif;
-        }
-      `}</style>
     </Card>
   );
 }

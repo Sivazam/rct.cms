@@ -56,7 +56,7 @@ export default function SpiritualInput({
           htmlFor={id} 
           className={cn(
             "text-sm font-medium transition-colors",
-            isFocused ? "text-orange-600" : "text-gray-700"
+            isFocused ? "text-amber-900" : "text-amber-800"
           )}
         >
           {label}
@@ -64,24 +64,21 @@ export default function SpiritualInput({
         </Label>
         
         {mantra && (
-          <div className="text-xs text-orange-600 italic text-sanskrit">
+          <div className="text-xs text-amber-600 italic">
             {mantra}
           </div>
         )}
       </div>
 
       <div className="relative">
-        {/* Spiritual icon background */}
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <div className="text-orange-600">
-            {getIcon()}
+        {/* Icon background */}
+        {icon && (
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <div className="text-amber-500">
+              {getIcon()}
+            </div>
           </div>
-        </div>
-
-        {/* Om symbol decoration */}
-        <div className="absolute inset-y-0 right-12 flex items-center pointer-events-none opacity-20">
-          <div className="text-orange-600 text-lg">ॐ</div>
-        </div>
+        )}
 
         <Input
           id={id}
@@ -91,38 +88,37 @@ export default function SpiritualInput({
           onChange={onChange}
           required={required}
           className={cn(
-            "pl-10 pr-12 transition-all duration-200",
-            "border-orange-200 focus:border-orange-400 focus:ring-orange-400",
-            "bg-orange-50/50 focus:bg-orange-50",
-            "placeholder:text-orange-300",
-            isFocused && "shadow-lg shadow-orange-100"
+            icon ? "pl-10" : "pl-3",
+            "pr-10 transition-all duration-200",
+            "border-amber-200 focus:border-amber-400 focus:ring-amber-400",
+            "bg-white focus:bg-white",
+            "placeholder:text-amber-300",
+            isFocused && "shadow-sm"
           )}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
 
-        {/* Password toggle or Om symbol */}
+        {/* Password toggle */}
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {type === 'password' ? (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-orange-600 hover:text-orange-700 transition-colors"
+              className="text-amber-500 hover:text-amber-600 transition-colors"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           ) : (
-            <div className="text-orange-400 text-sm">ॐ</div>
+            <div className="text-amber-200 text-sm">ॐ</div>
           )}
         </div>
       </div>
 
-      {/* Spiritual quote hint */}
-      {isFocused && (
-        <div className="text-xs text-orange-600 italic">
-          {type === 'email' && '"As you think, so you become" - Bhagavad Gita'}
-          {type === 'password' && '"The soul is unborn, eternal, ever-existing" - Bhagavad Gita 2.20'}
-          {type === 'text' && '"Speak the truth which is pleasant" - Bhagavad Gita 17.15'}
+      {/* Subtle hint */}
+      {isFocused && type === 'password' && (
+        <div className="text-xs text-amber-600 italic">
+          Please enter a secure password
         </div>
       )}
     </div>

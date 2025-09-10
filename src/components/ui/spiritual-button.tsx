@@ -31,23 +31,23 @@ export default function SpiritualButton({
     switch (variant) {
       case 'sacred':
         return {
-          button: 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-orange-700',
-          hover: 'shadow-lg shadow-orange-200/50 transform hover:scale-105'
+          button: 'bg-amber-700 hover:bg-amber-800 text-white border-amber-700',
+          hover: 'shadow-sm hover:shadow-md'
         };
       case 'ritual':
         return {
-          button: 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-red-700',
-          hover: 'shadow-lg shadow-red-200/50 transform hover:scale-105'
+          button: 'bg-stone-700 hover:bg-stone-800 text-white border-stone-700',
+          hover: 'shadow-sm hover:shadow-md'
         };
       case 'memorial':
         return {
-          button: 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-amber-700',
-          hover: 'shadow-lg shadow-amber-200/50 transform hover:scale-105'
+          button: 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600',
+          hover: 'shadow-sm hover:shadow-md'
         };
       default:
         return {
-          button: 'bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white border-orange-600',
-          hover: 'shadow-lg shadow-orange-200/50 transform hover:scale-105'
+          button: 'bg-amber-700 hover:bg-amber-800 text-white border-amber-700',
+          hover: 'shadow-sm hover:shadow-md'
         };
     }
   };
@@ -64,19 +64,13 @@ export default function SpiritualButton({
   const sizeStyles = getSizeStyles();
 
   return (
-    <div className="relative inline-block">
-      {/* Spiritual aura effect */}
-      <div className={cn(
-        "absolute inset-0 rounded-lg transition-all duration-300",
-        disabled ? 'opacity-0' : 'bg-gradient-to-r from-orange-200 to-red-200 blur-md opacity-50 group-hover:opacity-75'
-      )} />
-      
+    <div className="relative inline-block group">
       <Button
         type={type}
         onClick={onClick}
         disabled={disabled}
         className={cn(
-          "relative border-2 transition-all duration-300 group",
+          "relative border transition-all duration-200",
           styles.button,
           styles.hover,
           sizeStyles,
@@ -85,33 +79,17 @@ export default function SpiritualButton({
         )}
       >
         <div className="flex items-center space-x-2">
-          {showOm && <span className="text-lg">ॐ</span>}
+          {showOm && <span className="text-sm text-amber-200">ॐ</span>}
           <span>{children}</span>
-        </div>
-        
-        {/* Subtle spiritual pattern overlay */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="w-full h-full rounded-lg bg-repeat" 
-               style={{
-                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='2' y='15' font-family='serif' font-size='12' fill='%23ea580c'%3Eॐ%3C/text%3E%3C/svg%3E")`,
-                 backgroundSize: '20px 20px'
-               }}>
-          </div>
         </div>
       </Button>
 
-      {/* Mantra tooltip */}
+      {/* Subtle mantra tooltip */}
       {mantra && !disabled && (
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sanskrit">
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
           {mantra}
         </div>
       )}
-
-      <style jsx>{`
-        .text-sanskrit {
-          font-family: 'Noto Sans Devanagari', serif;
-        }
-      `}</style>
     </div>
   );
 }

@@ -48,6 +48,7 @@ export default function Home() {
         message="Connecting to Cremation Management System..."
         mantra="ॐ శాంతిః శాంతిః శాంతిః"
         teluguOnly={true}
+        useWheel={true}
       />
     );
   }
@@ -57,6 +58,7 @@ export default function Home() {
       message="Loading Cremation Management System..."
       mantra="ॐ భూర్భువః స్వః"
       teluguOnly={true}
+      useWheel={true}
     />
   );
 }

@@ -24,6 +24,7 @@ export default function PageTransitionLoader() {
         mantra={currentMantra}
         showOm={true}
         teluguOnly={true}
+        useWheel={true}
       />
     </div>
   );
