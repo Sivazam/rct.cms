@@ -189,7 +189,7 @@ export default function AdminDashboard() {
             <div className="hidden sm:flex justify-between items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-lg sm:text-xl font-semibold text-orange-900">
-                  ॐ CMS ॐ
+                  ॐ Cremation Management System ॐ
                 </h1>
                 <Badge variant="outline" className="ml-3 border-orange-200 text-orange-700">Admin</Badge>
               </div>
