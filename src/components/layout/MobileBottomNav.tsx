@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
-  userRole: 'admin' | 'operator';
+  userRole?: 'admin' | 'operator';
   userName: string;
   onLogout: () => void;
 }
@@ -40,7 +40,7 @@ interface NavItem {
   isMain?: boolean;
 }
 
-export default function MobileBottomNav({ userRole, userName, onLogout }: MobileBottomNavProps) {
+export default function MobileBottomNav({ userRole = 'admin', userName, onLogout }: MobileBottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -144,6 +144,10 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
   const navItems = userRole === 'admin' ? adminNavItems : operatorNavItems;
 
+  // Safety check: if userRole is invalid, default to admin
+  const safeUserRole = userRole === 'admin' || userRole === 'operator' ? userRole : 'admin';
+  const safeNavItems = safeUserRole === 'admin' ? adminNavItems : operatorNavItems;
+
   const getActiveNav = () => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -174,8 +178,10 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
 
   console.log('MobileBottomNav: About to render', {
     activeNav,
-    navItemsCount: navItems.length,
-    navItems: navItems.map(item => item.id)
+    userRole,
+    safeUserRole,
+    navItemsCount: safeNavItems.length,
+    navItems: safeNavItems.map(item => item.id)
   });
 
   return (
@@ -185,7 +191,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
         <div className="bg-white border-t border-orange-200 shadow-lg">
           <nav className="flex justify-around items-center py-2" aria-label="Mobile navigation">
             {/* First 3 navigation items */}
-            {navItems.slice(0, 3).map((item) => {
+            {safeNavItems.slice(0, 3).map((item) => {
               const isActive = activeNav === item.id;
               
               return (
@@ -259,7 +265,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
               </button>
               
               {/* More Menu Dropdown */}
-              {showMoreMenu && navItems.length > 3 && (
+              {showMoreMenu && safeNavItems.length > 3 && (
                 <div className="absolute bottom-full right-0 mb-3 z-40 sm:right-auto sm:left-1/2 sm:transform sm:-translate-x-1/2">
                   {/* Menu container with professional styling */}
                   <div className="relative z-20">
@@ -275,7 +281,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                     {/* Menu items list */}
                     <div className="bg-white rounded-b-lg shadow-2xl border border-orange-200 min-w-[240px] max-h-[70vh] overflow-y-auto">
                       <div className="p-1">
-                        {navItems.slice(3).map((item, index) => {
+                        {safeNavItems.slice(3).map((item, index) => {
                           const isActive = activeNav === item.id;
                           
                           return (
@@ -348,7 +354,7 @@ export default function MobileBottomNav({ userRole, userName, onLogout }: Mobile
                       {/* Menu footer */}
                       <div className="border-t border-orange-200 bg-orange-50 px-4 py-2 rounded-b-lg">
                         <div className="flex items-center justify-between text-xs text-orange-600">
-                          <span>{navItems.length - 3} items</span>
+                          <span>{safeNavItems.length - 3} items</span>
                           <span>Tap to close</span>
                         </div>
                       </div>

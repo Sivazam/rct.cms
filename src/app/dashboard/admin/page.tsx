@@ -677,7 +677,7 @@ export default function AdminDashboard() {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        {user && (
+        {user && user.role && (
           <div>
             {console.log('AdminDashboard: About to render MobileBottomNav', {
               user: user.email,
@@ -685,7 +685,7 @@ export default function AdminDashboard() {
               userName: user.name
             })}
             <MobileBottomNav 
-              userRole={user.role as 'admin' | 'operator'} 
+              userRole={user.role} 
               userName={user.name || 'User'} 
               onLogout={handleLogout}
             />
