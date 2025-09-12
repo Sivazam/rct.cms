@@ -104,7 +104,7 @@ export function DateRangePicker({
               size="sm" 
               onClick={() => {
                 if (date?.from && date?.to) {
-                  onDateRangeChange({ from: date.from, to: date.to })
+                  safeOnDateRangeChange({ from: date.from, to: date.to })
                 }
               }}
             >

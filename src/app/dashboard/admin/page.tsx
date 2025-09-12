@@ -44,19 +44,33 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [showWithDispatch, setShowWithDispatch] = useState(true);
   const [locations, setLocations] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>({
+  const [stats, setStats] = useState({
     totalEntries: 0,
     totalRenewals: 0,
     totalDeliveries: 0,
     expiringIn7Days: 0,
     monthlyRevenue: 0,
     renewalCollections: 0,
-    deliveryCollections: 0
+    deliveryCollections: 0,
+    currentActive: 0
   });
   const [expiringEntries, setExpiringEntries] = useState<any[]>([]);
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Safety wrapper for logout
+  const safeLogout = async () => {
+    try {
+      if (typeof logout === 'function') {
+        await logout();
+      } else {
+        console.warn('AdminDashboard: logout is not a function');
+      }
+    } catch (error) {
+      console.error('AdminDashboard: Error in logout:', error);
+    }
+  };
 
   // Safety wrapper for setDateRange
   const safeSetDateRange = (range: { from: Date; to: Date } | undefined) => {
@@ -162,15 +176,16 @@ export default function AdminDashboard() {
       console.log('Expiring entries found:', expiring.length);
       
       setStats({
-        totalEntries: statsData.totalEntries || entries.length,
-        totalRenewals: statsData.totalRenewals || pendingRenewals.length,
-        totalDeliveries: statsData.totalDeliveries || deliveries.length,
-        expiringIn7Days: statsData.expiringIn7Days || expiring.length,
+        totalEntries: statsData.totalEntries || entries.length || 0,
+        totalRenewals: statsData.totalRenewals || pendingRenewals.length || 0,
+        totalDeliveries: statsData.totalDeliveries || deliveries.length || 0,
+        expiringIn7Days: statsData.expiringIn7Days || expiring.length || 0,
         monthlyRevenue: showWithDispatch ? 
-          (statsData.renewalCollections + statsData.deliveryCollections) : 
-          statsData.renewalCollections,
+          ((statsData.renewalCollections || 0) + (statsData.deliveryCollections || 0)) : 
+          (statsData.renewalCollections || 0),
         renewalCollections: statsData.renewalCollections || 0,
-        deliveryCollections: statsData.deliveryCollections || 0
+        deliveryCollections: statsData.deliveryCollections || 0,
+        currentActive: statsData.currentActive || entries.filter(e => e.status === 'active').length || 0
       });
       
       setExpiringEntries(expiring);
@@ -198,7 +213,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await safeLogout();
   };
 
   return (
@@ -237,7 +252,7 @@ export default function AdminDashboard() {
                   </SelectContent>
                 </Select>
                 <div className="text-sm text-orange-700">
-                  Welcome, {user?.name}
+                  Welcome, {user?.name || 'Admin'}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
                   Logout
@@ -392,7 +407,7 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-3xl font-bold text-orange-800">{stats.totalEntries}</div>
+                          <div className="text-3xl font-bold text-orange-800">{stats.totalEntries || 0}</div>
                           <p className="text-sm text-orange-600 mt-1">
                             +12% from last month
                           </p>
@@ -415,7 +430,7 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-3xl font-bold text-red-800">{stats.totalRenewals}</div>
+                          <div className="text-3xl font-bold text-red-800">{stats.totalRenewals || 0}</div>
                           <p className="text-sm text-red-600 mt-1">
                             +8% from last month
                           </p>
@@ -438,7 +453,7 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-3xl font-bold text-amber-800">{stats.totalDeliveries}</div>
+                          <div className="text-3xl font-bold text-amber-800">{stats.totalDeliveries || 0}</div>
                           <p className="text-sm text-amber-600 mt-1">
                             +5% from last month
                           </p>
@@ -461,7 +476,7 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-3xl font-bold text-orange-800">₹{stats.monthlyRevenue.toLocaleString()}</div>
+                          <div className="text-3xl font-bold text-orange-800">₹{(stats.monthlyRevenue || 0).toLocaleString()}</div>
                           <p className="text-sm text-orange-600 mt-1">
                             {showWithDispatch ? 'Total collections (renewals + dispatch)' : 'Collections from renewals only'}
                           </p>
@@ -710,9 +725,9 @@ export default function AdminDashboard() {
               </div>
             }>
               <MobileBottomNav 
-                userRole={user.role} 
+                userRole={user.role || 'admin'} 
                 userName={user.name || 'User'} 
-                onLogout={handleLogout}
+                onLogout={safeLogout}
               />
             </ErrorBoundary>
           </div>

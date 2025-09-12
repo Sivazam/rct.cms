@@ -40,11 +40,24 @@ interface NavItem {
   isMain?: boolean;
 }
 
-export default function MobileBottomNav({ userRole = 'admin', userName, onLogout }: MobileBottomNavProps) {
+export default function MobileBottomNav({ userRole = 'admin', userName = 'User', onLogout }: MobileBottomNavProps) {
   // Get router and pathname hooks at the top level (rules of hooks)
   const pathname = usePathname();
   const router = useRouter();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  // Safety check for onLogout
+  const safeOnLogout = () => {
+    try {
+      if (typeof onLogout === 'function') {
+        onLogout();
+      } else {
+        console.warn('MobileBottomNav: onLogout is not a function');
+      }
+    } catch (error) {
+      console.error('MobileBottomNav: Error in onLogout:', error);
+    }
+  };
 
   console.log('MobileBottomNav: Component initialized', {
     userRole,
