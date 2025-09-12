@@ -94,7 +94,7 @@ export default function SpiritualDashboardWrapper({
               <div className="flex items-center space-x-2">
                 <div className="text-amber-600">ॐ</div>
                 <div className="text-sm text-amber-700">
-                  Rotary Charitable Trust - Sacred Service to Humanity
+                  Sacred Service to Humanity
                 </div>
               </div>
               

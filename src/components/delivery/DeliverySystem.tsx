@@ -210,10 +210,10 @@ export default function DeliverySystem() {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-blue-900 flex items-center justify-center space-x-2">
                 <Package className="h-8 w-8" />
-                <span>Delivery Management System</span>
+                <span>Dispatch Management System</span>
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Secure delivery process with OTP verification for Rotary Charitable Trust
+                Secure Dispatch process with OTP verification
               </CardDescription>
             </CardHeader>
           </Card>
@@ -326,7 +326,7 @@ export default function DeliverySystem() {
                     </div>
                   </button>
                   
-                  <button className="p-4 border rounded-lg hover:shadow-md transition-all duration-200 text-left opacity-50 cursor-not-allowed">
+                  {/* <button className="p-4 border rounded-lg hover:shadow-md transition-all duration-200 text-left opacity-50 cursor-not-allowed">
                     <div className="flex items-center space-x-3">
                       <RotateCcw className="h-6 w-6 text-gray-400" />
                       <div>
@@ -334,7 +334,7 @@ export default function DeliverySystem() {
                         <p className="text-sm text-gray-600">Process multiple deliveries (Coming Soon)</p>
                       </div>
                     </div>
-                  </button>
+                  </button> */}
                 </div>
               </CardContent>
             </Card>

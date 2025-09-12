@@ -110,9 +110,9 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
           <h1 className="text-2xl md:text-3xl font-bold text-orange-900">
             ॐ Cremation Management System ॐ
           </h1>
-          <p className="text-sm text-orange-700">
-            Rotary Charitable Trust
-          </p>
+          {/* <p className="text-sm text-orange-700">
+            
+          </p> */}
         </div>
 
         {/* Progress Bar */}

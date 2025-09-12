@@ -34,7 +34,7 @@ export default function PendingApprovalPage() {
         <SpiritualCard
           variant="ritual"
           title="Account Pending Approval"
-          description="Rotary Charitable Trust - SCM System"
+          description="SCM System"
           showOm={true}
           className="w-full max-w-md relative z-10"
         >

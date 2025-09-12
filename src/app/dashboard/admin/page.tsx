@@ -336,11 +336,11 @@ export default function AdminDashboard() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
+                    transition={{ delay: 0.1 }} 
                   >
                     <SpiritualCard
                       variant="sacred"
-                      title="Total Entries"
+                      title="Total Ash Pots"
                       showOm={true}
                       className="h-full"
                     >
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
                   >
                     <SpiritualCard
                       variant="ritual"
-                      title="Pending Renewals"
+                      title="Pending Ash Pots"
                       showOm={true}
                       className="h-full"
                     >
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
                   >
                     <SpiritualCard
                       variant="memorial"
-                      title="Deliveries"
+                      title="Dispatched Ash Pots"
                       showOm={true}
                       className="h-full"
                     >
@@ -427,7 +427,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Spiritual Quote */}
-                <SpiritualCard
+                {/* <SpiritualCard
                   variant="ritual"
                   title="Daily Wisdom"
                   mantra="The soul is unborn, eternal, ever-existing, undying and primeval. - Bhagavad Gita 2.20"
@@ -440,7 +440,7 @@ export default function AdminDashboard() {
                   <div className="text-sm text-orange-600 mt-2">
                     - Bhagavad Gita 2.38
                   </div>
-                </SpiritualCard>
+                </SpiritualCard> */}
 
                 {/* Quick Actions */}
                 <Card>
@@ -468,7 +468,7 @@ export default function AdminDashboard() {
                         handleTabChange('deliveries');
                       }}>
                         <Calendar className="h-6 w-6" />
-                        <span>Delivery</span>
+                        <span>Dispatch</span>
                       </Button>
                     </div>
                   </CardContent>

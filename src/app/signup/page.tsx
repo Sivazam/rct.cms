@@ -229,7 +229,7 @@ export default function SignupPage() {
         <div className="mt-8 text-center">
           <div className="text-2xl text-red-600 animate-pulse">ॐ</div>
           <div className="text-xs text-orange-500 mt-2">
-            Cremation Management System - Rotary Charitable Trust
+            Cremation Management System
           </div>
         </div>
       </motion.div>

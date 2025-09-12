@@ -398,8 +398,8 @@ export default function OperatorDashboard() {
                         transition={{ delay: 0.1 }}
                       >
                         <SpiritualCard
-                          variant="sacred"
-                          title="Total Entries"
+                          variant="sacred" 
+                          title="Total Ash Pots"
                           showOm={true}
                           className="h-full"
                         >
@@ -422,7 +422,7 @@ export default function OperatorDashboard() {
                       >
                         <SpiritualCard
                           variant="sacred"
-                          title="Pending Renewals"
+                          title="Pending Ash Pots"
                           showOm={true}
                           className="h-full"
                         >
@@ -525,7 +525,7 @@ export default function OperatorDashboard() {
                           onClick={() => handleTabChange('deliveries')}
                         >
                           {/* <Truck className="h-6 w-6" /> */}
-                          <span className="font-medium">Delivery</span>
+                          <span className="font-medium">Dispatch</span>
                           {/* <span className="text-xs">Complete process</span> */}
                         </Button>
                       </div>
@@ -580,7 +580,7 @@ export default function OperatorDashboard() {
                     </div>
 
                     {/* Spiritual Quote */}
-                    <SpiritualCard
+                    {/* <SpiritualCard
                       variant="ritual"
                       title="Daily Wisdom"
                       mantra="The soul is unborn, eternal, ever-existing, undying and primeval. - Bhagavad Gita 2.20"
@@ -593,7 +593,7 @@ export default function OperatorDashboard() {
                       <div className="text-sm text-orange-600 mt-2">
                         - Bhagavad Gita 2.38
                       </div>
-                    </SpiritualCard>
+                    </SpiritualCard> */}
 
                     {/* Expiring Soon */}
                     {expiringEntries.length > 0 && (

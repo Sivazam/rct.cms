@@ -117,7 +117,7 @@ export default function LoginPage() {
             </p>
 
             <div className="text-xs text-amber-600 italic">
-              Rotary Charitable Trust
+              CMS
             </div>
           </div>
         </SpiritualCard>
