@@ -465,20 +465,6 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     // Get all entries first
     let entries = await getEntries({ locationId });
     
-    // Filter by date range if provided
-    if (dateRange?.from && dateRange?.to) {
-      const fromDate = new Date(dateRange.from);
-      const toDate = new Date(dateRange.to);
-      toDate.setHours(23, 59, 59, 999); // End of the day
-      
-      entries = entries.filter(entry => {
-        const entryDate = entry.createdAt?.toDate?.();
-        return entryDate && entryDate >= fromDate && entryDate <= toDate;
-      });
-      
-      console.log('Entries after date range filter:', entries.length);
-    }
-    
     // Calculate statistics from actual entries
     let totalRenewalCollections = 0;
     let totalDeliveryCollections = 0;
@@ -491,8 +477,13 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     
     entries.forEach(entry => {
-      // Count total entries (ash pots)
-      totalActiveEntries += 1;
+      // Count active entries (ash pots) - only count if within date range or no date range specified
+      const entryDate = entry.entryDate?.toDate?.() || entry.createdAt?.toDate?.();
+      const isEntryInRange = !dateRange || (entryDate && entryDate >= dateRange.from && entryDate <= dateRange.to);
+      
+      if (entry.status === 'active' && isEntryInRange) {
+        totalActiveEntries += 1;
+      }
       
       // Process payments for collections - separate renewal and delivery payments
       if (entry.payments && Array.isArray(entry.payments)) {
@@ -512,23 +503,23 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
         });
       }
       
-      // Count deliveries (dispatched entries)
-      if (entry.status === 'dispatched') {
+      // Count deliveries (dispatched entries) - only count if within date range
+      if (entry.status === 'dispatched' && isEntryInRange) {
         totalDeliveries += 1;
       }
       
-      // Count expiring entries
+      // Count expiring entries - only count if within date range and still active
       const expiryDate = entry.expiryDate?.toDate?.();
-      if (expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now && entry.status === 'active') {
+      if (expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now && entry.status === 'active' && isEntryInRange) {
         expiringIn7Days += 1;
       }
     });
     
     const stats = {
-      totalEntries: totalActiveEntries,
+      totalEntries: totalActiveEntries, // This now represents active entries within date range
       totalRenewals: totalRenewals,
       totalDeliveries: totalDeliveries,
-      currentActive: entries.filter(e => e.status === 'active').length,
+      currentActive: entries.filter(e => e.status === 'active').length, // Total active regardless of date range
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
       renewalCollections: totalRenewalCollections,

@@ -17,7 +17,7 @@ import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { EnhancedDateRangePicker } from '@/components/ui/enhanced-date-range-picker';
 import { CollectionToggle } from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
@@ -387,9 +387,10 @@ export default function AdminDashboard() {
                       }
                     </p>
                   </div>
-                  <DateRangePicker 
+                  <EnhancedDateRangePicker 
                     onDateRangeChange={safeSetDateRange}
                     placeholder="Select date range (optional)"
+                    initialDateRange={dateRange}
                   />
                 </div>
 
@@ -399,22 +400,22 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }} 
                   >
-                    <SpiritualCard
-                      variant="sacred"
-                      title="Total Ash Pots"
-                      showOm={true}
-                      className="h-full"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-3xl font-bold text-orange-800">{stats.totalEntries || 0}</div>
-                          <p className="text-sm text-orange-600 mt-1">
-                            +12% from last month
-                          </p>
+                      <SpiritualCard
+                        variant="sacred"
+                        title="Active Ash Pots"
+                        showOm={true}
+                        className="h-full"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-3xl font-bold text-orange-800">{stats.totalEntries || 0}</div>
+                            <p className="text-sm text-orange-600 mt-1">
+                              Currently active entries
+                            </p>
+                          </div>
+                          <Package className="h-8 w-8 text-orange-600" />
                         </div>
-                        <Package className="h-8 w-8 text-orange-600" />
-                      </div>
-                    </SpiritualCard>
+                      </SpiritualCard>
                   </motion.div>
 
                   <motion.div
@@ -478,7 +479,12 @@ export default function AdminDashboard() {
                         <div>
                           <div className="text-3xl font-bold text-orange-800">₹{(stats.monthlyRevenue || 0).toLocaleString()}</div>
                           <p className="text-sm text-orange-600 mt-1">
-                            {showWithDispatch ? 'Total collections (renewals + dispatch)' : 'Collections from renewals only'}
+                            {dateRange 
+                              ? `Revenue from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+                              : showWithDispatch 
+                                ? 'Total collections (renewals + dispatch)' 
+                                : 'Collections from renewals only'
+                            }
                           </p>
                         </div>
                         <DollarSign className="h-8 w-8 text-orange-600" />
