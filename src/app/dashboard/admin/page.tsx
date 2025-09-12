@@ -17,7 +17,7 @@ import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import DateRangePicker from '@/components/ui/date-range-picker';
+// import DateRangePicker from '@/components/ui/date-range-picker';
 import CollectionToggle from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
@@ -387,10 +387,10 @@ export default function AdminDashboard() {
                       }
                     </p>
                   </div>
-                  <DateRangePicker 
+                  {/* <DateRangePicker 
                     onDateRangeChange={safeSetDateRange}
                     placeholder="Select date range (optional)"
-                  />
+                  /> */}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
