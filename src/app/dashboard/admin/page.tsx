@@ -16,6 +16,7 @@ import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import DateRangePicker from '@/components/ui/date-range-picker';
 import CollectionToggle from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
@@ -56,6 +57,24 @@ export default function AdminDashboard() {
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Safety wrapper for setDateRange
+  const safeSetDateRange = (range: { from: Date; to: Date } | undefined) => {
+    try {
+      setDateRange(range);
+    } catch (error) {
+      console.error('AdminDashboard: Error in setDateRange:', error);
+    }
+  };
+
+  // Safety wrapper for setShowWithDispatch
+  const safeSetShowWithDispatch = (show: boolean) => {
+    try {
+      setShowWithDispatch(show);
+    } catch (error) {
+      console.error('AdminDashboard: Error in setShowWithDispatch:', error);
+    }
+  };
 
   useEffect(() => {
     console.log('AdminDashboard: activeTab changed to:', activeTab);
@@ -354,7 +373,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <DateRangePicker 
-                    onDateRangeChange={(range) => setDateRange(range)}
+                    onDateRangeChange={safeSetDateRange}
                     placeholder="Select date range (optional)"
                   />
                 </div>
@@ -457,7 +476,7 @@ export default function AdminDashboard() {
                 <CollectionToggle
                   renewalCollections={stats.renewalCollections}
                   deliveryCollections={stats.deliveryCollections}
-                  onToggleChange={setShowWithDispatch}
+                  onToggleChange={safeSetShowWithDispatch}
                 />
 
                 {/* Spiritual Quote */}
@@ -676,7 +695,7 @@ export default function AdminDashboard() {
 
         </main>
 
-        {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation */}
         {user && user.role && (
           <div>
             {console.log('AdminDashboard: About to render MobileBottomNav', {
@@ -684,11 +703,18 @@ export default function AdminDashboard() {
               userRole: user.role,
               userName: user.name
             })}
-            <MobileBottomNav 
-              userRole={user.role} 
-              userName={user.name || 'User'} 
-              onLogout={handleLogout}
-            />
+            <ErrorBoundary fallback={
+              <div className="p-4 text-center text-orange-600">
+                <p>Navigation temporarily unavailable</p>
+                <p className="text-sm">Please use desktop navigation</p>
+              </div>
+            }>
+              <MobileBottomNav 
+                userRole={user.role} 
+                userName={user.name || 'User'} 
+                onLogout={handleLogout}
+              />
+            </ErrorBoundary>
           </div>
         )}
       </div>

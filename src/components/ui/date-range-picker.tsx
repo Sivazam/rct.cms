@@ -27,18 +27,31 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const [date, setDate] = useState<DateRange | undefined>()
 
+  // Safety check for onDateRangeChange
+  const safeOnDateRangeChange = (range: { from: Date; to: Date } | undefined) => {
+    try {
+      if (typeof onDateRangeChange === 'function') {
+        onDateRangeChange(range);
+      } else {
+        console.warn('DateRangePicker: onDateRangeChange is not a function');
+      }
+    } catch (error) {
+      console.error('DateRangePicker: Error in onDateRangeChange:', error);
+    }
+  }
+
   const handleSelect = (range: DateRange | undefined) => {
     setDate(range)
     if (range?.from && range?.to) {
-      onDateRangeChange({ from: range.from, to: range.to })
+      safeOnDateRangeChange({ from: range.from, to: range.to })
     } else {
-      onDateRangeChange(undefined)
+      safeOnDateRangeChange(undefined)
     }
   }
 
   const handleClear = () => {
     setDate(undefined)
-    onDateRangeChange(undefined)
+    safeOnDateRangeChange(undefined)
   }
 
   return (

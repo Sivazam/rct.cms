@@ -19,12 +19,29 @@ export function CollectionToggle({
 }: CollectionToggleProps) {
   const [showWithDispatch, setShowWithDispatch] = useState(true)
 
-  const handleToggle = (withDispatch: boolean) => {
-    setShowWithDispatch(withDispatch)
-    onToggleChange(withDispatch)
+  // Safety check for onToggleChange
+  const safeOnToggleChange = (withDispatch: boolean) => {
+    try {
+      if (typeof onToggleChange === 'function') {
+        onToggleChange(withDispatch);
+      } else {
+        console.warn('CollectionToggle: onToggleChange is not a function');
+      }
+    } catch (error) {
+      console.error('CollectionToggle: Error in onToggleChange:', error);
+    }
   }
 
-  const totalCollections = renewalCollections + (showWithDispatch ? deliveryCollections : 0)
+  const handleToggle = (withDispatch: boolean) => {
+    setShowWithDispatch(withDispatch)
+    safeOnToggleChange(withDispatch)
+  }
+
+  // Safety checks for numeric values
+  const safeRenewalCollections = typeof renewalCollections === 'number' ? renewalCollections : 0;
+  const safeDeliveryCollections = typeof deliveryCollections === 'number' ? deliveryCollections : 0;
+
+  const totalCollections = safeRenewalCollections + (showWithDispatch ? safeDeliveryCollections : 0)
 
   return (
     <Card className="border-orange-200 bg-orange-50">
@@ -73,7 +90,7 @@ export function CollectionToggle({
                   <RefreshCw className="h-3 w-3 text-green-600" />
                   Renewals:
                 </span>
-                <span className="font-semibold">₹{renewalCollections.toLocaleString()}</span>
+                <span className="font-semibold">₹{safeRenewalCollections.toLocaleString()}</span>
               </div>
               {showWithDispatch && (
                 <div className="flex items-center justify-between bg-white p-2 rounded">
@@ -81,7 +98,7 @@ export function CollectionToggle({
                     <Package className="h-3 w-3 text-blue-600" />
                     Dispatch:
                   </span>
-                  <span className="font-semibold">₹{deliveryCollections.toLocaleString()}</span>
+                  <span className="font-semibold">₹{safeDeliveryCollections.toLocaleString()}</span>
                 </div>
               )}
             </div>

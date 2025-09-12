@@ -41,6 +41,7 @@ interface NavItem {
 }
 
 export default function MobileBottomNav({ userRole = 'admin', userName, onLogout }: MobileBottomNavProps) {
+  // Get router and pathname hooks at the top level (rules of hooks)
   const pathname = usePathname();
   const router = useRouter();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -149,9 +150,13 @@ export default function MobileBottomNav({ userRole = 'admin', userName, onLogout
   const safeNavItems = safeUserRole === 'admin' ? adminNavItems : operatorNavItems;
 
   const getActiveNav = () => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('tab') || 'overview';
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('tab') || 'overview';
+      }
+    } catch (error) {
+      console.warn('MobileBottomNav: Error accessing window or URL:', error);
     }
     return 'overview';
   };
@@ -159,21 +164,36 @@ export default function MobileBottomNav({ userRole = 'admin', userName, onLogout
   const activeNav = getActiveNav();
 
   const handleNavClick = (navId: string, href: string) => {
-    console.log('MobileBottomNav: Navigation clicked', { navId, href });
-    
-    // Update URL parameters if needed
-    if (href.includes('?tab=')) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', navId);
-      window.history.pushState({}, '', url.toString());
+    try {
+      console.log('MobileBottomNav: Navigation clicked', { navId, href });
       
-      // Dispatch custom event to notify dashboard of URL change
-      window.dispatchEvent(new Event('urlchange'));
+      // Update URL parameters if needed
+      if (href.includes('?tab=') && typeof window !== 'undefined') {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', navId);
+          window.history.pushState({}, '', url.toString());
+          
+          // Dispatch custom event to notify dashboard of URL change
+          window.dispatchEvent(new Event('urlchange'));
+        } catch (urlError) {
+          console.warn('MobileBottomNav: Error updating URL:', urlError);
+        }
+      }
+      
+      // Navigate to the href
+      if (router && typeof router.push === 'function') {
+        router.push(href);
+      } else {
+        console.warn('MobileBottomNav: Router push not available, using fallback');
+        if (typeof window !== 'undefined') {
+          window.location.href = href;
+        }
+      }
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('MobileBottomNav: Error in handleNavClick:', error);
     }
-    
-    // Navigate to the href
-    router.push(href);
-    setShowMoreMenu(false);
   };
 
   console.log('MobileBottomNav: About to render', {
