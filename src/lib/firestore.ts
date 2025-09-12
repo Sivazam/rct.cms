@@ -312,6 +312,7 @@ export const getEntries = async (filters?: {
   status?: string;
   operatorId?: string;
   expiringSoon?: boolean;
+  needsRenewal?: boolean; // New filter for entries that need renewal (expired)
 }) => {
   try {
     console.log('getEntries called with:', filters);
@@ -363,6 +364,16 @@ export const getEntries = async (filters?: {
         return expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now;
       });
       console.log('Expiring soon entries after filter:', entries.length);
+    }
+    
+    // Filter for entries that need renewal (expired but still active)
+    if (filters?.needsRenewal) {
+      const now = new Date();
+      entries = entries.filter(entry => {
+        const expiryDate = entry.expiryDate?.toDate();
+        return expiryDate && expiryDate <= now && entry.status === 'active';
+      });
+      console.log('Entries needing renewal after filter:', entries.length);
     }
     
     return entries;

@@ -120,14 +120,14 @@ export default function OperatorDashboard() {
         setExpiringEntries([]);
       } else if (selectedLocation) {
         // Fetch comprehensive statistics for selected location
-        const [activeEntries, renewalsEntries, deliveredEntries, allEntries, expiringSoonEntries] = await Promise.all([
+        const [activeEntries, pendingRenewalsEntries, deliveredEntries, allEntries, expiringSoonEntries] = await Promise.all([
           getEntries({
             locationId: selectedLocation,
             status: 'active'
           }),
           getEntries({
             locationId: selectedLocation,
-            expiringSoon: true
+            needsRenewal: true
           }),
           getEntries({
             locationId: selectedLocation,
@@ -182,7 +182,7 @@ export default function OperatorDashboard() {
         
         setStats({
           totalEntries: activeEntries.length,
-          totalRenewals: renewalsEntries.length,
+          totalRenewals: pendingRenewalsEntries.length,
           totalDeliveries: deliveredEntries.length,
           expiringIn7Days: expiringSoonEntries.length,
           monthlyRevenue: monthlyRevenue,
@@ -196,7 +196,7 @@ export default function OperatorDashboard() {
         
         console.log('Operator stats updated:', {
           totalEntries: activeEntries.length,
-          totalRenewals: renewalsEntries.length,
+          totalRenewals: pendingRenewalsEntries.length,
           totalDeliveries: deliveredEntries.length,
           monthlyRevenue: monthlyRevenue,
           todayEntries: todayEntries.length,
@@ -422,7 +422,7 @@ export default function OperatorDashboard() {
                       >
                         <SpiritualCard
                           variant="sacred"
-                          title="Renewals"
+                          title="Pending Renewals"
                           showOm={true}
                           className="h-full"
                         >

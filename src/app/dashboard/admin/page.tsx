@@ -107,12 +107,12 @@ export default function AdminDashboard() {
       });
       console.log('Active entries found:', entries.length);
       
-      // Fetch renewals count
-      const renewals = await getEntries({
+      // Fetch pending renewals count (entries that need renewal)
+      const pendingRenewals = await getEntries({
         locationId: locationId,
-        expiringSoon: true
+        needsRenewal: true
       });
-      console.log('Renewals (expiring soon) found:', renewals.length);
+      console.log('Pending renewals (needing renewal) found:', pendingRenewals.length);
       
       // Fetch deliveries count
       const deliveries = await getEntries({
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
       
       setStats({
         totalEntries: entries.length,
-        totalRenewals: renewals.length,
+        totalRenewals: pendingRenewals.length,
         totalDeliveries: deliveries.length,
         expiringIn7Days: expiring.length,
         monthlyRevenue: statsData.monthlyRevenue || 0
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
                   >
                     <SpiritualCard
                       variant="ritual"
-                      title="Renewals"
+                      title="Pending Renewals"
                       showOm={true}
                       className="h-full"
                     >
