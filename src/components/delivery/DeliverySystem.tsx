@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { 
   Search, 
   Shield, 
+  Calculator,
   CheckCircle, 
   Calendar,
   Package,
@@ -19,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 import DeliverySearch from './DeliverySearch';
 import DeliveryOTP from './DeliveryOTP';
+import DeliveryPayment from './DeliveryPayment';
 import DeliveryConfirmation from './DeliveryConfirmation';
 import DeliveryHistory from './DeliveryHistory';
 
@@ -43,7 +45,7 @@ interface Entry {
   lastRenewalDate?: string;
 }
 
-type DeliveryStep = 'search' | 'otp' | 'confirmation' | 'history';
+type DeliveryStep = 'search' | 'otp' | 'payment' | 'confirmation' | 'history';
 
 export default function DeliverySystem() {
   const { user } = useAuth();
@@ -54,12 +56,18 @@ export default function DeliverySystem() {
     deliveryDate: string;
     operatorName: string;
   } | null>(null);
+  const [paymentData, setPaymentData] = useState<{
+    amountPaid: number;
+    dueAmount: number;
+    reason?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const steps = [
     { id: 'search', name: 'Search Entry', icon: Search },
     { id: 'otp', name: 'OTP Verification', icon: Shield },
-    { id: 'confirmation', name: 'Confirmation', icon: CheckCircle },
+    { id: 'payment', name: 'Payment Processing', icon: Calculator },
+    { id: 'confirmation', name: 'Dispatch Confirmation', icon: CheckCircle },
   ];
 
   const currentStepIndex = steps.findIndex(step => step.id === currentStep);
@@ -80,7 +88,48 @@ export default function DeliverySystem() {
         operatorName
       });
       
-      // Process delivery using the actual API
+      // Move to payment step instead of directly to confirmation
+      setCurrentStep('payment');
+    }
+  };
+
+  const handleBack = () => {
+    switch (currentStep) {
+      case 'otp':
+        setCurrentStep('search');
+        break;
+      case 'payment':
+        setCurrentStep('otp');
+        break;
+      case 'confirmation':
+        setCurrentStep('payment');
+        break;
+      case 'history':
+        setCurrentStep('search');
+        break;
+    }
+  };
+
+  const handleNewDelivery = () => {
+    setSelectedEntry(null);
+    setDeliveryData(null);
+    setPaymentData(null);
+    setCurrentStep('search');
+  };
+
+  const handleViewHistory = () => {
+    setCurrentStep('history');
+  };
+
+  const handlePaymentComplete = async (payment: {
+    amountPaid: number;
+    dueAmount: number;
+    reason?: string;
+  }) => {
+    if (selectedEntry && deliveryData && user) {
+      setPaymentData(payment);
+      
+      // Process delivery with payment using the actual API
       setLoading(true);
       try {
         const response = await fetch('/api/deliveries', {
@@ -91,8 +140,11 @@ export default function DeliverySystem() {
           body: JSON.stringify({
             entryId: selectedEntry.id,
             operatorId: user.uid,
-            operatorName: operatorName,
-            otp: otp
+            operatorName: deliveryData.operatorName,
+            otp: deliveryData.otp,
+            amountPaid: payment.amountPaid,
+            dueAmount: payment.dueAmount,
+            reason: payment.reason
           }),
         });
 
@@ -115,36 +167,14 @@ export default function DeliverySystem() {
     }
   };
 
-  const handleBack = () => {
-    switch (currentStep) {
-      case 'otp':
-        setCurrentStep('search');
-        break;
-      case 'confirmation':
-        setCurrentStep('otp');
-        break;
-      case 'history':
-        setCurrentStep('search');
-        break;
-    }
-  };
-
-  const handleNewDelivery = () => {
-    setSelectedEntry(null);
-    setDeliveryData(null);
-    setCurrentStep('search');
-  };
-
-  const handleViewHistory = () => {
-    setCurrentStep('history');
-  };
-
   const getStepProgress = () => {
     switch (currentStep) {
       case 'search':
         return 0;
       case 'otp':
-        return 50;
+        return 33;
+      case 'payment':
+        return 66;
       case 'confirmation':
         return 100;
       default:
@@ -172,11 +202,26 @@ export default function DeliverySystem() {
           />
         ) : null;
       
+      case 'payment':
+        return selectedEntry ? (
+          <DeliveryPayment
+            entry={selectedEntry}
+            onPaymentComplete={handlePaymentComplete}
+            onBack={handleBack}
+            loading={loading}
+          />
+        ) : null;
+      
       case 'confirmation':
-        return selectedEntry && deliveryData ? (
+        return selectedEntry && deliveryData && paymentData ? (
           <DeliveryConfirmation
             entry={selectedEntry}
-            deliveryData={deliveryData}
+            deliveryData={{
+              ...deliveryData,
+              amountPaid: paymentData.amountPaid,
+              dueAmount: paymentData.dueAmount,
+              reason: paymentData.reason
+            }}
             onNewDelivery={handleNewDelivery}
             onViewHistory={handleViewHistory}
             loading={loading}
@@ -213,7 +258,7 @@ export default function DeliverySystem() {
                 <span>Dispatch Management System</span>
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Secure Dispatch process with OTP verification
+                Secure Dispatch process with OTP verification and payment processing
               </CardDescription>
             </CardHeader>
           </Card>
@@ -356,7 +401,7 @@ export default function DeliverySystem() {
               className="w-full"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to {currentStep === 'otp' ? 'Search' : 'OTP Verification'}
+              Back to {currentStep === 'otp' ? 'Search' : currentStep === 'payment' ? 'OTP Verification' : 'Payment'}
             </Button>
           </motion.div>
         )}

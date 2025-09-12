@@ -6,7 +6,7 @@ import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
   try {
-    const { entryId, operatorId, operatorName, otp } = await request.json();
+    const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason } = await request.json();
 
     if (!entryId || !operatorId || !operatorName || !otp) {
       return NextResponse.json(
@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
 
     if (entryData.status !== 'active') {
       return NextResponse.json(
-        { error: 'Entry is not active and cannot be delivered' },
+        { error: 'Entry is not active and cannot be dispatched' },
         { status: 400 }
       );
     }
 
-    // Create delivery record
+    // Create delivery record with payment information
     const deliveryDate = new Date().toISOString();
     const deliveryRecord = {
       entryId,
@@ -74,18 +74,37 @@ export async function POST(request: NextRequest) {
       entryDate: entryData.entryDate,
       expiryDate: entryData.expiryDate,
       renewalCount: entryData.renewalCount || 0,
-      status: 'delivered',
+      status: 'dispatched', // Changed from 'delivered' to 'dispatched'
+      // Payment information
+      dueAmount: dueAmount || 0,
+      amountPaid: amountPaid || 0,
+      reason: reason || null,
+      paymentType: amountPaid > 0 ? (amountPaid < dueAmount ? 'partial' : 'full') : 'free',
       createdAt: serverTimestamp()
     };
 
     const deliveryDocRef = await addDoc(collection(db, 'deliveries'), deliveryRecord);
 
-    // Update entry status to delivered
+    // Add payment record to entry's payments array
+    const existingPayments = entryData.payments || [];
+    const newPayment = {
+      amount: amountPaid || 0,
+      dueAmount: dueAmount || 0,
+      date: new Date(),
+      type: 'delivery',
+      method: 'cash', // Default to cash, can be extended
+      reason: reason || null,
+      operatorId: operatorId,
+      operatorName: operatorName
+    };
+
+    // Update entry status to dispatched and add payment
     await updateDoc(doc(db, 'entries', entryDoc.id), {
-      status: 'delivered',
+      status: 'dispatched', // Changed from 'delivered' to 'dispatched'
       deliveryDate: deliveryDate,
       deliveredBy: operatorId,
       deliveredAt: serverTimestamp(),
+      payments: [...existingPayments, newPayment],
       lastModifiedAt: serverTimestamp()
     });
 
@@ -142,28 +161,33 @@ export async function POST(request: NextRequest) {
     await addDoc(collection(db, 'deliveryLogs'), {
       entryId,
       operatorId,
-      action: 'delivery_completed',
+      action: 'dispatch_completed', // Changed from 'delivery_completed'
       deliveryId: deliveryDocRef.id,
       customerMobile,
+      amountPaid: amountPaid || 0,
+      dueAmount: dueAmount || 0,
+      reason: reason || null,
       smsSent: smsResult.success,
       timestamp: serverTimestamp()
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Delivery processed successfully',
+      message: 'Dispatch processed successfully',
       deliveryId: deliveryDocRef.id,
       deliveryDate,
       entryId: entryId.slice(-6), // Return only last 6 digits for security
       customerName,
       customerMobile: customerMobile.slice(0, -4) + 'XXXX', // Mask mobile number
+      amountPaid: amountPaid || 0,
+      dueAmount: dueAmount || 0,
       smsSent: smsResult.success
     });
 
   } catch (error) {
-    console.error('Error processing delivery:', error);
+    console.error('Error processing dispatch:', error);
     return NextResponse.json(
-      { error: 'Failed to process delivery' },
+      { error: 'Failed to process dispatch' },
       { status: 500 }
     );
   }

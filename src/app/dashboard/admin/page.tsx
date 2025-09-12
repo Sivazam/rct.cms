@@ -17,6 +17,7 @@ import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import DateRangePicker from '@/components/ui/date-range-picker';
+import CollectionToggle from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -40,13 +41,16 @@ export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
+  const [showWithDispatch, setShowWithDispatch] = useState(true);
   const [locations, setLocations] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
     totalEntries: 0,
     totalRenewals: 0,
     totalDeliveries: 0,
     expiringIn7Days: 0,
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
+    renewalCollections: 0,
+    deliveryCollections: 0
   });
   const [expiringEntries, setExpiringEntries] = useState<any[]>([]);
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
@@ -59,7 +63,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [selectedLocation, dateRange]);
+  }, [selectedLocation, dateRange, showWithDispatch]);
 
   useEffect(() => {
     // Handle tab changes from URL parameters
@@ -143,7 +147,11 @@ export default function AdminDashboard() {
         totalRenewals: statsData.totalRenewals || pendingRenewals.length,
         totalDeliveries: statsData.totalDeliveries || deliveries.length,
         expiringIn7Days: statsData.expiringIn7Days || expiring.length,
-        monthlyRevenue: statsData.monthlyRevenue || 0
+        monthlyRevenue: showWithDispatch ? 
+          (statsData.renewalCollections + statsData.deliveryCollections) : 
+          statsData.renewalCollections,
+        renewalCollections: statsData.renewalCollections || 0,
+        deliveryCollections: statsData.deliveryCollections || 0
       });
       
       setExpiringEntries(expiring);
@@ -436,7 +444,7 @@ export default function AdminDashboard() {
                         <div>
                           <div className="text-3xl font-bold text-orange-800">₹{stats.monthlyRevenue.toLocaleString()}</div>
                           <p className="text-sm text-orange-600 mt-1">
-                            Total collections from renewals
+                            {showWithDispatch ? 'Total collections (renewals + dispatch)' : 'Collections from renewals only'}
                           </p>
                         </div>
                         <DollarSign className="h-8 w-8 text-orange-600" />
@@ -444,6 +452,13 @@ export default function AdminDashboard() {
                     </SpiritualCard>
                   </motion.div>
                 </div>
+
+                {/* Collection Toggle */}
+                <CollectionToggle
+                  renewalCollections={stats.renewalCollections}
+                  deliveryCollections={stats.deliveryCollections}
+                  onToggleChange={setShowWithDispatch}
+                />
 
                 {/* Spiritual Quote */}
                 {/* <SpiritualCard

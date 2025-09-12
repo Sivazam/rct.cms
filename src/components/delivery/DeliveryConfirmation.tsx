@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
-import { CheckCircle, Calendar, MapPin, Phone, Package, User, Download, Home } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Phone, Package, User, Download, Home, IndianRupee, AlertTriangle } from 'lucide-react';
 import { formatDateTime } from '@/lib/date-utils';
 
 interface Customer {
@@ -36,6 +36,9 @@ interface DeliveryConfirmationProps {
     otp: string;
     deliveryDate: string;
     operatorName: string;
+    amountPaid: number;
+    dueAmount: number;
+    reason?: string;
   };
   onNewDelivery: () => void;
   onViewHistory: () => void;
@@ -175,6 +178,55 @@ export default function DeliveryConfirmation({
                 </div>
               </div>
             </div>
+
+            {/* Payment Information */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-800 border-b pb-2">Payment Information</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <IndianRupee className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">Due Amount:</span>
+                  </div>
+                  <span className="text-sm font-semibold">₹{deliveryData.dueAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <IndianRupee className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">Amount Paid:</span>
+                  </div>
+                  <span className={`text-sm font-semibold ${deliveryData.amountPaid < deliveryData.dueAmount ? 'text-yellow-600' : 'text-green-600'}`}>
+                    ₹{deliveryData.amountPaid.toLocaleString()}
+                  </span>
+                </div>
+                {deliveryData.amountPaid < deliveryData.dueAmount && (
+                  <div className="flex items-start space-x-2 bg-yellow-50 p-2 rounded">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-yellow-800">
+                      <strong>Partial Payment:</strong> Customer paid ₹{deliveryData.amountPaid.toLocaleString()} out of ₹{deliveryData.dueAmount.toLocaleString()}
+                      {deliveryData.reason && (
+                        <div className="mt-1">
+                          <strong>Reason:</strong> {deliveryData.reason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {deliveryData.amountPaid === 0 && (
+                  <div className="flex items-start space-x-2 bg-blue-50 p-2 rounded">
+                    <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-blue-800">
+                      <strong>Free Delivery:</strong> No payment collected for this delivery
+                      {deliveryData.reason && (
+                        <div className="mt-1">
+                          <strong>Reason:</strong> {deliveryData.reason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Entry Details */}
@@ -199,7 +251,7 @@ export default function DeliveryConfirmation({
           <div className="flex items-center justify-center">
             <Badge className="bg-green-100 text-green-800 text-lg px-4 py-2">
               <CheckCircle className="h-4 w-4 mr-2" />
-              Successfully Delivered
+              Successfully Dispatched
             </Badge>
           </div>
         </CardContent>
@@ -209,7 +261,7 @@ export default function DeliveryConfirmation({
       <Alert>
         <AlertDescription>
           <strong>Notifications Sent:</strong> SMS confirmation has been sent to the customer ({entry.customer.mobile}) 
-          and a delivery notification has been logged in the system.
+          and a dispatch notification has been logged in the system.
         </AlertDescription>
       </Alert>
 
@@ -239,7 +291,7 @@ export default function DeliveryConfirmation({
           className="flex-1"
         >
           <Package className="h-4 w-4 mr-2" />
-          New Delivery
+          New Dispatch
         </Button>
       </div>
 

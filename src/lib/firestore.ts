@@ -480,7 +480,8 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     }
     
     // Calculate statistics from actual entries
-    let totalCollections = 0;
+    let totalRenewalCollections = 0;
+    let totalDeliveryCollections = 0;
     let totalRenewals = 0;
     let totalDeliveries = 0;
     let totalActiveEntries = 0;
@@ -493,7 +494,7 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       // Count total entries (ash pots)
       totalActiveEntries += 1;
       
-      // Process payments for collections
+      // Process payments for collections - separate renewal and delivery payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
           const paymentDate = payment.date?.toDate?.();
@@ -501,18 +502,18 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
           
           // Only count payments within date range if specified
           if (!dateRange || (paymentDate && paymentDate >= dateRange.from && paymentDate <= dateRange.to)) {
-            totalCollections += amount;
-          }
-          
-          // Count renewals
-          if (payment.type === 'renewal') {
-            totalRenewals += 1;
+            if (payment.type === 'renewal') {
+              totalRenewalCollections += amount;
+              totalRenewals += 1;
+            } else if (payment.type === 'delivery') {
+              totalDeliveryCollections += amount;
+            }
           }
         });
       }
       
-      // Count deliveries
-      if (entry.status === 'delivered') {
+      // Count deliveries (dispatched entries)
+      if (entry.status === 'dispatched') {
         totalDeliveries += 1;
       }
       
@@ -529,7 +530,9 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       totalDeliveries: totalDeliveries,
       currentActive: entries.filter(e => e.status === 'active').length,
       expiringIn7Days: expiringIn7Days,
-      monthlyRevenue: totalCollections, // This will now show total collections
+      monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
+      renewalCollections: totalRenewalCollections,
+      deliveryCollections: totalDeliveryCollections,
       lastUpdated: serverTimestamp()
     };
     
@@ -615,7 +618,7 @@ export const getOperatorStats = async (operatorId: string) => {
       }
       
       // Count deliveries
-      if (entry.status === 'delivered') {
+      if (entry.status === 'dispatched') {
         totalDeliveries += 1;
       }
     });
