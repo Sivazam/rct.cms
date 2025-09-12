@@ -15,10 +15,10 @@ import OperatorPerformance from '@/components/admin/OperatorPerformance';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
+import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { EnhancedDateRangePicker } from '@/components/ui/enhanced-date-range-picker';
-import { CollectionToggle } from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -58,6 +58,7 @@ export default function AdminDashboard() {
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [expandedCard, setExpandedCard] = useState<string | null>(null); // Track which card is expanded
 
   // Safety wrapper for logout
   const safeLogout = async () => {
@@ -292,10 +293,10 @@ export default function AdminDashboard() {
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-8">
-          {/* Desktop Tabs Only - No mobile tabs */}
+          {/* Desktop Tabs Only - Reduced to 4 tabs */}
           <div className="hidden md:block mb-6">
             <div className="w-full overflow-x-auto">
-              <div className="grid w-full min-w-max grid-cols-8 gap-1 p-1 bg-orange-100 rounded-lg">
+              <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-orange-100 rounded-lg">
                 <button
                   onClick={() => handleTabChange('overview')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -307,16 +308,6 @@ export default function AdminDashboard() {
                   Overview
                 </button>
                 <button
-                  onClick={() => handleTabChange('locations')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'locations' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Locations
-                </button>
-                <button
                   onClick={() => handleTabChange('operators')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'operators' 
@@ -326,7 +317,37 @@ export default function AdminDashboard() {
                 >
                   Operators
                 </button>
-  
+                <button
+                  onClick={() => handleTabChange('analytics')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'analytics' 
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
+                  }`}
+                >
+                  Analytics
+                </button>
+                <button
+                  onClick={() => handleTabChange('settings')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'settings' 
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
+                  }`}
+                >
+                  Settings
+                </button>
+                {/* Hidden tabs - kept for functionality but not shown in menu */}
+                {/* <button
+                  onClick={() => handleTabChange('locations')}
+                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'locations' 
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
+                  }`}
+                >
+                  Locations
+                </button>
                 <button
                   onClick={() => handleTabChange('entries')}
                   className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -356,17 +377,7 @@ export default function AdminDashboard() {
                   }`}
                 >
                   Deliveries
-                </button>
-                <button
-                  onClick={() => handleTabChange('analytics')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'analytics' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Analytics
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -404,7 +415,8 @@ export default function AdminDashboard() {
                         variant="sacred"
                         title="Total Active Ash Pots"
                         showOm={true}
-                        className="h-full"
+                        className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setExpandedCard(expandedCard === 'active' ? null : 'active')}
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -427,7 +439,8 @@ export default function AdminDashboard() {
                       variant="ritual"
                       title="Pending Ash Pots"
                       showOm={true}
-                      className="h-full"
+                      className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setExpandedCard(expandedCard === 'pending' ? null : 'pending')}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -450,7 +463,8 @@ export default function AdminDashboard() {
                       variant="memorial"
                       title="Dispatched Ash Pots"
                       showOm={true}
-                      className="h-full"
+                      className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setExpandedCard(expandedCard === 'dispatched' ? null : 'dispatched')}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -487,18 +501,97 @@ export default function AdminDashboard() {
                             }
                           </p>
                         </div>
-                        <DollarSign className="h-8 w-8 text-orange-600" />
+                        <div className="flex flex-col items-end gap-2">
+                          <DollarSign className="h-8 w-8 text-orange-600" />
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => setShowWithDispatch(true)}
+                              className={`text-xs px-2 py-1 rounded ${
+                                showWithDispatch 
+                                  ? 'bg-orange-500 text-white' 
+                                  : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                              }`}
+                            >
+                              With Dispatch
+                            </button>
+                            <button
+                              onClick={() => setShowWithDispatch(false)}
+                              className={`text-xs px-2 py-1 rounded ${
+                                !showWithDispatch 
+                                  ? 'bg-orange-500 text-white' 
+                                  : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                              }`}
+                            >
+                              Without
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                      {showWithDispatch && (
+                        <div className="mt-3 pt-3 border-t border-orange-200">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1">
+                                <RefreshCw className="h-3 w-3 text-green-600" />
+                                Renewals:
+                              </span>
+                              <span className="font-semibold">₹{(stats.renewalCollections || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1">
+                                <Package className="h-3 w-3 text-blue-600" />
+                                Dispatch:
+                              </span>
+                              <span className="font-semibold">₹{(stats.deliveryCollections || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </SpiritualCard>
                   </motion.div>
                 </div>
 
-                {/* Collection Toggle */}
-                <CollectionToggle
-                  renewalCollections={stats.renewalCollections || 0}
-                  deliveryCollections={stats.deliveryCollections || 0}
-                  onToggleChange={safeSetShowWithDispatch}
-                />
+                {/* Integrated collection toggle is now part of the Collection card above */}
+
+                {/* Interactive Lists Section - Shows when cards are clicked */}
+                {expandedCard && (
+                  <Card className="border-orange-200 bg-orange-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center space-x-2">
+                          {expandedCard === 'active' && <Package className="h-5 w-5" />}
+                          {expandedCard === 'pending' && <RefreshCw className="h-5 w-5" />}
+                          {expandedCard === 'dispatched' && <Calendar className="h-5 w-5" />}
+                          <span>
+                            {expandedCard === 'active' && 'Active Ash Pots'}
+                            {expandedCard === 'pending' && 'Pending Ash Pots'}
+                            {expandedCard === 'dispatched' && 'Dispatched Ash Pots'}
+                          </span>
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedCard(null)}
+                          className="text-orange-600 hover:text-orange-800"
+                        >
+                          Close
+                        </Button>
+                      </CardTitle>
+                      <CardDescription>
+                        {expandedCard === 'active' && 'Currently active ash pot entries'}
+                        {expandedCard === 'pending' && 'Entries pending renewal or processing'}
+                        {expandedCard === 'dispatched' && 'Dispatched/delivered ash pot entries'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <InteractiveEntriesList 
+                        type={expandedCard}
+                        locationId={selectedLocation === 'all' ? undefined : selectedLocation}
+                        dateRange={dateRange}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Spiritual Quote */}
                 {/* <SpiritualCard
@@ -693,25 +786,62 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Locations Tab */}
-              {activeTab === 'locations' && <LocationManagement onLocationsUpdated={fetchDashboardData} />}
+              {/* Locations Tab - Hidden but functional */}
+              {/* {activeTab === 'locations' && <LocationManagement onLocationsUpdated={fetchDashboardData} />} */}
 
-              {/* Operators Tab */}
-              {activeTab === 'operators' && <OperatorManagement />}
+              {/* Operators Tab - Hidden but functional */}
+              {/* {activeTab === 'operators' && <OperatorManagement />} */}
 
-  
+              {/* Entries Tab - Hidden but functional */}
+              {/* {activeTab === 'entries' && <CustomerEntrySystem />} */}
 
-              {/* Entries Tab */}
-              {activeTab === 'entries' && <CustomerEntrySystem />}
+              {/* Renewals Tab - Hidden but functional */}
+              {/* {activeTab === 'renewals' && <RenewalSystem />} */}
 
-              {/* Renewals Tab */}
-              {activeTab === 'renewals' && <RenewalSystem />}
-
-              {/* Deliveries Tab */}
-              {activeTab === 'deliveries' && <DeliverySystem />}
+              {/* Deliveries Tab - Hidden but functional */}
+              {/* {activeTab === 'deliveries' && <DeliverySystem />} */}
 
               {/* Analytics Tab */}
               {activeTab === 'analytics' && <OperatorPerformance />}
+
+              {/* Settings Tab - New combined settings */}
+              {activeTab === 'settings' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Locations Management */}
+                    <Card className="border-orange-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center space-x-2">
+                          <MapPin className="h-5 w-5" />
+                          <span>Location Management</span>
+                        </CardTitle>
+                        <CardDescription>
+                          Manage cremation venues and locations
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <LocationManagement onLocationsUpdated={fetchDashboardData} />
+                      </CardContent>
+                    </Card>
+
+                    {/* Operators Management */}
+                    <Card className="border-orange-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center space-x-2">
+                          <Users className="h-5 w-5" />
+                          <span>Operator Management</span>
+                        </CardTitle>
+                        <CardDescription>
+                          Manage operator accounts and permissions
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <OperatorManagement />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
           </div>
 
         </main>
