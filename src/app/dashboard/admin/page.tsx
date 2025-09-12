@@ -17,8 +17,8 @@ import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import DateRangePicker from '@/components/ui/date-range-picker';
-import CollectionToggle from '@/components/ui/collection-toggle';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { CollectionToggle } from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
       
       // Fetch statistics based on selected location and date range
       const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
-      const statsData = await getSystemStats(locationId, dateRange);
+      const statsData = await getSystemStats(locationId, dateRange) || {};
       
       // Fetch real entries count with date range filtering
       const entries = await getEntries({
@@ -176,16 +176,16 @@ export default function AdminDashboard() {
       console.log('Expiring entries found:', expiring.length);
       
       setStats({
-        totalEntries: statsData.totalEntries || entries.length || 0,
-        totalRenewals: statsData.totalRenewals || pendingRenewals.length || 0,
-        totalDeliveries: statsData.totalDeliveries || deliveries.length || 0,
-        expiringIn7Days: statsData.expiringIn7Days || expiring.length || 0,
+        totalEntries: statsData?.totalEntries || entries.length || 0,
+        totalRenewals: statsData?.totalRenewals || pendingRenewals.length || 0,
+        totalDeliveries: statsData?.totalDeliveries || deliveries.length || 0,
+        expiringIn7Days: statsData?.expiringIn7Days || expiring.length || 0,
         monthlyRevenue: showWithDispatch ? 
-          ((statsData.renewalCollections || 0) + (statsData.deliveryCollections || 0)) : 
-          (statsData.renewalCollections || 0),
-        renewalCollections: statsData.renewalCollections || 0,
-        deliveryCollections: statsData.deliveryCollections || 0,
-        currentActive: statsData.currentActive || entries.filter(e => e.status === 'active').length || 0
+          ((statsData?.renewalCollections || 0) + (statsData?.deliveryCollections || 0)) : 
+          (statsData?.renewalCollections || 0),
+        renewalCollections: statsData?.renewalCollections || 0,
+        deliveryCollections: statsData?.deliveryCollections || 0,
+        currentActive: statsData?.currentActive || entries.filter(e => e.status === 'active').length || 0
       });
       
       setExpiringEntries(expiring);
@@ -487,11 +487,10 @@ export default function AdminDashboard() {
                   </motion.div>
                 </div>
 
-                {/* //HERE IS THE ISSUE */}
                 {/* Collection Toggle */}
                 <CollectionToggle
-                  renewalCollections={stats.renewalCollections}
-                  deliveryCollections={stats.deliveryCollections}
+                  renewalCollections={stats.renewalCollections || 0}
+                  deliveryCollections={stats.deliveryCollections || 0}
                   onToggleChange={safeSetShowWithDispatch}
                 />
 
