@@ -18,7 +18,7 @@ import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 // import DateRangePicker from '@/components/ui/date-range-picker';
-import CollectionToggle from '@/components/ui/collection-toggle';
+// import CollectionToggle from '@/components/ui/collection-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -488,11 +488,11 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Collection Toggle */}
-                <CollectionToggle
+                {/* <CollectionToggle
                   renewalCollections={stats.renewalCollections}
                   deliveryCollections={stats.deliveryCollections}
                   onToggleChange={safeSetShowWithDispatch}
-                />
+                /> */}
 
                 {/* Spiritual Quote */}
                 {/* <SpiritualCard
