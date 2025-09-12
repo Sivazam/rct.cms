@@ -402,7 +402,7 @@ export default function AdminDashboard() {
                   >
                       <SpiritualCard
                         variant="sacred"
-                        title="Active Ash Pots"
+                        title="Total Active Ash Pots"
                         showOm={true}
                         className="h-full"
                       >
