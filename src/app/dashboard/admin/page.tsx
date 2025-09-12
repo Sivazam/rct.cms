@@ -16,6 +16,7 @@ import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import DateRangePicker from '@/components/ui/date-range-picker';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -38,6 +39,7 @@ import {
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState('all');
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [locations, setLocations] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
     totalEntries: 0,
@@ -57,7 +59,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [selectedLocation]);
+  }, [selectedLocation, dateRange]);
 
   useEffect(() => {
     // Handle tab changes from URL parameters
@@ -88,7 +90,7 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching dashboard data for location:', selectedLocation);
+      console.log('Fetching dashboard data for location:', selectedLocation, 'dateRange:', dateRange);
       
       // Fetch locations
       const locationsData = await getLocations();
@@ -96,11 +98,11 @@ export default function AdminDashboard() {
       setLocations(activeLocations);
       console.log('Active locations:', activeLocations.length);
       
-      // Fetch statistics based on selected location
+      // Fetch statistics based on selected location and date range
       const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
-      const statsData = await getSystemStats(locationId);
+      const statsData = await getSystemStats(locationId, dateRange);
       
-      // Fetch real entries count
+      // Fetch real entries count with date range filtering
       const entries = await getEntries({
         locationId: locationId,
         status: 'active'
@@ -121,7 +123,7 @@ export default function AdminDashboard() {
       });
       console.log('Deliveries found:', deliveries.length);
       
-      // Fetch recent entries for display
+      // Fetch recent entries for display (always show recent, not filtered by date range)
       const allEntries = await getEntries({
         locationId: locationId
       });
@@ -129,7 +131,7 @@ export default function AdminDashboard() {
       const recent = allEntries.slice(0, 5); // Show last 5 entries
       console.log('Recent entries (first 5):', recent.length);
       
-      // Fetch expiring entries with details
+      // Fetch expiring entries with details (always show current expiring, not filtered by date range)
       const expiring = await getEntries({
         locationId: locationId,
         expiringSoon: true
@@ -137,10 +139,10 @@ export default function AdminDashboard() {
       console.log('Expiring entries found:', expiring.length);
       
       setStats({
-        totalEntries: entries.length,
-        totalRenewals: pendingRenewals.length,
-        totalDeliveries: deliveries.length,
-        expiringIn7Days: expiring.length,
+        totalEntries: statsData.totalEntries || entries.length,
+        totalRenewals: statsData.totalRenewals || pendingRenewals.length,
+        totalDeliveries: statsData.totalDeliveries || deliveries.length,
+        expiringIn7Days: statsData.expiringIn7Days || expiring.length,
         monthlyRevenue: statsData.monthlyRevenue || 0
       });
       
@@ -332,6 +334,23 @@ export default function AdminDashboard() {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
+                {/* Date Range Picker */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-orange-200">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold text-orange-800">Dashboard Overview</h3>
+                    <p className="text-sm text-orange-600">
+                      {dateRange 
+                        ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+                        : 'Showing data till today'
+                      }
+                    </p>
+                  </div>
+                  <DateRangePicker 
+                    onDateRangeChange={(range) => setDateRange(range)}
+                    placeholder="Select date range (optional)"
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -409,7 +428,7 @@ export default function AdminDashboard() {
                   >
                     <SpiritualCard
                       variant="sacred"
-                      title="Revenue"
+                      title="Collection"
                       showOm={true}
                       className="h-full"
                     >
@@ -417,7 +436,7 @@ export default function AdminDashboard() {
                         <div>
                           <div className="text-3xl font-bold text-orange-800">₹{stats.monthlyRevenue.toLocaleString()}</div>
                           <p className="text-sm text-orange-600 mt-1">
-                            +15% from last month
+                            Total collections from renewals
                           </p>
                         </div>
                         <DollarSign className="h-8 w-8 text-orange-600" />

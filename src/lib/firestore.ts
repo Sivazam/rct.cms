@@ -457,26 +457,84 @@ export const verifyOTP = async (otpId: string, otp: string) => {
   }
 };
 
-// System Stats
-export const getSystemStats = async (locationId?: string) => {
+// System Stats with Date Range Support
+export const getSystemStats = async (locationId?: string, dateRange?: { from: Date; to: Date }) => {
   try {
-    const statsId = locationId || 'overall';
-    const statsDoc = await getDoc(doc(db, 'systemStats', statsId));
+    console.log('getSystemStats called with:', { locationId, dateRange });
     
-    if (statsDoc.exists()) {
-      return statsDoc.data();
+    // Get all entries first
+    let entries = await getEntries({ locationId });
+    
+    // Filter by date range if provided
+    if (dateRange?.from && dateRange?.to) {
+      const fromDate = new Date(dateRange.from);
+      const toDate = new Date(dateRange.to);
+      toDate.setHours(23, 59, 59, 999); // End of the day
+      
+      entries = entries.filter(entry => {
+        const entryDate = entry.createdAt?.toDate?.();
+        return entryDate && entryDate >= fromDate && entryDate <= toDate;
+      });
+      
+      console.log('Entries after date range filter:', entries.length);
     }
     
-    // Return default stats if not found
-    return {
-      totalEntries: 0,
-      totalRenewals: 0,
-      totalDeliveries: 0,
-      currentActive: 0,
-      expiringIn7Days: 0,
-      monthlyRevenue: 0,
+    // Calculate statistics from actual entries
+    let totalCollections = 0;
+    let totalRenewals = 0;
+    let totalDeliveries = 0;
+    let totalActiveEntries = 0;
+    let expiringIn7Days = 0;
+    
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    entries.forEach(entry => {
+      // Count total entries (ash pots)
+      totalActiveEntries += 1;
+      
+      // Process payments for collections
+      if (entry.payments && Array.isArray(entry.payments)) {
+        entry.payments.forEach((payment: any) => {
+          const paymentDate = payment.date?.toDate?.();
+          const amount = payment.amount || 0;
+          
+          // Only count payments within date range if specified
+          if (!dateRange || (paymentDate && paymentDate >= dateRange.from && paymentDate <= dateRange.to)) {
+            totalCollections += amount;
+          }
+          
+          // Count renewals
+          if (payment.type === 'renewal') {
+            totalRenewals += 1;
+          }
+        });
+      }
+      
+      // Count deliveries
+      if (entry.status === 'delivered') {
+        totalDeliveries += 1;
+      }
+      
+      // Count expiring entries
+      const expiryDate = entry.expiryDate?.toDate?.();
+      if (expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now && entry.status === 'active') {
+        expiringIn7Days += 1;
+      }
+    });
+    
+    const stats = {
+      totalEntries: totalActiveEntries,
+      totalRenewals: totalRenewals,
+      totalDeliveries: totalDeliveries,
+      currentActive: entries.filter(e => e.status === 'active').length,
+      expiringIn7Days: expiringIn7Days,
+      monthlyRevenue: totalCollections, // This will now show total collections
       lastUpdated: serverTimestamp()
     };
+    
+    console.log('Calculated stats:', stats);
+    return stats;
   } catch (error) {
     console.error('Error getting system stats:', error);
     throw error;
