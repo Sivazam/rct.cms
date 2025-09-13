@@ -7,7 +7,10 @@ export async function POST(request: NextRequest) {
   try {
     const { entryId, operatorId } = await request.json();
 
+    console.log('OTP Request received:', { entryId, operatorId });
+
     if (!entryId || !operatorId) {
+      console.log('Missing required fields:', { entryId, operatorId });
       return NextResponse.json(
         { error: 'Entry ID and Operator ID are required' },
         { status: 400 }
@@ -19,17 +22,49 @@ export async function POST(request: NextRequest) {
     const q = query(entriesRef, where('id', '==', entryId));
     const querySnapshot = await getDocs(q);
 
+    console.log('Query snapshot size:', querySnapshot.size);
+
     if (querySnapshot.empty) {
+      console.log('Entry not found for ID:', entryId);
+      
+      // Check if there are any entries at all
+      const allEntriesSnapshot = await getDocs(collection(db, 'entries'));
+      console.log('Total entries in database:', allEntriesSnapshot.size);
+      
+      if (allEntriesSnapshot.size === 0) {
+        return NextResponse.json(
+          { 
+            error: 'No entries found in database. Please create some test entries first.',
+            suggestion: 'Please create a customer entry to get started.',
+            totalEntries: 0
+          },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Entry not found' },
+        { 
+          error: 'Entry not found',
+          entryId: entryId,
+          totalEntries: allEntriesSnapshot.size,
+          availableEntryIds: allEntriesSnapshot.docs.map(doc => doc.id).slice(0, 5)
+        },
         { status: 404 }
       );
     }
 
     const entryDoc = querySnapshot.docs[0];
     const entryData = entryDoc.data();
+    
+    console.log('Entry found:', { 
+      id: entryDoc.id, 
+      status: entryData.status,
+      customerName: entryData.customerName,
+      customerMobile: entryData.customerMobile
+    });
 
     if (entryData.status !== 'active') {
+      console.log('Entry not active:', entryData.status);
       return NextResponse.json(
         { error: 'Entry is not active and cannot be delivered' },
         { status: 400 }

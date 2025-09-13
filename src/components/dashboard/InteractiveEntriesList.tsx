@@ -319,10 +319,18 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
 
   const handleSendOTPForDispatch = async () => {
     if (!selectedEntryForDispatch) {
+      console.log('No selected entry for dispatch');
       return;
     }
 
     try {
+      console.log('Sending OTP for dispatch:', {
+        entryId: selectedEntryForDispatch.id,
+        customerName: selectedEntryForDispatch.customerName,
+        customerMobile: selectedEntryForDispatch.customerMobile,
+        operatorId: selectedEntryForDispatch.operatorId
+      });
+
       // Send OTP using the deliveries API
       const response = await fetch('/api/deliveries/otp', {
         method: 'POST',
@@ -340,8 +348,11 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       const data = await response.json();
 
       if (!response.ok) {
+        console.error('API Error:', data);
         throw new Error(data.error || 'Failed to send OTP');
       }
+
+      console.log('OTP API Response:', data);
 
       // OTP sent successfully, close dispatch dialog and show OTP verification
       setShowDispatchDialog(false);
@@ -364,7 +375,21 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       console.log('OTP sent successfully for dispatch:', data);
     } catch (error: any) {
       console.error('Error sending OTP for dispatch:', error);
-      alert('Failed to send OTP: ' + error.message);
+      
+      // Handle specific error messages
+      let errorMessage = 'Failed to send OTP';
+      
+      if (error.message.includes('No entries found in database')) {
+        errorMessage = 'No entries found in database. Please create some customer entries first.';
+      } else if (error.message.includes('Entry not found')) {
+        errorMessage = 'Entry not found. Please refresh and try again.';
+      } else if (error.message.includes('Entry is not active')) {
+        errorMessage = 'Entry is not active and cannot be delivered.';
+      } else {
+        errorMessage = error.message || 'Failed to send OTP';
+      }
+      
+      alert(errorMessage);
     }
   };
 
