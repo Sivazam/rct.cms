@@ -468,12 +468,17 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   };
 
   const calculateDueAmount = (entry: Entry) => {
-    // Calculate due amount based on overdue months
+    // For active entries, due amount is always 0 (already paid)
+    if (entry.status === 'active') {
+      return 0;
+    }
+    
+    // For pending/expired entries, calculate due amount based on overdue months
     const entryDate = new Date(entry.entryDate?.toDate?.() || entry.entryDate);
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from entry
     const now = new Date();
     
-    // Calculate overdue months
+    // Calculate overdue days
     const timeDiff = now.getTime() - expiryDate.getTime();
     const overdueDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
     
@@ -484,7 +489,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     // Calculate overdue months (round up)
     const months = Math.ceil(overdueDays / 30);
     
-    // Calculate due amount (₹300 per month)
+    // Calculate due amount (₹300 per month) - starting from second month onwards
+    // First month is already paid (₹500), so we calculate from second month
     return months * 300;
   };
 
@@ -1195,10 +1201,10 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
 
       {/* Dispatch Details Dialog */}
       <Dialog open={showDispatchDialog} onOpenChange={setShowDispatchDialog}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto w-full mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Dispatch Ash Pot</DialogTitle>
-            <DialogDescription className="text-sm sm:text-base">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto w-full mx-0 sm:mx-4 p-4 sm:p-6">
+          <DialogHeader className="space-y-2 sm:space-y-3">
+            <DialogTitle className="text-lg sm:text-xl font-bold">Dispatch Ash Pot</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base text-gray-600">
               Process dispatch for {selectedEntryForDispatch?.customerName}
             </DialogDescription>
           </DialogHeader>
@@ -1206,37 +1212,37 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           {selectedEntryForDispatch && (
             <div className="space-y-6">
               {/* Current Entry Status */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-3">Current Entry Status</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Customer:</span>
-                      <span className="text-sm font-medium">{selectedEntryForDispatch.customerName}</span>
+              <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                <h4 className="font-medium mb-2 sm:mb-3 text-sm sm:text-base">Current Entry Status</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs sm:text-sm text-gray-600">Customer:</span>
+                      <span className="text-xs sm:text-sm font-medium text-right max-w-[60%]">{selectedEntryForDispatch.customerName}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Mobile:</span>
-                      <span className="text-sm font-medium">{selectedEntryForDispatch.customerMobile}</span>
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs sm:text-sm text-gray-600">Mobile:</span>
+                      <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.customerMobile}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Ash Pots:</span>
-                      <span className="text-sm font-medium">{selectedEntryForDispatch.numberOfPots}</span>
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs sm:text-sm text-gray-600">Ash Pots:</span>
+                      <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.numberOfPots}</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Location:</span>
-                      <span className="text-sm font-medium">{selectedEntryForDispatch.locationName}</span>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs sm:text-sm text-gray-600">Location:</span>
+                      <span className="text-xs sm:text-sm font-medium text-right max-w-[60%]">{selectedEntryForDispatch.locationName}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Entry Date:</span>
-                      <span className="text-sm font-medium">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs sm:text-sm text-gray-600">Entry Date:</span>
+                      <span className="text-xs sm:text-sm font-medium text-right">
                         {formatDate(new Date(selectedEntryForDispatch.entryDate?.toDate?.() || selectedEntryForDispatch.entryDate))}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Status:</span>
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs sm:text-sm text-gray-600">Status:</span>
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
                         {selectedEntryForDispatch.status}
                       </Badge>
                     </div>
@@ -1278,18 +1284,25 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
               </div>
 
               {/* Dispatch Configuration */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="dispatchAmount" className="text-sm font-medium">Collection Amount (₹)</Label>
                     <Input
                       id="dispatchAmount"
                       type="number"
                       value={dispatchAmount}
-                      onChange={(e) => setDispatchAmount(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Only allow numbers and empty string
+                        if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                          setDispatchAmount(value);
+                        }
+                      }}
                       placeholder="Enter amount"
                       min="0"
-                      className="h-10"
+                      step="1"
+                      className="h-9 sm:h-10 text-sm sm:text-base"
                     />
                     <p className="text-xs text-gray-500">
                       Service-based collection - enter any amount
@@ -1302,7 +1315,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                       value={dispatchPaymentMethod} 
                       onValueChange={(value) => setDispatchPaymentMethod(value as 'cash' | 'upi')}
                     >
-                      <SelectTrigger className="h-10">
+                      <SelectTrigger className="h-9 sm:h-10 text-sm sm:text-base">
                         <SelectValue placeholder="Select payment method" />
                       </SelectTrigger>
                       <SelectContent>
