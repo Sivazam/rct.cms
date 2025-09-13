@@ -496,24 +496,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   };
 
   const calculateDueAmount = (entry: Entry) => {
-    // For active entries, due amount is always 0 (already paid)
-    if (entry.status === 'active') {
-      return 0;
-    }
-    
-    // For pending/expired entries, calculate due amount based on overdue months
+    // For truly active entries (not expired), due amount is always 0 (already paid)
     const entryDate = new Date(entry.entryDate?.toDate?.() || entry.entryDate);
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from entry
     const now = new Date();
     
-    // Calculate overdue days
+    // Check if entry is actually expired
     const timeDiff = now.getTime() - expiryDate.getTime();
     const overdueDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
     
     if (overdueDays <= 0) {
-      return 0; // No due amount if not overdue
+      return 0; // No due amount if not expired (truly active)
     }
     
+    // For expired entries (including pending entries with 'active' status), calculate due amount based on overdue months
     // Calculate overdue months (round up)
     const months = Math.ceil(overdueDays / 30);
     
