@@ -870,8 +870,8 @@ export default function AdminDashboard() {
               {/* Locations Tab - Hidden but functional */}
               {/* {activeTab === 'locations' && <LocationManagement onLocationsUpdated={fetchDashboardData} />} */}
 
-              {/* Operators Tab - Hidden but functional */}
-              {/* {activeTab === 'operators' && <OperatorManagement />} */}
+              {/* Operators Tab */}
+              {activeTab === 'operators' && <OperatorManagement />}
 
               {/* Entries Tab - Hidden but functional */}
               {/* {activeTab === 'entries' && <CustomerEntrySystem />} */}
@@ -885,42 +885,24 @@ export default function AdminDashboard() {
               {/* Analytics Tab */}
               {activeTab === 'analytics' && <OperatorPerformance />}
 
-              {/* Settings Tab - New combined settings */}
+              {/* Settings Tab - Location management only */}
               {activeTab === 'settings' && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Locations Management */}
-                    <Card className="border-orange-200">
-                      <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                          <MapPin className="h-5 w-5" />
-                          <span>Location Management</span>
-                        </CardTitle>
-                        <CardDescription>
-                          Manage cremation venues and locations
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <LocationManagement onLocationsUpdated={fetchDashboardData} />
-                      </CardContent>
-                    </Card>
-
-                    {/* Operators Management */}
-                    <Card className="border-orange-200">
-                      <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                          <Users className="h-5 w-5" />
-                          <span>Operator Management</span>
-                        </CardTitle>
-                        <CardDescription>
-                          Manage operator accounts and permissions
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <OperatorManagement />
-                      </CardContent>
-                    </Card>
-                  </div>
+                  {/* Locations Management */}
+                  <Card className="border-orange-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <MapPin className="h-5 w-5" />
+                        <span>Location Management</span>
+                      </CardTitle>
+                      <CardDescription>
+                        Manage cremation venues and locations
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <LocationManagement onLocationsUpdated={fetchDashboardData} />
+                    </CardContent>
+                  </Card>
                 </div>
               )}
           </div>
