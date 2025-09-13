@@ -231,7 +231,14 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       }));
 
       // Additional filtering based on type
-      if (type === 'pending') {
+      if (type === 'active') {
+        // Filter for truly active entries (not expired)
+        const now = new Date();
+        entriesWithDetails = entriesWithDetails.filter(entry => {
+          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
+          return expiryDate > now && entry.status === 'active';
+        });
+      } else if (type === 'pending') {
         // Filter for entries that need renewal (expired but still active)
         const now = new Date();
         entriesWithDetails = entriesWithDetails.filter(entry => {
