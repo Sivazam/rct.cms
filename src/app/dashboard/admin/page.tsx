@@ -629,7 +629,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Debug Test Button */}
-                {/* <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                   <h3 className="text-lg font-semibold text-blue-800 mb-2">Debug Test</h3>
                   <div className="flex gap-2">
                     <Button 
@@ -672,7 +672,7 @@ export default function AdminDashboard() {
                   <div className="mt-2 text-sm text-blue-600">
                     Current expandedCard: <strong>{expandedCard || 'none'}</strong>
                   </div>
-                </div> */}
+                </div>
 
                 {/* Spiritual Quote */}
                 {/* <SpiritualCard
@@ -691,7 +691,7 @@ export default function AdminDashboard() {
                 </SpiritualCard> */}
 
                 {/* Quick Actions */}
-                {/* <Card>
+                <Card>
                   <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
                     <CardDescription>
@@ -720,7 +720,7 @@ export default function AdminDashboard() {
                       </Button>
                     </div>
                   </CardContent>
-                </Card> */}
+                </Card>
 
                 {/* Expiring Soon */}
                 <Card className="border-orange-200 bg-orange-50">

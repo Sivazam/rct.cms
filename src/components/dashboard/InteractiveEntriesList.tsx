@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info } from 'lucide-react';
+import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers, getCustomerByMobile } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
@@ -159,12 +159,17 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   const [showMobileDialog, setShowMobileDialog] = useState(false);
   const [showCustomerFoundDialog, setShowCustomerFoundDialog] = useState(false);
   const [showRenewalDetailsDialog, setShowRenewalDetailsDialog] = useState(false);
+  const [showDispatchDialog, setShowDispatchDialog] = useState(false);
   const [mobileNumber, setMobileNumber] = useState('');
   const [foundCustomer, setFoundCustomer] = useState<any>(null);
   const [searchingCustomer, setSearchingCustomer] = useState(false);
   const [renewalMonths, setRenewalMonths] = useState(1);
   const [renewalPaymentMethod, setRenewalPaymentMethod] = useState<'cash' | 'upi'>('cash');
   const [customerError, setCustomerError] = useState('');
+  const [selectedEntryForDispatch, setSelectedEntryForDispatch] = useState<Entry | null>(null);
+  const [dispatchAmount, setDispatchAmount] = useState('');
+  const [dispatchReason, setDispatchReason] = useState('');
+  const [dispatchPaymentMethod, setDispatchPaymentMethod] = useState<'cash' | 'upi'>('cash');
   const RENEWAL_RATE_PER_MONTH = 300;
 
   useEffect(() => {
@@ -302,6 +307,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     setShowRenewal(true);
   };
 
+  const handleDispatchClick = (entry: Entry) => {
+    setSelectedEntryForDispatch(entry);
+    setDispatchAmount('');
+    setDispatchReason('');
+    setDispatchPaymentMethod('cash');
+    setShowDispatchDialog(true);
+  };
+
+  const handleSendOTPForDispatch = () => {
+    setShowDispatchDialog(false);
+    // For dispatch, we'll directly go to OTP verification
+    setShowRenewal(true); // Reuse the renewal system for OTP, but we'll need to handle dispatch differently
+  };
+
   const handleBackToList = () => {
     setShowNewEntry(false);
     setShowRenewal(false);
@@ -309,6 +328,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     setShowMobileDialog(false);
     setShowCustomerFoundDialog(false);
     setShowRenewalDetailsDialog(false);
+    setShowDispatchDialog(false);
+    setSelectedEntryForDispatch(null);
     setFoundCustomer(null);
     setMobileNumber('');
     setCustomerError('');
@@ -383,8 +404,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     }
   };
 
-  const calculateRenewalAmount = (months: number, entry: Entry) => {
-    return months * RENEWAL_RATE_PER_MONTH * entry.numberOfPots;
+  const calculateRenewalAmount = (months: number) => {
+    return months * RENEWAL_RATE_PER_MONTH; // Fixed rate per month, not per pot
   };
 
   const getNewExpiryDate = (entry: Entry, months: number) => {
@@ -398,6 +419,16 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       currency: 'INR',
       minimumFractionDigits: 0
     }).format(amount);
+  };
+
+  const calculateDueAmount = (entry: Entry) => {
+    // Calculate total amount paid
+    const totalPaid = entry.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+    
+    // For dispatch, we don't have a fixed due amount since it's service-based
+    // But we can calculate the base service fee if needed
+    // For now, return 0 as this is a service-based product
+    return 0;
   };
 
   if (loading) {
@@ -536,6 +567,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           <TableHeader>
             <TableRow>
               {type === 'pending' && <TableHead className="w-24">Action</TableHead>}
+              {(type === 'active' || type === 'pending') && <TableHead className="w-24">Dispatch</TableHead>}
               <TableHead>Customer</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Location</TableHead>
@@ -550,7 +582,11 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           <TableBody>
             {filteredEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={type === 'pending' ? 10 : 9} className="text-center py-12">
+                <TableCell colSpan={
+                  (type === 'pending' ? 1 : 0) + 
+                  ((type === 'active' || type === 'pending') ? 1 : 0) + 
+                  9
+                } className="text-center py-12">
                   <div className="flex flex-col items-center space-y-4">
                     <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
                       <Package className="h-8 w-8 text-orange-500" />
@@ -600,6 +636,18 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                         >
                           <RefreshCw className="h-3 w-3 mr-1" />
                           Renew
+                        </Button>
+                      </TableCell>
+                    )}
+                    {(type === 'active' || type === 'pending') && (
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleDispatchClick(entry)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <Truck className="h-3 w-3 mr-1" />
+                          Dispatch
                         </Button>
                       </TableCell>
                     )}
@@ -740,10 +788,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                   <Button 
                     size="sm" 
                     onClick={() => handleRenewClick(entry)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white mb-2"
                   >
                     <RefreshCw className="h-3 w-3 mr-1" />
                     Renew Entry
+                  </Button>
+                )}
+                {(type === 'active' || type === 'pending') && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleDispatchClick(entry)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Truck className="h-3 w-3 mr-1" />
+                    Dispatch Entry
                   </Button>
                 )}
               </motion.div>
@@ -858,7 +916,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
 
       {/* Renewal Details Dialog */}
       <Dialog open={showRenewalDetailsDialog} onOpenChange={setShowRenewalDetailsDialog}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Renewal Details</DialogTitle>
             <DialogDescription>
@@ -975,7 +1033,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                       <div className="flex justify-between">
                         <span className="text-sm font-medium text-blue-800">Total Amount:</span>
                         <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                          {formatCurrency(calculateRenewalAmount(renewalMonths, selectedEntryForRenewal))}
+                          {formatCurrency(calculateRenewalAmount(renewalMonths))}
                         </Badge>
                       </div>
                     </div>
@@ -1014,6 +1072,184 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 </Button>
                 <Button onClick={handleSendOTPForRenewal}>
                   Send OTP & Continue
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispatch Details Dialog */}
+      <Dialog open={showDispatchDialog} onOpenChange={setShowDispatchDialog}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Dispatch Ash Pot</DialogTitle>
+            <DialogDescription>
+              Process dispatch for {selectedEntryForDispatch?.customerName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEntryForDispatch && (
+            <div className="space-y-6">
+              {/* Current Entry Status */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-3">Current Entry Status</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Customer:</span>
+                      <span className="text-sm font-medium">{selectedEntryForDispatch.customerName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mobile:</span>
+                      <span className="text-sm font-medium">{selectedEntryForDispatch.customerMobile}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Ash Pots:</span>
+                      <span className="text-sm font-medium">{selectedEntryForDispatch.numberOfPots}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Location:</span>
+                      <span className="text-sm font-medium">{selectedEntryForDispatch.locationName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Entry Date:</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(new Date(selectedEntryForDispatch.entryDate?.toDate?.() || selectedEntryForDispatch.entryDate))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Status:</span>
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                        {selectedEntryForDispatch.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dispatch Configuration */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dispatchAmount">Collection Amount (₹)</Label>
+                    <Input
+                      id="dispatchAmount"
+                      type="number"
+                      value={dispatchAmount}
+                      onChange={(e) => setDispatchAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      min="0"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Service-based collection - enter any amount
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dispatchPaymentMethod">Payment Method</Label>
+                    <Select 
+                      value={dispatchPaymentMethod} 
+                      onValueChange={(value) => setDispatchPaymentMethod(value as 'cash' | 'upi')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Reason for Collection */}
+                <div className="space-y-2">
+                  <Label htmlFor="dispatchReason">Remarks (Optional)</Label>
+                  <textarea
+                    id="dispatchReason"
+                    value={dispatchReason}
+                    onChange={(e) => setDispatchReason(e.target.value)}
+                    placeholder="Add any remarks or reasons for the collection amount..."
+                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    rows={3}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Required if collecting less than standard amount
+                  </p>
+                </div>
+
+                {/* Dispatch Summary */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-3 flex items-center space-x-2">
+                    <Calculator className="h-4 w-4" />
+                    <span>Dispatch Summary</span>
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-800">Collection Amount:</span>
+                      <span className="text-sm font-medium text-blue-800">
+                        {dispatchAmount ? formatCurrency(parseFloat(dispatchAmount) || 0) : '₹0'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-800">Payment Method:</span>
+                      <span className="text-sm font-medium text-blue-800">
+                        {dispatchPaymentMethod === 'cash' ? 'Cash' : 'UPI'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-800">Number of Pots:</span>
+                      <span className="text-sm font-medium text-blue-800">
+                        {selectedEntryForDispatch.numberOfPots}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Important Information */}
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>Important:</strong> This is a service-based dispatch. You can collect any amount including ₹0. 
+                    OTP verification will be sent to customer mobile for confirmation. The entry will be marked as dispatched.
+                  </AlertDescription>
+                </Alert>
+
+                {/* Validation for Reason */}
+                {dispatchAmount && parseFloat(dispatchAmount) < 300 && !dispatchReason && (
+                  <Alert variant="destructive">
+                    <AlertDescription className="text-sm">
+                      <strong>Required:</strong> Please provide a reason for collecting less than the standard amount (₹300).
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Validation for Amount */}
+                {dispatchAmount && parseFloat(dispatchAmount) > 300 && (
+                  <Alert variant="destructive">
+                    <AlertDescription className="text-sm">
+                      <strong>Invalid:</strong> Cannot collect more than the standard amount (₹300).
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowDispatchDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSendOTPForDispatch}
+                  disabled={
+                    !dispatchAmount || 
+                    parseFloat(dispatchAmount) > 300 ||
+                    (parseFloat(dispatchAmount) < 300 && !dispatchReason.trim())
+                  }
+                >
+                  Send OTP & Dispatch
                 </Button>
               </div>
             </div>

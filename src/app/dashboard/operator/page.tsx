@@ -579,7 +579,7 @@ export default function OperatorDashboard() {
                     </div>
 
                     {/* Quick Actions */}
-                    {/* <SpiritualCard
+                    <SpiritualCard
                       variant="sacred"
                       title="Quick Actions"
                       description="Perform common tasks quickly"
@@ -590,28 +590,33 @@ export default function OperatorDashboard() {
                           className="h-20 flex-col space-y-2 bg-orange-600 hover:bg-orange-700" 
                           onClick={() => handleTabChange('entries')}
                         >
-                
+                          {/* <Plus className="h-6 w-6" /> */}
                           <span className="font-medium">New Entry</span>
+                          {/* <span className="text-xs opacity-80">Register customer</span> */}
                         </Button>
                         <Button 
                           variant="outline" 
                           className="h-20 flex-col space-y-2 border-orange-200 text-orange-700 hover:bg-orange-50" 
                           onClick={() => handleTabChange('renewals')}
                         >
+                          {/* <RefreshCw className="h-6 w-6" /> */}
                           <span className="font-medium">Renewal</span>
+                          {/* <span className="text-xs">Extend period</span> */}
                         </Button>
                         <Button 
                           variant="outline" 
                           className="h-20 flex-col space-y-2 border-orange-200 text-orange-700 hover:bg-orange-50" 
                           onClick={() => handleTabChange('deliveries')}
                         >
+                          {/* <Truck className="h-6 w-6" /> */}
                           <span className="font-medium">Dispatch</span>
+                          {/* <span className="text-xs">Complete process</span> */}
                         </Button>
                       </div>
-                    </SpiritualCard> */}
+                    </SpiritualCard>
 
                     {/* Today's Summary */}
-                    {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <SpiritualCard
                         variant="ritual"
                         title="Today's Entries"
@@ -656,7 +661,7 @@ export default function OperatorDashboard() {
                           </div>
                         </CardContent>
                       </SpiritualCard>
-                    </div> */}
+                    </div>
 
                     {/* Spiritual Quote */}
                     {/* <SpiritualCard
