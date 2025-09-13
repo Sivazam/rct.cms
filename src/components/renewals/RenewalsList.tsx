@@ -138,10 +138,14 @@ export default function RenewalsList() {
   };
 
   const filteredRenewals = renewals.filter(renewal => {
+    const customerName = renewal.customerName || '';
+    const customerMobile = renewal.customerMobile || '';
+    const customerCity = renewal.customerCity || '';
+    
     const matchesSearch = 
-      renewal.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      renewal.customerMobile.includes(searchTerm) ||
-      renewal.customerCity.toLowerCase().includes(searchTerm.toLowerCase());
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerMobile.includes(searchTerm) ||
+      customerCity.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesLocation = locationFilter === 'all' || renewal.locationName === locationFilter;
     const matchesMonths = monthFilter === 'all' || renewal.months.toString() === monthFilter;

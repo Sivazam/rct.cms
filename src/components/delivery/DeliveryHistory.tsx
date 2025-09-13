@@ -138,11 +138,15 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(delivery =>
-        delivery.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        delivery.customer.mobile.includes(searchTerm) ||
-        delivery.entryId.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(delivery => {
+        const customerName = delivery.customer?.name || '';
+        const customerMobile = delivery.customer?.mobile || '';
+        const entryId = delivery.entryId || '';
+        
+        return customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               customerMobile.includes(searchTerm) ||
+               entryId.toLowerCase().includes(searchTerm.toLowerCase());
+      });
     }
 
     // Location filter

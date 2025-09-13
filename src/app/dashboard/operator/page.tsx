@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
+import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -45,10 +46,47 @@ export default function OperatorDashboard() {
   const [expiringEntries, setExpiringEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [expandedCard, setExpandedCard] = useState<string | null>(null); // Track which card is expanded
+  const expandedContentRef = useRef<HTMLDivElement>(null); // Ref for scrolling to expanded content
 
   useEffect(() => {
     fetchOperatorData();
   }, [selectedLocation, user]);
+
+  // Handle card expansion with smooth scrolling
+  const handleCardClick = (cardType: string) => {
+    console.log('🔥 Operator Card clicked:', cardType);
+    console.log('🔥 Current expandedCard:', expandedCard);
+    const newExpandedCard = expandedCard === cardType ? null : cardType;
+    console.log('🔥 New expandedCard will be:', newExpandedCard);
+    setExpandedCard(newExpandedCard);
+    
+    // Scroll to expanded content after a short delay to allow DOM update
+    if (newExpandedCard && expandedContentRef.current) {
+      setTimeout(() => {
+        expandedContentRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        console.log('🔜 Scrolled to operator expanded content');
+      }, 100);
+    }
+  };
+
+  useEffect(() => {
+    console.log('OperatorDashboard: expandedCard changed to:', expandedCard);
+    
+    // Scroll to expanded content when it changes
+    if (expandedCard && expandedContentRef.current) {
+      setTimeout(() => {
+        expandedContentRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        console.log('🔜 Scrolled to operator expanded content from useEffect');
+      }, 150);
+    }
+  }, [expandedCard]);
 
   useEffect(() => {
     // Handle tab changes from URL parameters
@@ -401,7 +439,8 @@ export default function OperatorDashboard() {
                           variant="sacred" 
                           title="Total Ash Pots"
                           showOm={true}
-                          className="h-full"
+                          className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
+                          onClick={() => handleCardClick('active')}
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -424,7 +463,8 @@ export default function OperatorDashboard() {
                           variant="sacred"
                           title="Pending Ash Pots"
                           showOm={true}
-                          className="h-full"
+                          className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
+                          onClick={() => handleCardClick('pending')}
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -450,7 +490,8 @@ export default function OperatorDashboard() {
                           variant="sacred"
                           title="Deliveries"
                           showOm={true}
-                          className="h-full"
+                          className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
+                          onClick={() => handleCardClick('dispatched')}
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -492,6 +533,49 @@ export default function OperatorDashboard() {
                           </div>
                         </SpiritualCard>
                       </motion.div>
+                    </div>
+
+                    {/* Interactive Lists Section - Shows when cards are clicked */}
+                    <div ref={expandedContentRef} className="scroll-mt-4">
+                      {expandedCard && (
+                        console.log('🚀 Rendering operator expanded content for:', expandedCard),
+                        <Card className="border-orange-200 bg-orange-50 shadow-md">
+                          <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                              <span className="flex items-center space-x-2">
+                                {expandedCard === 'active' && <Package className="h-5 w-5" />}
+                                {expandedCard === 'pending' && <RefreshCw className="h-5 w-5" />}
+                                {expandedCard === 'dispatched' && <Truck className="h-5 w-5" />}
+                                <span>
+                                  {expandedCard === 'active' && 'Active Ash Pots'}
+                                  {expandedCard === 'pending' && 'Pending Ash Pots'}
+                                  {expandedCard === 'dispatched' && 'Deliveries'}
+                                </span>
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedCard(null)}
+                                className="text-orange-600 hover:text-orange-800"
+                              >
+                                Close
+                              </Button>
+                            </CardTitle>
+                            <CardDescription>
+                              {expandedCard === 'active' && 'Currently active ash pot entries'}
+                              {expandedCard === 'pending' && 'Entries pending renewal or processing'}
+                              {expandedCard === 'dispatched' && 'Completed deliveries'}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <InteractiveEntriesList 
+                              type={expandedCard}
+                              locationId={selectedLocation}
+                              dateRange={undefined}
+                            />
+                          </CardContent>
+                        </Card>
+                      )}
                     </div>
 
                     {/* Quick Actions */}

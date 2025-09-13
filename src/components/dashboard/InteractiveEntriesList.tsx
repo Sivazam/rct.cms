@@ -61,6 +61,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState(locationId || 'all');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -146,10 +147,14 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   };
 
   const filteredEntries = entries.filter(entry => {
+    const customerName = entry.customerName || '';
+    const customerMobile = entry.customerMobile || '';
+    const customerCity = entry.customerCity || '';
+    
     const matchesSearch = 
-      entry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.customerMobile.includes(searchTerm) ||
-      entry.customerCity.toLowerCase().includes(searchTerm.toLowerCase());
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerMobile.includes(searchTerm) ||
+      customerCity.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesLocation = locationFilter === 'all' || entry.locationId === locationFilter;
     
@@ -222,18 +227,22 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${
+              isSearchFocused ? 'text-orange-500' : 'text-gray-400'
+            }`} />
             <Input
               placeholder="Search by name, mobile, or city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              className="pl-10 border-orange-200 focus:border-orange-400 focus:ring-orange-200"
             />
           </div>
         </div>
         <div className="flex gap-2">
           <Select value={locationFilter} onValueChange={setLocationFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48 border-orange-200 focus:border-orange-400 focus:ring-orange-200">
               <SelectValue placeholder="Location" />
             </SelectTrigger>
             <SelectContent>
@@ -247,6 +256,15 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           </Select>
         </div>
       </div>
+
+      {/* Results Summary */}
+      {!loading && (
+        <div className="text-sm text-gray-600">
+          Showing {filteredEntries.length} of {entries.length} entries
+          {searchTerm && ` for "${searchTerm}"`}
+          {locationFilter !== 'all' && ` in ${locations.find(l => l.id === locationFilter)?.venueName || 'selected location'}`}
+        </div>
+      )}
 
       {/* Entries Table - Desktop View */}
       <div className="hidden md:block rounded-md border">
@@ -267,11 +285,33 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           <TableBody>
             {filteredEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
-                  <div className="flex flex-col items-center space-y-2">
-                    <Package className="h-12 w-12 text-gray-400" />
-                    <p className="text-gray-500">No {type} entries found</p>
-                    <p className="text-sm text-gray-400">Try adjusting your filters</p>
+                <TableCell colSpan={9} className="text-center py-12">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+                      <Package className="h-8 w-8 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-medium">No {type} entries found</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {searchTerm || locationFilter !== 'all' 
+                          ? 'Try adjusting your filters or search terms'
+                          : 'There are no entries matching your criteria'
+                        }
+                      </p>
+                      {(searchTerm || locationFilter !== 'all') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSearchTerm('');
+                            setLocationFilter('all');
+                          }}
+                          className="mt-3 border-orange-200 text-orange-700 hover:bg-orange-50"
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>
@@ -356,10 +396,30 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       {/* Mobile Cards View */}
       <div className="md:hidden space-y-4">
         {filteredEntries.length === 0 ? (
-          <div className="text-center py-8">
-            <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500">No {type} entries found</p>
-            <p className="text-sm text-gray-400">Try adjusting your filters</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="h-8 w-8 text-orange-500" />
+            </div>
+            <p className="text-gray-700 font-medium">No {type} entries found</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {searchTerm || locationFilter !== 'all' 
+                ? 'Try adjusting your filters or search terms'
+                : 'There are no entries matching your criteria'
+              }
+            </p>
+            {(searchTerm || locationFilter !== 'all') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setLocationFilter('all');
+                }}
+                className="mt-3 border-orange-200 text-orange-700 hover:bg-orange-50"
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         ) : (
           filteredEntries.map((entry, index) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,6 +59,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCard, setExpandedCard] = useState<string | null>(null); // Track which card is expanded
+  const expandedContentRef = useRef<HTMLDivElement>(null); // Ref for scrolling to expanded content
 
   // Debug function to handle card expansion
   const handleCardClick = (cardType: string) => {
@@ -67,6 +68,17 @@ export default function AdminDashboard() {
     const newExpandedCard = expandedCard === cardType ? null : cardType;
     console.log('🔥 New expandedCard will be:', newExpandedCard);
     setExpandedCard(newExpandedCard);
+    
+    // Scroll to expanded content after a short delay to allow DOM update
+    if (newExpandedCard && expandedContentRef.current) {
+      setTimeout(() => {
+        expandedContentRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        console.log('🔜 Scrolled to expanded content');
+      }, 100);
+    }
   };
 
   // Safety wrapper for logout
@@ -102,6 +114,17 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     console.log('AdminDashboard: expandedCard changed to:', expandedCard);
+    
+    // Scroll to expanded content when it changes
+    if (expandedCard && expandedContentRef.current) {
+      setTimeout(() => {
+        expandedContentRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        console.log('🔜 Scrolled to expanded content from useEffect');
+      }, 150);
+    }
   }, [expandedCard]);
 
   useEffect(() => {
@@ -424,7 +447,7 @@ export default function AdminDashboard() {
                         variant="sacred"
                         title="Total Active Ash Pots"
                         showOm={true}
-                        className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                        className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
                         onClick={() => handleCardClick('active')}
                       >
                         <div className="flex items-center justify-between">
@@ -448,7 +471,7 @@ export default function AdminDashboard() {
                       variant="ritual"
                       title="Pending Ash Pots"
                       showOm={true}
-                      className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                      className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
                       onClick={() => handleCardClick('pending')}
                     >
                       <div className="flex items-center justify-between">
@@ -472,7 +495,7 @@ export default function AdminDashboard() {
                       variant="memorial"
                       title="Dispatched Ash Pots"
                       showOm={true}
-                      className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                      className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
                       onClick={() => handleCardClick('dispatched')}
                     >
                       <div className="flex items-center justify-between">
@@ -563,9 +586,10 @@ export default function AdminDashboard() {
                 {/* Integrated collection toggle is now part of the Collection card above */}
 
                 {/* Interactive Lists Section - Shows when cards are clicked */}
-                {expandedCard && (
-                  console.log('🚀 Rendering expanded content for:', expandedCard),
-                  <Card className="border-orange-200 bg-orange-50">
+                <div ref={expandedContentRef} className="scroll-mt-4">
+                  {expandedCard && (
+                    console.log('🚀 Rendering expanded content for:', expandedCard),
+                    <Card className="border-orange-200 bg-orange-50 shadow-md">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="flex items-center space-x-2">
@@ -602,6 +626,7 @@ export default function AdminDashboard() {
                     </CardContent>
                   </Card>
                 )}
+                </div>
 
                 {/* Debug Test Button */}
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">

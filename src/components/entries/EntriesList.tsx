@@ -105,10 +105,14 @@ export default function EntriesList() {
   };
 
   const filteredEntries = entries.filter(entry => {
+    const customerName = entry.customerName || '';
+    const customerMobile = entry.customerMobile || '';
+    const customerCity = entry.customerCity || '';
+    
     const matchesSearch = 
-      entry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.customerMobile.includes(searchTerm) ||
-      entry.customerCity.toLowerCase().includes(searchTerm.toLowerCase());
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerMobile.includes(searchTerm) ||
+      customerCity.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
     const matchesLocation = locationFilter === 'all' || entry.locationId === locationFilter;
