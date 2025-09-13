@@ -5,17 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getEntries, getLocations, getUsers } from '@/lib/firestore';
+import { getEntries, getLocations, getUsers, getCustomerByMobile } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import OTPVerification from '@/components/renewals/OTPVerification';
 import RenewalForm from '@/components/renewals/RenewalForm';
 import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
+import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
 
 interface Entry {
   id: string;
@@ -151,6 +155,17 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [showRenewal, setShowRenewal] = useState(false);
   const [selectedEntryForRenewal, setSelectedEntryForRenewal] = useState<Entry | null>(null);
+  // New dialog states
+  const [showMobileDialog, setShowMobileDialog] = useState(false);
+  const [showCustomerFoundDialog, setShowCustomerFoundDialog] = useState(false);
+  const [showRenewalDetailsDialog, setShowRenewalDetailsDialog] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [foundCustomer, setFoundCustomer] = useState<any>(null);
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
+  const [renewalMonths, setRenewalMonths] = useState(1);
+  const [renewalPaymentMethod, setRenewalPaymentMethod] = useState<'cash' | 'upi'>('cash');
+  const [customerError, setCustomerError] = useState('');
+  const RENEWAL_RATE_PER_MONTH = 300;
 
   useEffect(() => {
     fetchData();
@@ -236,21 +251,67 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   };
 
   const handleNewEntryClick = () => {
+    setShowMobileDialog(true);
+    setMobileNumber('');
+    setFoundCustomer(null);
+    setCustomerError('');
+  };
+
+  const handleMobileSearch = async () => {
+    if (!mobileNumber.trim()) {
+      setCustomerError('Please enter a mobile number');
+      return;
+    }
+
+    setSearchingCustomer(true);
+    setCustomerError('');
+    setFoundCustomer(null);
+
+    try {
+      const customer = await getCustomerByMobile(mobileNumber.trim());
+      setFoundCustomer(customer);
+      if (customer) {
+        setShowMobileDialog(false);
+        setShowCustomerFoundDialog(true);
+      } else {
+        // New customer - show entry form directly
+        setShowMobileDialog(false);
+        setShowNewEntry(true);
+      }
+    } catch (error: any) {
+      setCustomerError(error.message || 'Failed to search customer');
+    } finally {
+      setSearchingCustomer(false);
+    }
+  };
+
+  const handleCreateNewCustomerEntry = () => {
+    setShowCustomerFoundDialog(false);
     setShowNewEntry(true);
-    setShowRenewal(false);
-    setSelectedEntryForRenewal(null);
   };
 
   const handleRenewClick = (entry: Entry) => {
     setSelectedEntryForRenewal(entry);
+    setRenewalMonths(1);
+    setRenewalPaymentMethod('cash');
+    setShowRenewalDetailsDialog(true);
+  };
+
+  const handleSendOTPForRenewal = () => {
+    setShowRenewalDetailsDialog(false);
     setShowRenewal(true);
-    setShowNewEntry(false);
   };
 
   const handleBackToList = () => {
     setShowNewEntry(false);
     setShowRenewal(false);
     setSelectedEntryForRenewal(null);
+    setShowMobileDialog(false);
+    setShowCustomerFoundDialog(false);
+    setShowRenewalDetailsDialog(false);
+    setFoundCustomer(null);
+    setMobileNumber('');
+    setCustomerError('');
     // Refresh the data
     fetchData();
   };
@@ -322,6 +383,23 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     }
   };
 
+  const calculateRenewalAmount = (months: number, entry: Entry) => {
+    return months * RENEWAL_RATE_PER_MONTH * entry.numberOfPots;
+  };
+
+  const getNewExpiryDate = (entry: Entry, months: number) => {
+    const currentExpiry = new Date(entry.expiryDate?.toDate?.() || entry.expiryDate);
+    return new Date(currentExpiry.getTime() + (months * 30 * 24 * 60 * 60 * 1000));
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -330,20 +408,31 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     );
   }
 
-  // Show CustomerEntrySystem if New Entry is clicked for active type
+  // Show CustomerEntryForm if New Entry is clicked for active type
   if (showNewEntry && type === 'active') {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-orange-800">Create New Entry</h3>
-            <p className="text-sm text-orange-600">Register a new customer and create ash pot entry</p>
+            <h3 className="text-lg font-semibold text-orange-800">
+              {foundCustomer ? 'Create New Entry for Existing Customer' : 'Create New Customer Entry'}
+            </h3>
+            <p className="text-sm text-orange-600">
+              {foundCustomer 
+                ? `Create ash pot entry for ${foundCustomer.name}`
+                : 'Register a new customer and create ash pot entry'
+              }
+            </p>
           </div>
           <Button variant="outline" onClick={handleBackToList}>
             ← Back to List
           </Button>
         </div>
-        <CustomerEntrySystem />
+        <CustomerEntryForm 
+          customer={foundCustomer} 
+          onSuccess={handleBackToList}
+          onCancel={handleBackToList}
+        />
       </div>
     );
   }
@@ -558,19 +647,27 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                         <Calendar className="h-4 w-4 text-gray-400" />
                         <span>{formatDate(entry.expiryDate)}</span>
                         {isExpiringSoon(entry.expiryDate) && (
-                          <Badge variant="destructive" className="text-xs">Expiring Soon</Badge>
+                          <Badge variant="destructive" className="ml-2 text-xs">
+                            Expiring Soon
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(entry.status)}>
-                        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                      <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
+                        {entry.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div className="font-medium">₹{entry.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0}</div>
-                        <div className="text-gray-500">{entry.renewals?.length || 0} renewals</div>
+                        {entry.payments && entry.payments.length > 0 ? (
+                          <div>
+                            <div className="font-medium">₹{entry.payments.reduce((sum, p) => sum + p.amount, 0)}</div>
+                            <div className="text-gray-500">{entry.payments.length} payment(s)</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">No payments</span>
+                        )}
                       </div>
                     </TableCell>
                   </motion.tr>
@@ -581,8 +678,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
         </Table>
       </div>
 
-      {/* Mobile Cards View */}
-      <div className="md:hidden space-y-4">
+      {/* Mobile View */}
+      <div className="md:hidden space-y-3">
         {filteredEntries.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -595,19 +692,6 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 : 'There are no entries matching your criteria'
               }
             </p>
-            {(searchTerm || locationFilter !== 'all') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('');
-                  setLocationFilter('all');
-                }}
-                className="mt-3 border-orange-200 text-orange-700 hover:bg-orange-50"
-              >
-                Clear Filters
-              </Button>
-            )}
           </div>
         ) : (
           filteredEntries.map((entry, index) => {
@@ -618,91 +702,324 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white border rounded-lg p-4 shadow-sm"
+                className="bg-white border border-gray-200 rounded-lg p-4"
               >
-                {/* Renew Button for Pending Type */}
-                {type === 'pending' && (
-                  <div className="mb-3">
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleRenewClick(entry)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Renew Entry
-                    </Button>
-                  </div>
-                )}
-
-                {/* Customer Info */}
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      {typeInfo.icon}
-                      <h3 className="font-medium text-gray-900">{entry.customerName}</h3>
-                      <Badge className={getStatusColor(entry.status)}>
-                        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-1 text-sm text-gray-600 mb-1">
-                      <Phone className="h-3 w-3" />
-                      <span>{entry.customerMobile}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">{entry.customerCity}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
-                      <Package className="h-3 w-3" />
-                      <span>{entry.numberOfPots}</span>
+                  <div className="flex items-center space-x-2">
+                    {typeInfo.icon}
+                    <div>
+                      <h4 className="font-medium">{entry.customerName}</h4>
+                      <p className="text-sm text-gray-500">{entry.customerCity}</p>
                     </div>
                   </div>
+                  <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
+                    {entry.status}
+                  </Badge>
                 </div>
-
-                {/* Location */}
-                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-2">
-                  <MapPin className="h-3 w-3" />
-                  <span>{entry.locationName}</span>
-                </div>
-
-                {/* Operator */}
-                <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
-                  <Users className="h-3 w-3" />
-                  <span>By {entry.operatorName}</span>
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Entry Date</div>
-                    <div className="flex items-center space-x-1 text-sm">
-                      <Calendar className="h-3 w-3 text-gray-400" />
-                      <span>{formatDate(entry.entryDate)}</span>
-                    </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div className="flex items-center space-x-1">
+                    <Phone className="h-3 w-3 text-gray-400" />
+                    <span className="truncate">{entry.customerMobile}</span>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Expiry Date</div>
-                    <div className={`flex items-center space-x-1 text-sm ${isExpiringSoon(entry.expiryDate) ? 'text-red-600 font-medium' : ''}`}>
-                      <Calendar className="h-3 w-3 text-gray-400" />
-                      <span>{formatDate(entry.expiryDate)}</span>
-                      {isExpiringSoon(entry.expiryDate) && (
-                        <Badge variant="destructive" className="text-xs">Expiring Soon</Badge>
-                      )}
-                    </div>
+                  <div className="flex items-center space-x-1">
+                    <Package className="h-3 w-3 text-gray-400" />
+                    <span>{entry.numberOfPots} pot(s)</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs">{formatDate(entry.entryDate)}</span>
+                  </div>
+                  <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate) ? 'text-red-600' : ''}`}>
+                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs">{formatDate(entry.expiryDate)}</span>
                   </div>
                 </div>
 
-                {/* Payments */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="text-sm">
-                    <div className="font-medium">₹{entry.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0}</div>
-                    <div className="text-gray-500">{entry.renewals?.length || 0} renewals</div>
-                  </div>
-                </div>
+                {type === 'pending' && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleRenewClick(entry)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Renew Entry
+                  </Button>
+                )}
               </motion.div>
             );
           })
         )}
       </div>
+
+      {/* Mobile Number Dialog for New Entry */}
+      <Dialog open={showMobileDialog} onOpenChange={setShowMobileDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enter Mobile Number</DialogTitle>
+            <DialogDescription>
+              Search for existing customer or register new customer
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mobile">Mobile Number</Label>
+              <Input
+                id="mobile"
+                type="tel"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                placeholder="+91XXXXXXXXXX"
+                disabled={searchingCustomer}
+              />
+            </div>
+            
+            {customerError && (
+              <Alert variant="destructive">
+                <AlertDescription>{customerError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowMobileDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleMobileSearch}
+                disabled={searchingCustomer || !mobileNumber.trim()}
+              >
+                {searchingCustomer ? 'Searching...' : 'Search Customer'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Found Dialog */}
+      <Dialog open={showCustomerFoundDialog} onOpenChange={setShowCustomerFoundDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customer Found</DialogTitle>
+            <DialogDescription>
+              Customer with this mobile number already exists in the system
+            </DialogDescription>
+          </DialogHeader>
+          
+          {foundCustomer && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-lg">{foundCustomer.name}</h4>
+                    <p className="text-sm text-gray-600">Existing Customer</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <span>{foundCustomer.mobile}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span>{foundCustomer.city}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span>
+                      Customer since: {formatFirestoreDate(foundCustomer.createdAt)}
+                    </span>
+                  </div>
+                  {foundCustomer.additionalDetails && (
+                    <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                      {foundCustomer.additionalDetails}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowCustomerFoundDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateNewCustomerEntry}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Entry
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Renewal Details Dialog */}
+      <Dialog open={showRenewalDetailsDialog} onOpenChange={setShowRenewalDetailsDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Renewal Details</DialogTitle>
+            <DialogDescription>
+              Configure renewal period and payment method for {selectedEntryForRenewal?.customerName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEntryForRenewal && (
+            <div className="space-y-6">
+              {/* Current Entry Status */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-3">Current Entry Status</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Customer:</span>
+                      <span className="text-sm font-medium">{selectedEntryForRenewal.customerName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mobile:</span>
+                      <span className="text-sm font-medium">{selectedEntryForRenewal.customerMobile}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Ash Pots:</span>
+                      <span className="text-sm font-medium">{selectedEntryForRenewal.numberOfPots}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Current Expiry:</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(new Date(selectedEntryForRenewal.expiryDate?.toDate?.() || selectedEntryForRenewal.expiryDate))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Rate per Month:</span>
+                      <span className="text-sm font-medium">₹{RENEWAL_RATE_PER_MONTH} per pot</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total Months:</span>
+                      <span className="text-sm font-medium">
+                        {selectedEntryForRenewal.payments.reduce((sum, payment) => sum + payment.months, 0)} months
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Renewal Configuration */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="renewalMonths">Renewal Period</Label>
+                    <Select 
+                      value={renewalMonths.toString()} 
+                      onValueChange={(value) => setRenewalMonths(parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select renewal period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Month</SelectItem>
+                        <SelectItem value="2">2 Months</SelectItem>
+                        <SelectItem value="3">3 Months</SelectItem>
+                        <SelectItem value="6">6 Months</SelectItem>
+                        <SelectItem value="12">12 Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <Select 
+                      value={renewalPaymentMethod} 
+                      onValueChange={(value) => setRenewalPaymentMethod(value as 'cash' | 'upi')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Renewal Summary */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-3 flex items-center space-x-2">
+                    <Calculator className="h-4 w-4" />
+                    <span>Renewal Summary</span>
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-800">Renewal Period:</span>
+                      <span className="text-sm font-medium text-blue-800">
+                        {renewalMonths} month(s)
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-800">Rate per Month:</span>
+                      <span className="text-sm font-medium text-blue-800">
+                        {formatCurrency(RENEWAL_RATE_PER_MONTH)} per pot
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-800">Number of Pots:</span>
+                      <span className="text-sm font-medium text-blue-800">
+                        {selectedEntryForRenewal.numberOfPots}
+                      </span>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-blue-800">Total Amount:</span>
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          {formatCurrency(calculateRenewalAmount(renewalMonths, selectedEntryForRenewal))}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* New Expiry Date */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center space-x-2">
+                    <Clock className="h-4 w-4" />
+                    <span>New Expiry Date</span>
+                  </h4>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-green-800">
+                      {formatDate(getNewExpiryDate(selectedEntryForRenewal, renewalMonths))}
+                    </p>
+                    <p className="text-xs text-green-600">
+                      Total storage period: {selectedEntryForRenewal.payments.reduce((sum, payment) => sum + payment.months, 0) + renewalMonths} months from original entry
+                    </p>
+                  </div>
+                </div>
+
+                {/* Important Information */}
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>Important:</strong> Once renewed, the entry will be extended by the selected period. 
+                    OTP verification will be sent to customer mobile. The renewal will be recorded in the entry history.
+                  </AlertDescription>
+                </Alert>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowRenewalDetailsDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSendOTPForRenewal}>
+                  Send OTP & Continue
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
