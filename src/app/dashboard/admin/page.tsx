@@ -60,6 +60,15 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCard, setExpandedCard] = useState<string | null>(null); // Track which card is expanded
 
+  // Debug function to handle card expansion
+  const handleCardClick = (cardType: string) => {
+    console.log('Card clicked:', cardType);
+    console.log('Current expandedCard:', expandedCard);
+    const newExpandedCard = expandedCard === cardType ? null : cardType;
+    console.log('New expandedCard will be:', newExpandedCard);
+    setExpandedCard(newExpandedCard);
+  };
+
   // Safety wrapper for logout
   const safeLogout = async () => {
     try {
@@ -92,8 +101,8 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    console.log('AdminDashboard: activeTab changed to:', activeTab);
-  }, [activeTab]);
+    console.log('AdminDashboard: expandedCard changed to:', expandedCard);
+  }, [expandedCard]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -416,7 +425,7 @@ export default function AdminDashboard() {
                         title="Total Active Ash Pots"
                         showOm={true}
                         className="h-full cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => setExpandedCard(expandedCard === 'active' ? null : 'active')}
+                        onClick={() => handleCardClick('active')}
                       >
                         <div className="flex items-center justify-between">
                           <div>
@@ -440,7 +449,7 @@ export default function AdminDashboard() {
                       title="Pending Ash Pots"
                       showOm={true}
                       className="h-full cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => setExpandedCard(expandedCard === 'pending' ? null : 'pending')}
+                      onClick={() => handleCardClick('pending')}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -464,7 +473,7 @@ export default function AdminDashboard() {
                       title="Dispatched Ash Pots"
                       showOm={true}
                       className="h-full cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => setExpandedCard(expandedCard === 'dispatched' ? null : 'dispatched')}
+                      onClick={() => handleCardClick('dispatched')}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -555,6 +564,7 @@ export default function AdminDashboard() {
 
                 {/* Interactive Lists Section - Shows when cards are clicked */}
                 {expandedCard && (
+                  console.log('Rendering expanded content for:', expandedCard),
                   <Card className="border-orange-200 bg-orange-50">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
