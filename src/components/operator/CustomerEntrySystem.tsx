@@ -108,7 +108,7 @@ export default function CustomerEntrySystem() {
   const handleExistingEntry = () => {
     if (searchResult) {
       setFormData({
-        customerName: searchResult.name,
+        customerName: '',  // Don't prefill name - it can be different for different entries
         customerMobile: searchResult.mobile,
         city: searchResult.city,
         numberOfPots: 1,

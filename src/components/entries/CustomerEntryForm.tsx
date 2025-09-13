@@ -36,7 +36,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
   const { user } = useAuth();
   const { showSMSDialog } = useSMSDialog();
   const [formData, setFormData] = useState({
-    name: customer?.name || '',
+    name: '',  // Don't prefill name - it can be different for different entries
     mobile: customer?.mobile || '',
     city: customer?.city || '',
     additionalDetails: customer?.additionalDetails || '',
@@ -209,7 +209,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                   required
-                  disabled={isExistingCustomer || submitting}
+                  disabled={submitting}
                   placeholder="Enter customer name"
                 />
               </div>
