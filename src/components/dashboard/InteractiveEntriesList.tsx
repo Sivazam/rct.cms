@@ -347,15 +347,15 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       setShowDispatchDialog(false);
       
       // For active entries, force amount to 0 regardless of input
-      const finalAmount = selectedEntryForDispatch.status === 'active' ? 0 : (dispatchAmount ? parseFloat(dispatchAmount) : 0);
+      const finalAmount = type === 'active' ? 0 : (dispatchAmount ? parseFloat(dispatchAmount) : 0);
       
       // Store the dispatch data and show OTP verification
       setDispatchData({
         entryId: selectedEntryForDispatch.id,
         customerMobile: selectedEntryForDispatch.customerMobile,
         amount: finalAmount,
-        reason: selectedEntryForDispatch.status === 'active' ? 'Free dispatch - active entry' : dispatchReason,
-        paymentMethod: selectedEntryForDispatch.status === 'active' ? 'cash' : dispatchPaymentMethod,
+        reason: type === 'active' ? 'Free dispatch - active entry' : dispatchReason,
+        paymentMethod: type === 'active' ? 'cash' : dispatchPaymentMethod,
         otpId: data.otpId || '' // Store OTP ID if returned
       });
       
@@ -1288,7 +1288,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
 
               {/* Dispatch Configuration */}
               <div className="space-y-4 sm:space-y-6">
-                {selectedEntryForDispatch.status === 'active' ? (
+                {type === 'active' ? (
                   // For active entries - show free dispatch info
                   <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                     <div className="flex items-center space-x-2 mb-3">
@@ -1396,7 +1396,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 </div>
 
                 {/* Important Information */}
-                {selectedEntryForDispatch.status === 'active' ? (
+                {type === 'active' ? (
                   <Alert className="bg-green-50 border-green-200">
                     <Info className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-sm text-green-800">
@@ -1415,7 +1415,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 )}
 
                 {/* Validation for Reason - Only show for pending entries */}
-                {selectedEntryForDispatch.status !== 'active' && dispatchAmount && parseFloat(dispatchAmount) < 300 && !dispatchReason && (
+                {type !== 'active' && dispatchAmount && parseFloat(dispatchAmount) < 300 && !dispatchReason && (
                   <Alert variant="destructive">
                     <AlertDescription className="text-sm">
                       <strong>Required:</strong> Please provide a reason for collecting less than the standard amount (₹300).
@@ -1424,7 +1424,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 )}
 
                 {/* Validation for Amount - Only show for pending entries */}
-                {selectedEntryForDispatch.status !== 'active' && dispatchAmount && parseFloat(dispatchAmount) > 300 && (
+                {type !== 'active' && dispatchAmount && parseFloat(dispatchAmount) > 300 && (
                   <Alert variant="destructive">
                     <AlertDescription className="text-sm">
                       <strong>Invalid:</strong> Cannot collect more than the standard amount (₹300).
@@ -1444,7 +1444,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 <Button 
                   onClick={handleSendOTPForDispatch}
                   disabled={
-                    selectedEntryForDispatch.status === 'active' 
+                    type === 'active' 
                       ? false // Always enable for active entries
                       : !dispatchAmount || 
                         parseFloat(dispatchAmount) > 300 ||
@@ -1452,7 +1452,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                   }
                   className="flex-1 order-1 sm:order-2"
                 >
-                  {selectedEntryForDispatch.status === 'active' ? 'Send OTP & Free Dispatch' : 'Send OTP & Dispatch'}
+                  {type === 'active' ? 'Send OTP & Free Dispatch' : 'Send OTP & Dispatch'}
                 </Button>
               </div>
             </div>

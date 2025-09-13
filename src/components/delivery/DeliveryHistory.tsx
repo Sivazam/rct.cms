@@ -50,6 +50,9 @@ interface DeliveryRecord {
   entryDate: string;
   expiryDate: string;
   renewalCount: number;
+  amount?: number;
+  reason?: string;
+  paymentMethod?: string;
 }
 
 interface DeliveryHistoryProps {
@@ -117,7 +120,10 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           smsSent: delivery.smsSent || false,
           entryDate: delivery.entryDate,
           expiryDate: delivery.expiryDate,
-          renewalCount: delivery.renewalCount || 0
+          renewalCount: delivery.renewalCount || 0,
+          amount: delivery.amount || 0,
+          reason: delivery.reason || '',
+          paymentMethod: delivery.paymentMethod || 'cash'
         }));
         
         setDeliveries(transformedDeliveries);
@@ -316,6 +322,8 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                   <TableHead>Contact</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Pots</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Reason</TableHead>
                   <TableHead>Delivery Date</TableHead>
                   <TableHead>Operator</TableHead>
                   <TableHead>Status</TableHead>
@@ -353,6 +361,18 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                       <div className="flex items-center space-x-1">
                         <Package className="h-4 w-4 text-gray-400" />
                         <span>{delivery.pots}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <span className="font-medium">₹{delivery.amount || 0}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs">
+                        <span className="text-sm text-gray-600">
+                          {delivery.reason || 'N/A'}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(delivery.deliveryDate)}</TableCell>
