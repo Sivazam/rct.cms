@@ -346,13 +346,16 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       // OTP sent successfully, close dispatch dialog and show OTP verification
       setShowDispatchDialog(false);
       
+      // For active entries, force amount to 0 regardless of input
+      const finalAmount = selectedEntryForDispatch.status === 'active' ? 0 : (dispatchAmount ? parseFloat(dispatchAmount) : 0);
+      
       // Store the dispatch data and show OTP verification
       setDispatchData({
         entryId: selectedEntryForDispatch.id,
         customerMobile: selectedEntryForDispatch.customerMobile,
-        amount: dispatchAmount ? parseFloat(dispatchAmount) : 0,
-        reason: dispatchReason,
-        paymentMethod: dispatchPaymentMethod,
+        amount: finalAmount,
+        reason: selectedEntryForDispatch.status === 'active' ? 'Free dispatch - active entry' : dispatchReason,
+        paymentMethod: selectedEntryForDispatch.status === 'active' ? 'cash' : dispatchPaymentMethod,
         otpId: data.otpId || '' // Store OTP ID if returned
       });
       
@@ -1285,46 +1288,68 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
 
               {/* Dispatch Configuration */}
               <div className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="dispatchAmount" className="text-sm font-medium">Collection Amount (₹)</Label>
-                    <Input
-                      id="dispatchAmount"
-                      type="number"
-                      value={dispatchAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Only allow numbers and empty string
-                        if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                          setDispatchAmount(value);
-                        }
-                      }}
-                      placeholder="Enter amount"
-                      min="0"
-                      step="1"
-                      className="h-9 sm:h-10 text-sm sm:text-base"
-                    />
-                    <p className="text-xs text-gray-500">
-                      Service-based collection - enter any amount
+                {selectedEntryForDispatch.status === 'active' ? (
+                  // For active entries - show free dispatch info
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 font-bold text-sm">₹0</span>
+                      </div>
+                      <h4 className="font-medium text-green-800">Free Dispatch</h4>
+                    </div>
+                    <p className="text-sm text-green-700">
+                      This entry is active and already paid. No collection amount is required for dispatch.
                     </p>
+                    <div className="mt-3 p-3 bg-white rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-green-800">Collection Amount:</span>
+                        <span className="text-lg font-bold text-green-800">₹0</span>
+                      </div>
+                    </div>
                   </div>
+                ) : (
+                  // For pending/expired entries - show amount input
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="dispatchAmount" className="text-sm font-medium">Collection Amount (₹)</Label>
+                      <Input
+                        id="dispatchAmount"
+                        type="number"
+                        value={dispatchAmount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow numbers and empty string
+                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            setDispatchAmount(value);
+                          }
+                        }}
+                        placeholder="Enter amount"
+                        min="0"
+                        step="1"
+                        className="h-9 sm:h-10 text-sm sm:text-base"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Service-based collection - enter any amount
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="dispatchPaymentMethod" className="text-sm font-medium">Payment Method</Label>
-                    <Select 
-                      value={dispatchPaymentMethod} 
-                      onValueChange={(value) => setDispatchPaymentMethod(value as 'cash' | 'upi')}
-                    >
-                      <SelectTrigger className="h-9 sm:h-10 text-sm sm:text-base">
-                        <SelectValue placeholder="Select payment method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="upi">UPI</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label htmlFor="dispatchPaymentMethod" className="text-sm font-medium">Payment Method</Label>
+                      <Select 
+                        value={dispatchPaymentMethod} 
+                        onValueChange={(value) => setDispatchPaymentMethod(value as 'cash' | 'upi')}
+                      >
+                        <SelectTrigger className="h-9 sm:h-10 text-sm sm:text-base">
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">Cash</SelectItem>
+                          <SelectItem value="upi">UPI</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Reason for Collection */}
                 <div className="space-y-2">
@@ -1371,16 +1396,26 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 </div>
 
                 {/* Important Information */}
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-sm">
-                    <strong>Important:</strong> This is a service-based dispatch. You can collect any amount including ₹0. 
-                    OTP verification will be sent to customer mobile for confirmation. The entry will be marked as dispatched.
-                  </AlertDescription>
-                </Alert>
+                {selectedEntryForDispatch.status === 'active' ? (
+                  <Alert className="bg-green-50 border-green-200">
+                    <Info className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-sm text-green-800">
+                      <strong>Free Dispatch:</strong> This entry is active and already paid. No amount will be collected. 
+                      OTP verification will be sent to customer mobile for confirmation. The entry will be marked as dispatched.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      <strong>Important:</strong> This is a service-based dispatch. You can collect any amount including ₹0. 
+                      OTP verification will be sent to customer mobile for confirmation. The entry will be marked as dispatched.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                {/* Validation for Reason */}
-                {dispatchAmount && parseFloat(dispatchAmount) < 300 && !dispatchReason && (
+                {/* Validation for Reason - Only show for pending entries */}
+                {selectedEntryForDispatch.status !== 'active' && dispatchAmount && parseFloat(dispatchAmount) < 300 && !dispatchReason && (
                   <Alert variant="destructive">
                     <AlertDescription className="text-sm">
                       <strong>Required:</strong> Please provide a reason for collecting less than the standard amount (₹300).
@@ -1388,8 +1423,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                   </Alert>
                 )}
 
-                {/* Validation for Amount */}
-                {dispatchAmount && parseFloat(dispatchAmount) > 300 && (
+                {/* Validation for Amount - Only show for pending entries */}
+                {selectedEntryForDispatch.status !== 'active' && dispatchAmount && parseFloat(dispatchAmount) > 300 && (
                   <Alert variant="destructive">
                     <AlertDescription className="text-sm">
                       <strong>Invalid:</strong> Cannot collect more than the standard amount (₹300).
@@ -1409,13 +1444,15 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 <Button 
                   onClick={handleSendOTPForDispatch}
                   disabled={
-                    !dispatchAmount || 
-                    parseFloat(dispatchAmount) > 300 ||
-                    (parseFloat(dispatchAmount) < 300 && !dispatchReason.trim())
+                    selectedEntryForDispatch.status === 'active' 
+                      ? false // Always enable for active entries
+                      : !dispatchAmount || 
+                        parseFloat(dispatchAmount) > 300 ||
+                        (parseFloat(dispatchAmount) < 300 && !dispatchReason.trim())
                   }
                   className="flex-1 order-1 sm:order-2"
                 >
-                  Send OTP & Dispatch
+                  {selectedEntryForDispatch.status === 'active' ? 'Send OTP & Free Dispatch' : 'Send OTP & Dispatch'}
                 </Button>
               </div>
             </div>
