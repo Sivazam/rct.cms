@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -146,6 +147,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
 }
 
 export default function InteractiveEntriesList({ type, locationId, dateRange }: InteractiveEntriesListProps) {
+  const { user } = useAuth();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,6 +175,10 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   const [dispatchData, setDispatchData] = useState<any>(null);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const RENEWAL_RATE_PER_MONTH = 300;
+
+  // Determine if location filter should be shown
+  const shouldShowLocationFilter = user?.role === 'admin'; // Only admins see location filter
+  const isOperator = user?.role === 'operator';
 
   useEffect(() => {
     fetchData();
@@ -735,21 +741,23 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
             />
           </div>
         </div>
-        <div className="flex gap-2">
-          <Select value={locationFilter} onValueChange={setLocationFilter}>
-            <SelectTrigger className="w-48 border-orange-200 focus:border-orange-400 focus:ring-orange-200">
-              <SelectValue placeholder="Location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Locations</SelectItem>
-              {locations.map((location) => (
-                <SelectItem key={location.id} value={location.id}>
-                  {location.venueName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {shouldShowLocationFilter && (
+          <div className="flex gap-2">
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger className="w-48 border-orange-200 focus:border-orange-400 focus:ring-orange-200">
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.venueName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* Results Summary */}

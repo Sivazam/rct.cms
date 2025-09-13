@@ -485,6 +485,24 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
         totalActiveEntries += 1;
       }
       
+      // Count pending renewals (expired but still active entries)
+      if (entry.status === 'active') {
+        const expiryDate = entry.expiryDate?.toDate?.() || new Date(entry.expiryDate);
+        if (expiryDate <= now && isEntryInRange) {
+          totalRenewals += 1; // Count as pending renewal
+        }
+        
+        // Count expiring entries
+        if (expiryDate >= now && expiryDate <= sevenDaysFromNow) {
+          expiringIn7Days += 1;
+        }
+      }
+      
+      // Count dispatched entries (both 'delivered' and 'dispatched' status)
+      if ((entry.status === 'delivered' || entry.status === 'dispatched') && isEntryInRange) {
+        totalDeliveries += 1; // Count as dispatched
+      }
+      
       // Process payments for collections - separate renewal and delivery payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
@@ -495,23 +513,11 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
           if (!dateRange || (paymentDate && paymentDate >= dateRange.from && paymentDate <= dateRange.to)) {
             if (payment.type === 'renewal') {
               totalRenewalCollections += amount;
-              totalRenewals += 1;
             } else if (payment.type === 'delivery') {
               totalDeliveryCollections += amount;
             }
           }
         });
-      }
-      
-      // Count deliveries (dispatched entries) - only count if within date range
-      if (entry.status === 'dispatched' && isEntryInRange) {
-        totalDeliveries += 1;
-      }
-      
-      // Count expiring entries - only count if within date range and still active
-      const expiryDate = entry.expiryDate?.toDate?.();
-      if (expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now && entry.status === 'active' && isEntryInRange) {
-        expiringIn7Days += 1;
       }
     });
     

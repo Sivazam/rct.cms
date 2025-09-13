@@ -9,9 +9,6 @@ import {
   Users, 
   TrendingUp,
   Settings,
-  Package,
-  RefreshCw,
-  Truck,
   User,
   LogOut
 } from 'lucide-react';
