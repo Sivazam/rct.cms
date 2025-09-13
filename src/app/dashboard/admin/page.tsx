@@ -511,7 +511,7 @@ export default function AdminDashboard() {
                     </SpiritualCard>
                   </motion.div>
 
-                  <motion.div
+                  {/* <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -577,7 +577,94 @@ export default function AdminDashboard() {
                         </div>
                       )}
                     </SpiritualCard>
+                  </motion.div> */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <SpiritualCard
+                      variant="sacred"
+                      title="Collection"
+                      showOm={true}
+                      className="h-full"
+                    >
+                      {/* Header with switch in top right */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+                          <div className="hidden sm:block">
+                            <div className="text-xs text-orange-600">
+                              {showWithDispatch ? 'Including dispatch collections' : 'Renewals only'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Switch moved to top right */}
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-xs sm:text-sm font-medium ${!showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
+                              Renewals
+                            </span>
+                            <Switch
+                              checked={showWithDispatch}
+                              onCheckedChange={setShowWithDispatch}
+                              className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300"
+                            />
+                            <span className={`text-xs sm:text-sm font-medium ${showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
+                              + Dispatch
+                            </span>
+                          </div>
+                          <div className="sm:hidden text-xs text-orange-600 text-right">
+                            {showWithDispatch ? 'Including dispatch' : 'Renewals only'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main revenue display */}
+                      <div className="mb-3">
+                        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-orange-800 mb-2">
+                          ₹{(stats.monthlyRevenue || 0).toLocaleString()}
+                        </div>
+                        <p className="text-xs sm:text-sm text-orange-600 leading-relaxed">
+                          {dateRange 
+                            ? `Revenue from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+                            : showWithDispatch 
+                              ? 'Total collections (renewals + dispatch)' 
+                              : 'Collections from renewals only'
+                          }
+                        </p>
+                      </div>
+
+                      {/* Breakdown section - only show when dispatch is included */}
+                      {showWithDispatch && (
+                        <div className="mt-4 pt-3 border-t border-orange-200">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                            <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
+                              <span className="flex items-center gap-2 text-green-700">
+                                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <span className="font-medium">Renewals</span>
+                              </span>
+                              <span className="font-bold text-green-800">
+                                ₹{(stats.renewalCollections || 0).toLocaleString()}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
+                              <span className="flex items-center gap-2 text-blue-700">
+                                <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <span className="font-medium">Dispatch</span>
+                              </span>
+                              <span className="font-bold text-blue-800">
+                                ₹{(stats.deliveryCollections || 0).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </SpiritualCard>
                   </motion.div>
+                
                 </div>
 
                 {/* Integrated collection toggle is now part of the Collection card above */}
