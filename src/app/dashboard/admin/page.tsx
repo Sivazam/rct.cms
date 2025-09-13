@@ -19,6 +19,7 @@ import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesLis
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { EnhancedDateRangePicker } from '@/components/ui/enhanced-date-range-picker';
+import { Switch } from '@/components/ui/switch';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -209,16 +210,16 @@ export default function AdminDashboard() {
       console.log('Expiring entries found:', expiring.length);
       
       setStats({
-        totalEntries: statsData?.totalEntries || entries.length || 0,
-        totalRenewals: statsData?.totalRenewals || pendingRenewals.length || 0,
-        totalDeliveries: statsData?.totalDeliveries || deliveries.length || 0,
-        expiringIn7Days: statsData?.expiringIn7Days || expiring.length || 0,
+        totalEntries: statsData?.totalEntries || 0,
+        totalRenewals: statsData?.totalRenewals || 0,
+        totalDeliveries: statsData?.totalDeliveries || 0,
+        expiringIn7Days: statsData?.expiringIn7Days || 0,
         monthlyRevenue: showWithDispatch ? 
           ((statsData?.renewalCollections || 0) + (statsData?.deliveryCollections || 0)) : 
           (statsData?.renewalCollections || 0),
         renewalCollections: statsData?.renewalCollections || 0,
         deliveryCollections: statsData?.deliveryCollections || 0,
-        currentActive: statsData?.currentActive || entries.filter(e => e.status === 'active').length || 0
+        currentActive: statsData?.currentActive || 0
       });
       
       setExpiringEntries(expiring);
@@ -535,27 +536,23 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <DollarSign className="h-8 w-8 text-orange-600" />
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => setShowWithDispatch(true)}
-                              className={`text-xs px-2 py-1 rounded ${
-                                showWithDispatch 
-                                  ? 'bg-orange-500 text-white' 
-                                  : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                              }`}
-                            >
-                              With Dispatch
-                            </button>
-                            <button
-                              onClick={() => setShowWithDispatch(false)}
-                              className={`text-xs px-2 py-1 rounded ${
-                                !showWithDispatch 
-                                  ? 'bg-orange-500 text-white' 
-                                  : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                              }`}
-                            >
-                              Without
-                            </button>
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center space-x-2">
+                              <span className={`text-sm font-medium ${showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
+                                Without Dispatch
+                              </span>
+                              <Switch
+                                checked={showWithDispatch}
+                                onCheckedChange={setShowWithDispatch}
+                                className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300"
+                              />
+                              <span className={`text-sm font-medium ${showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
+                                With Dispatch
+                              </span>
+                            </div>
+                            <div className="text-xs text-orange-600">
+                              {showWithDispatch ? 'Including dispatch collections' : 'Renewals only'}
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -431,6 +431,30 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     const matchesLocation = locationFilter === 'all' || entry.locationId === locationFilter;
     
     return matchesSearch && matchesLocation;
+  }).sort((a, b) => {
+    // Sort by expiry date (closest to expiry on top)
+    const expiryA = a.expiryDate?.toDate ? a.expiryDate.toDate() : new Date(a.expiryDate);
+    const expiryB = b.expiryDate?.toDate ? b.expiryDate.toDate() : new Date(b.expiryDate);
+    
+    // For active entries, sort by closest expiry first
+    if (type === 'active') {
+      return expiryA.getTime() - expiryB.getTime();
+    }
+    
+    // For pending entries, sort by most overdue first
+    if (type === 'pending') {
+      const now = new Date();
+      const overdueA = Math.max(0, now.getTime() - expiryA.getTime());
+      const overdueB = Math.max(0, now.getTime() - expiryB.getTime());
+      return overdueB - overdueA; // Most overdue first
+    }
+    
+    // For dispatched entries, sort by most recent dispatch first
+    if (type === 'dispatched') {
+      return expiryB.getTime() - expiryA.getTime(); // Most recent first
+    }
+    
+    return 0;
   });
 
   const getStatusColor = (status: string) => {
@@ -448,12 +472,37 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     return formatFirestoreDate(date);
   };
 
-  const isExpiringSoon = (expiryDate: any) => {
-    if (!expiryDate) return false;
+  const getExpiryStatusColor = (expiryDate: any) => {
+    if (!expiryDate) return '';
+    
     const now = new Date();
     const expiry = expiryDate.toDate ? expiryDate.toDate() : new Date(expiryDate);
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    return expiry <= sevenDaysFromNow && expiry > now;
+    const timeDiff = expiry.getTime() - now.getTime();
+    const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry <= 1) {
+      return 'bg-red-100 border-red-200'; // Red for 1 day or less
+    } else if (daysUntilExpiry <= 3) {
+      return 'bg-orange-100 border-orange-200'; // Orange for 3 days or less
+    } else if (daysUntilExpiry <= 7) {
+      return 'bg-yellow-100 border-yellow-200'; // Yellow for 7 days or less
+    }
+    
+    return ''; // No special background for more than 7 days
+  };
+
+  const getDaysUntilExpiry = (expiryDate: any) => {
+    if (!expiryDate) return null;
+    
+    const now = new Date();
+    const expiry = expiryDate.toDate ? expiryDate.toDate() : new Date(expiryDate);
+    const timeDiff = expiry.getTime() - now.getTime();
+    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  };
+
+  const isExpiringSoon = (expiryDate: any) => {
+    const daysUntil = getDaysUntilExpiry(expiryDate);
+    return daysUntil !== null && daysUntil <= 7 && daysUntil > 0;
   };
 
   const getTypeSpecificInfo = (entry: Entry) => {
@@ -770,13 +819,14 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
             ) : (
               filteredEntries.map((entry, index) => {
                 const typeInfo = getTypeSpecificInfo(entry);
+                const expiryColorClass = type === 'active' || type === 'pending' ? getExpiryStatusColor(entry.expiryDate) : '';
                 return (
                   <motion.tr
                     key={entry.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-gray-50"
+                    className={`hover:bg-gray-50 ${expiryColorClass} border-l-4`}
                   >
                     {type === 'pending' && (
                       <TableCell>
@@ -895,13 +945,14 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
         ) : (
           filteredEntries.map((entry, index) => {
             const typeInfo = getTypeSpecificInfo(entry);
+            const expiryColorClass = type === 'active' || type === 'pending' ? getExpiryStatusColor(entry.expiryDate) : '';
             return (
               <motion.div
                 key={entry.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white border border-gray-200 rounded-lg p-4"
+                className={`bg-white border border-gray-200 rounded-lg p-4 ${expiryColorClass} border-l-4`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-2">

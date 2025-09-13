@@ -11,7 +11,9 @@ import {
   Settings,
   Package,
   RefreshCw,
-  Truck
+  Truck,
+  User,
+  LogOut
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -95,25 +97,18 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
       isMain: true
     },
     {
-      id: 'entries',
-      label: 'Entries',
-      icon: <Package className="h-5 w-5" />,
-      href: '/dashboard/operator?tab=entries',
-      isMain: true
+      id: 'profile',
+      label: 'Profile',
+      icon: <User className="h-5 w-5" />,
+      href: '/dashboard/operator?tab=profile',
+      isMain: false
     },
     {
-      id: 'renewals',
-      label: 'Renewals',
-      icon: <RefreshCw className="h-5 w-5" />,
-      href: '/dashboard/operator?tab=renewals',
-      isMain: true
-    },
-    {
-      id: 'deliveries',
-      label: 'Deliveries',
-      icon: <Truck className="h-5 w-5" />,
-      href: '/dashboard/operator?tab=deliveries',
-      isMain: true
+      id: 'logout',
+      label: 'Logout',
+      icon: <LogOut className="h-5 w-5" />,
+      href: '#', // Will handle logout directly
+      isMain: false
     }
   ];
 
@@ -140,6 +135,12 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
   const handleNavClick = (navId: string, href: string) => {
     try {
       console.log('MobileBottomNav: Navigation clicked', { navId, href });
+      
+      // Handle logout specially
+      if (navId === 'logout') {
+        safeOnLogout();
+        return;
+      }
       
       // Update URL parameters if needed
       if (href.includes('?tab=') && typeof window !== 'undefined') {

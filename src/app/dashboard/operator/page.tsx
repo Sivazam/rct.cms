@@ -15,6 +15,7 @@ import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
+import { EnhancedDateRangePicker } from '@/components/ui/enhanced-date-range-picker';
 import { 
   MapPin,
   Package,
@@ -34,6 +35,7 @@ import { motion } from 'framer-motion';
 export default function OperatorDashboard() {
   const { user, logout } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [locations, setLocations] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
     totalEntries: 0,
@@ -51,7 +53,7 @@ export default function OperatorDashboard() {
 
   useEffect(() => {
     fetchOperatorData();
-  }, [selectedLocation, user]);
+  }, [selectedLocation, user, dateRange]);
 
   // Handle card expansion with smooth scrolling
   const handleCardClick = (cardType: string) => {
@@ -216,14 +218,14 @@ export default function OperatorDashboard() {
           return expiryDate && expiryDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         }).length;
         
-        const statsData = await getSystemStats(selectedLocation);
+          const statsData = await getSystemStats(selectedLocation, dateRange);
         
         setStats({
-          totalEntries: activeEntries.length,
-          totalRenewals: pendingRenewalsEntries.length,
-          totalDeliveries: deliveredEntries.length,
-          expiringIn7Days: expiringSoonEntries.length,
-          monthlyRevenue: monthlyRevenue,
+          totalEntries: statsData?.totalEntries || 0,
+          totalRenewals: statsData?.totalRenewals || 0,
+          totalDeliveries: statsData?.totalDeliveries || 0,
+          expiringIn7Days: statsData?.expiringIn7Days || 0,
+          monthlyRevenue: statsData?.renewalCollections || 0,
           todayEntries: todayEntries.length,
           todayRevenue: todayRevenue,
           pendingTasks: pendingTasks
@@ -375,7 +377,7 @@ export default function OperatorDashboard() {
             </div>
           ) : (
             <div>
-              {/* Desktop Tabs */}
+              {/* Desktop Tabs - Simplified to Overview Only */}
               <div className="hidden md:block mb-6">
                 <div className="w-full overflow-x-auto">
                   <div className="flex flex-wrap gap-1 p-1 bg-orange-100 rounded-lg min-w-max">
@@ -389,45 +391,32 @@ export default function OperatorDashboard() {
                     >
                       Overview
                     </button>
-                    <button
-                      onClick={() => handleTabChange('entries')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'entries' 
-                          ? 'bg-orange-500 text-white shadow-sm' 
-                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                      }`}
-                    >
-                      Customer Entries
-                    </button>
-                    <button
-                      onClick={() => handleTabChange('renewals')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'renewals' 
-                          ? 'bg-orange-500 text-white shadow-sm' 
-                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                      }`}
-                    >
-                      Renewals
-                    </button>
-                    <button
-                      onClick={() => handleTabChange('deliveries')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'deliveries' 
-                          ? 'bg-orange-500 text-white shadow-sm' 
-                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                      }`}
-                    >
-                      Deliveries
-                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Responsive Content - Works for both desktop and mobile */}
               <div className="space-y-6">
-                {/* Overview Tab */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-6">
+                {/* Overview Tab - Always Show */}
+                <div className="space-y-6">
+                    {/* Date Range Picker */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-orange-200">
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-lg font-semibold text-orange-800">Dashboard Overview</h3>
+                        <p className="text-sm text-orange-600">
+                          {dateRange 
+                            ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+                            : 'Showing data till today'
+                          }
+                        </p>
+                      </div>
+                      <EnhancedDateRangePicker 
+                        onDateRangeChange={setDateRange}
+                        placeholder="Select date range (optional)"
+                        initialDateRange={dateRange}
+                      />
+                    </div>
+
                     {/* Enhanced Stats Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                       <motion.div
@@ -571,7 +560,7 @@ export default function OperatorDashboard() {
                             <InteractiveEntriesList 
                               type={expandedCard}
                               locationId={selectedLocation}
-                              dateRange={undefined}
+                              dateRange={dateRange}
                             />
                           </CardContent>
                         </Card>
@@ -804,17 +793,7 @@ export default function OperatorDashboard() {
                         </CardContent>
                       </Card>
                     )}
-                  </div>
-                )}
-
-                {/* Entries Tab */}
-                {activeTab === 'entries' && <CustomerEntrySystem />}
-
-                {/* Renewals Tab */}
-                {activeTab === 'renewals' && <RenewalSystem />}
-
-                {/* Deliveries Tab */}
-                {activeTab === 'deliveries' && <DeliverySystem />}
+                </div>
               </div>
             </div>
           )}
