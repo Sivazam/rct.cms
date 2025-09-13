@@ -7,10 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw } from 'lucide-react';
+import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
+import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
+import RenewalSystem from '@/components/renewals/RenewalSystem';
+import OTPVerification from '@/components/renewals/OTPVerification';
+import RenewalForm from '@/components/renewals/RenewalForm';
+import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
 
 interface Entry {
   id: string;
@@ -55,6 +60,87 @@ interface InteractiveEntriesListProps {
   dateRange?: { from: Date; to: Date };
 }
 
+// Wrapper component for RenewalSystem with pre-selected entry
+function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; onBack: () => void }) {
+  const [currentStep, setCurrentStep] = useState<'otp' | 'form' | 'confirmation'>('otp');
+  const [completedRenewal, setCompletedRenewal] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleOTPVerified = () => {
+    setCurrentStep('form');
+  };
+
+  const handleRenewalSuccess = (renewalData: any) => {
+    setCompletedRenewal(renewalData);
+    setCurrentStep('confirmation');
+  };
+
+  const handleCancel = () => {
+    onBack();
+  };
+
+  const handleNewRenewal = () => {
+    setCurrentStep('otp');
+    setCompletedRenewal(null);
+  };
+
+  const handleViewEntries = () => {
+    onBack();
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 'otp':
+        return (
+          <div className="mb-4">
+            <OTPVerification
+              mobile={entry.customerMobile}
+              entryId={entry.id}
+              type="renewal"
+              onVerified={handleOTPVerified}
+              onCancel={handleCancel}
+              loading={loading}
+            />
+          </div>
+        );
+
+      case 'form':
+        return (
+          <div className="mb-4">
+            <RenewalForm
+              entry={entry}
+              onSuccess={handleRenewalSuccess}
+              onCancel={handleCancel}
+              loading={loading}
+            />
+          </div>
+        );
+
+      case 'confirmation':
+        return (
+          <div>
+            {completedRenewal && (
+              <RenewalConfirmation
+                renewalData={completedRenewal}
+                onNewRenewal={handleNewRenewal}
+                onViewEntries={handleViewEntries}
+              />
+            )}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      {renderStep()}
+    </div>
+  );
+}
+
 export default function InteractiveEntriesList({ type, locationId, dateRange }: InteractiveEntriesListProps) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -62,6 +148,9 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState(locationId || 'all');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showNewEntry, setShowNewEntry] = useState(false);
+  const [showRenewal, setShowRenewal] = useState(false);
+  const [selectedEntryForRenewal, setSelectedEntryForRenewal] = useState<Entry | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -146,6 +235,26 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     }
   };
 
+  const handleNewEntryClick = () => {
+    setShowNewEntry(true);
+    setShowRenewal(false);
+    setSelectedEntryForRenewal(null);
+  };
+
+  const handleRenewClick = (entry: Entry) => {
+    setSelectedEntryForRenewal(entry);
+    setShowRenewal(true);
+    setShowNewEntry(false);
+  };
+
+  const handleBackToList = () => {
+    setShowNewEntry(false);
+    setShowRenewal(false);
+    setSelectedEntryForRenewal(null);
+    // Refresh the data
+    fetchData();
+  };
+
   const filteredEntries = entries.filter(entry => {
     const customerName = entry.customerName || '';
     const customerMobile = entry.customerMobile || '';
@@ -221,8 +330,74 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     );
   }
 
+  // Show CustomerEntrySystem if New Entry is clicked for active type
+  if (showNewEntry && type === 'active') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-orange-800">Create New Entry</h3>
+            <p className="text-sm text-orange-600">Register a new customer and create ash pot entry</p>
+          </div>
+          <Button variant="outline" onClick={handleBackToList}>
+            ← Back to List
+          </Button>
+        </div>
+        <CustomerEntrySystem />
+      </div>
+    );
+  }
+
+  // Show RenewalSystem if Renew is clicked for pending type
+  if (showRenewal && type === 'pending' && selectedEntryForRenewal) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-green-800">Renew Entry</h3>
+            <p className="text-sm text-green-600">Renew ash pot entry for {selectedEntryForRenewal.customerName}</p>
+          </div>
+          <Button variant="outline" onClick={handleBackToList}>
+            ← Back to List
+          </Button>
+        </div>
+        <RenewalSystemWithPreselectedEntry entry={selectedEntryForRenewal} onBack={handleBackToList} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {/* Header with New Entry button for Active type */}
+      {type === 'active' && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-orange-800">Active Ash Pots</h3>
+            <p className="text-sm text-orange-600">Currently active ash pot entries</p>
+          </div>
+          <Button onClick={handleNewEntryClick} className="bg-orange-600 hover:bg-orange-700">
+            <Plus className="h-4 w-4 mr-2" />
+            New Entry
+          </Button>
+        </div>
+      )}
+
+      {/* Header for Pending type */}
+      {type === 'pending' && (
+        <div>
+          <h3 className="text-lg font-semibold text-red-800">Pending Ash Pots</h3>
+          <p className="text-sm text-red-600">Entries pending renewal or processing</p>
+        </div>
+      )}
+
+      {/* Header for Dispatched type */}
+      {type === 'dispatched' && (
+        <div>
+          <h3 className="text-lg font-semibold text-amber-800">Dispatched Ash Pots</h3>
+          <p className="text-sm text-amber-600">Dispatched/delivered ash pot entries</p>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -271,6 +446,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
         <Table>
           <TableHeader>
             <TableRow>
+              {type === 'pending' && <TableHead className="w-24">Action</TableHead>}
               <TableHead>Customer</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Location</TableHead>
@@ -285,7 +461,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           <TableBody>
             {filteredEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={type === 'pending' ? 10 : 9} className="text-center py-12">
                   <div className="flex flex-col items-center space-y-4">
                     <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
                       <Package className="h-8 w-8 text-orange-500" />
@@ -326,6 +502,18 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                     transition={{ delay: index * 0.05 }}
                     className="hover:bg-gray-50"
                   >
+                    {type === 'pending' && (
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleRenewClick(entry)}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Renew
+                        </Button>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {typeInfo.icon}
@@ -432,6 +620,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 transition={{ delay: index * 0.05 }}
                 className="bg-white border rounded-lg p-4 shadow-sm"
               >
+                {/* Renew Button for Pending Type */}
+                {type === 'pending' && (
+                  <div className="mb-3">
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleRenewClick(entry)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Renew Entry
+                    </Button>
+                  </div>
+                )}
+
                 {/* Customer Info */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -483,14 +685,14 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                       <Calendar className="h-3 w-3 text-gray-400" />
                       <span>{formatDate(entry.expiryDate)}</span>
                       {isExpiringSoon(entry.expiryDate) && (
-                        <Badge variant="destructive" className="text-xs">Soon</Badge>
+                        <Badge variant="destructive" className="text-xs">Expiring Soon</Badge>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Payment Info */}
-                <div className="flex items-center justify-between pt-3 border-t">
+                {/* Payments */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <div className="text-sm">
                     <div className="font-medium">₹{entry.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0}</div>
                     <div className="text-gray-500">{entry.renewals?.length || 0} renewals</div>

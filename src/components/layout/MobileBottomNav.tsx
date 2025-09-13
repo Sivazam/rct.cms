@@ -8,7 +8,10 @@ import {
   Home, 
   Users, 
   TrendingUp,
-  Settings
+  Settings,
+  Package,
+  RefreshCw,
+  Truck
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
