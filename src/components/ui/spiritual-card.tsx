@@ -13,6 +13,7 @@ interface SpiritualCardProps {
   mantra?: string;
   showOm?: boolean;
   footer?: ReactNode;
+  onClick?: () => void;
 }
 
 export default function SpiritualCard({
@@ -23,7 +24,8 @@ export default function SpiritualCard({
   variant = 'default',
   mantra,
   showOm = false,
-  footer
+  footer,
+  onClick
 }: SpiritualCardProps) {
   const getVariantStyles = () => {
     switch (variant) {
@@ -61,7 +63,10 @@ export default function SpiritualCard({
   const styles = getVariantStyles();
 
   return (
-    <Card className={`relative overflow-hidden ${styles.card} ${className}`}>
+    <Card 
+      className={`relative overflow-hidden ${styles.card} ${className}`}
+      onClick={onClick}
+    >
       {/* Subtle background element */}
       {showOm && (
         <div className="absolute top-3 right-3 text-amber-200 text-lg opacity-20 pointer-events-none">

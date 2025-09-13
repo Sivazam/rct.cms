@@ -62,10 +62,10 @@ export default function AdminDashboard() {
 
   // Debug function to handle card expansion
   const handleCardClick = (cardType: string) => {
-    console.log('Card clicked:', cardType);
-    console.log('Current expandedCard:', expandedCard);
+    console.log('🔥 Card clicked:', cardType);
+    console.log('🔥 Current expandedCard:', expandedCard);
     const newExpandedCard = expandedCard === cardType ? null : cardType;
-    console.log('New expandedCard will be:', newExpandedCard);
+    console.log('🔥 New expandedCard will be:', newExpandedCard);
     setExpandedCard(newExpandedCard);
   };
 
@@ -564,7 +564,7 @@ export default function AdminDashboard() {
 
                 {/* Interactive Lists Section - Shows when cards are clicked */}
                 {expandedCard && (
-                  console.log('Rendering expanded content for:', expandedCard),
+                  console.log('🚀 Rendering expanded content for:', expandedCard),
                   <Card className="border-orange-200 bg-orange-50">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
@@ -602,6 +602,52 @@ export default function AdminDashboard() {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Debug Test Button */}
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-2">Debug Test</h3>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => {
+                        console.log('🔵 Test button clicked - active');
+                        setExpandedCard('active');
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600"
+                    >
+                      Test Active Card
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        console.log('🔵 Test button clicked - pending');
+                        setExpandedCard('pending');
+                      }}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Test Pending Card
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        console.log('🔵 Test button clicked - dispatched');
+                        setExpandedCard('dispatched');
+                      }}
+                      className="bg-amber-500 hover:bg-amber-600"
+                    >
+                      Test Dispatched Card
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        console.log('🔵 Test button clicked - close');
+                        setExpandedCard(null);
+                      }}
+                      variant="outline"
+                    >
+                      Close All
+                    </Button>
+                  </div>
+                  <div className="mt-2 text-sm text-blue-600">
+                    Current expandedCard: <strong>{expandedCard || 'none'}</strong>
+                  </div>
+                </div>
 
                 {/* Spiritual Quote */}
                 {/* <SpiritualCard
