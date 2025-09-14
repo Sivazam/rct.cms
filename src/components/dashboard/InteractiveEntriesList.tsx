@@ -219,6 +219,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         operatorName: operatorMap.get(entry.operatorId) || 'Unknown Operator'
       }));
 
+      // Debug: Log dispatched entries to see their structure
+      if (type === 'dispatched') {
+        console.log('Dispatched entries data:', entriesWithDetails.slice(0, 3)); // Log first 3 dispatched entries
+        entriesWithDetails.forEach((entry, index) => {
+          console.log(`Dispatched entry ${index + 1}:`, {
+            id: entry.id,
+            status: entry.status,
+            deliveryDate: entry.deliveryDate,
+            dispatchReason: entry.dispatchReason,
+            customerName: entry.customerName
+          });
+        });
+      }
+
       // Additional filtering based on type
       if (type === 'active') {
         // Filter for truly active entries (not expired)
@@ -534,6 +548,18 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
     
     const daysUntil = getDaysUntilExpiry(expiryDate);
     return daysUntil !== null && daysUntil <= 7 && daysUntil > 0;
+  };
+
+  // Helper function to get dispatch date from entry
+  const getDispatchDate = (entry: Entry) => {
+    // Try different possible field names for backward compatibility
+    return entry.deliveryDate || entry.dispatchDate || entry.deliveredAt;
+  };
+
+  // Helper function to get dispatch reason from entry
+  const getDispatchReason = (entry: Entry) => {
+    // Try different possible field names for backward compatibility
+    return entry.dispatchReason || entry.reason || entry.deliveryReason;
   };
 
   const getTypeSpecificInfo = (entry: Entry) => {
@@ -902,7 +928,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-4 w-4 text-blue-400" />
-                          <span>{formatDate(entry.deliveryDate)}</span>
+                          <span>{getDispatchDate(entry) ? formatDate(getDispatchDate(entry)) : 'N/A'}</span>
                         </div>
                       </TableCell>
                     )}
@@ -910,7 +936,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                       <TableCell>
                         <div className="max-w-xs">
                           <span className="text-sm text-gray-600">
-                            {entry.dispatchReason || 'N/A'}
+                            {getDispatchReason(entry) || 'N/A'}
                           </span>
                         </div>
                       </TableCell>
@@ -1009,7 +1035,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                   {type === 'dispatched' && (
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-3 w-3 text-blue-400" />
-                      <span className="text-xs">{formatDate(entry.deliveryDate)}</span>
+                      <span className="text-xs">{getDispatchDate(entry) ? formatDate(getDispatchDate(entry)) : 'N/A'}</span>
                     </div>
                   )}
                   {type !== 'dispatched' && (
@@ -1020,10 +1046,10 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                   )}
                 </div>
 
-                {type === 'dispatched' && entry.dispatchReason && (
+                {type === 'dispatched' && getDispatchReason(entry) && (
                   <div className="mb-3 p-2 bg-gray-50 rounded text-xs">
                     <div className="font-medium text-gray-700 mb-1">Reason:</div>
-                    <div className="text-gray-600">{entry.dispatchReason}</div>
+                    <div className="text-gray-600">{getDispatchReason(entry)}</div>
                   </div>
                 )}
 
