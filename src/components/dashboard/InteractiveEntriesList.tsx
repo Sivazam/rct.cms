@@ -504,7 +504,10 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
-    return formatFirestoreDate(date);
+    console.log('Formatting date:', date, 'type:', typeof date);
+    const formatted = formatFirestoreDate(date);
+    console.log('Formatted date:', formatted);
+    return formatted;
   };
 
   const getExpiryStatusColor = (expiryDate: any, entryStatus?: string) => {
