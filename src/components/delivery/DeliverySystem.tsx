@@ -36,20 +36,20 @@ interface Entry {
   entryDate: string;
   expiryDate: string;
   pots: number;
-  status: 'active' | 'expired' | 'delivered';
+  status: 'active' | 'expired' | 'dispatched';
   locationId: string;
   locationName: string;
   renewalCount: number;
   lastRenewalDate?: string;
 }
 
-type DeliveryStep = 'search' | 'payment' | 'confirmation' | 'history';
+type DispatchStep = 'search' | 'payment' | 'confirmation' | 'history';
 
 export default function DeliverySystem() {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<DeliveryStep>('search');
+  const [currentStep, setCurrentStep] = useState<DispatchStep>('search');
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-  const [deliveryData, setDeliveryData] = useState<{
+  const [dispatchData, setDispatchData] = useState<{
     deliveryDate: string;
     operatorName: string;
   } | null>(null);
@@ -89,7 +89,7 @@ export default function DeliverySystem() {
 
   const handleNewDelivery = () => {
     setSelectedEntry(null);
-    setDeliveryData(null);
+    setDispatchData(null);
     setPaymentData(null);
     setCurrentStep('search');
   };
@@ -107,14 +107,14 @@ export default function DeliverySystem() {
       const deliveryDate = new Date().toISOString();
       const operatorName = user.name || 'Operator';
       
-      setDeliveryData({
+      setDispatchData({
         deliveryDate,
         operatorName
       });
       
       setPaymentData(payment);
       
-      // Process delivery with payment using the actual API
+      // Process dispatch with payment using the actual API
       setLoading(true);
       try {
         const response = await fetch('/api/deliveries', {
@@ -135,13 +135,13 @@ export default function DeliverySystem() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to process delivery');
+          throw new Error(data.error || 'Failed to process dispatch');
         }
 
-        // Delivery processed successfully
-        console.log('Delivery processed successfully:', data);
+        // Dispatch processed successfully
+        console.log('Dispatch processed successfully:', data);
       } catch (error: any) {
-        console.error('Error processing delivery:', error);
+        console.error('Error processing dispatch:', error);
         // Even if there's an error, we'll proceed to confirmation for demo purposes
         // In production, you might want to show an error message
       } finally {
@@ -185,11 +185,11 @@ export default function DeliverySystem() {
         ) : null;
       
       case 'confirmation':
-        return selectedEntry && deliveryData && paymentData ? (
+        return selectedEntry && dispatchData && paymentData ? (
           <DeliveryConfirmation
             entry={selectedEntry}
             deliveryData={{
-              ...deliveryData,
+              ...dispatchData,
               amountPaid: paymentData.amountPaid,
               dueAmount: paymentData.dueAmount,
               reason: paymentData.reason
@@ -325,7 +325,7 @@ export default function DeliverySystem() {
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
                 <CardDescription>
-                  Common delivery-related tasks
+                  Common dispatch-related tasks
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -337,8 +337,8 @@ export default function DeliverySystem() {
                     <div className="flex items-center space-x-3">
                       <Calendar className="h-6 w-6 text-blue-600" />
                       <div>
-                        <h3 className="font-semibold">Delivery History</h3>
-                        <p className="text-sm text-gray-600">View all past deliveries</p>
+                        <h3 className="font-semibold">Dispatch History</h3>
+                        <p className="text-sm text-gray-600">View all past dispatches</p>
                       </div>
                     </div>
                   </button>
@@ -347,8 +347,8 @@ export default function DeliverySystem() {
                     <div className="flex items-center space-x-3">
                       <RotateCcw className="h-6 w-6 text-gray-400" />
                       <div>
-                        <h3 className="font-semibold">Bulk Delivery</h3>
-                        <p className="text-sm text-gray-600">Process multiple deliveries (Coming Soon)</p>
+                        <h3 className="font-semibold">Bulk Dispatch</h3>
+                        <p className="text-sm text-gray-600">Process multiple dispatches (Coming Soon)</p>
                       </div>
                     </div>
                   </button> */}

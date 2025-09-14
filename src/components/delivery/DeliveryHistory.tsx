@@ -34,7 +34,7 @@ interface Customer {
   city: string;
 }
 
-interface DeliveryRecord {
+interface DispatchRecord {
   id: string;
   entryId: string;
   customerId: string;
@@ -61,8 +61,8 @@ interface DeliveryHistoryProps {
 }
 
 export default function DeliveryHistory({ onClose, loading = false }: DeliveryHistoryProps) {
-  const [deliveries, setDeliveries] = useState<DeliveryRecord[]>([]);
-  const [filteredDeliveries, setFilteredDeliveries] = useState<DeliveryRecord[]>([]);
+  const [dispatches, setDispatches] = useState<DispatchRecord[]>([]);
+  const [filteredDeliveries, setFilteredDeliveries] = useState<DispatchRecord[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLocation, setFilterLocation] = useState('all');
@@ -71,13 +71,13 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadDeliveries();
+    loadDispatches();
     loadLocations();
   }, []);
 
   useEffect(() => {
-    filterAndSearchDeliveries();
-  }, [deliveries, searchTerm, filterLocation, filterDateRange]);
+    filterAndSearchDispatches();
+  }, [dispatches, searchTerm, filterLocation, filterDateRange]);
 
   const loadLocations = async () => {
     try {
@@ -91,7 +91,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
     }
   };
 
-  const loadDeliveries = async () => {
+  const loadDispatches = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/deliveries');
@@ -100,7 +100,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
         const deliveriesData = data.deliveries || [];
         
         // Transform API data to match our interface
-        const transformedDeliveries: DeliveryRecord[] = deliveriesData.map((delivery: any) => ({
+        const transformedDispatches: DispatchRecord[] = deliveriesData.map((delivery: any) => ({
           id: delivery.id,
           entryId: delivery.entryId,
           customerId: delivery.customerId,
@@ -126,28 +126,28 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           paymentMethod: delivery.paymentMethod || 'cash'
         }));
         
-        setDeliveries(transformedDeliveries);
+        setDispatches(transformedDispatches);
       } else {
-        console.error('Failed to load deliveries:', response.statusText);
-        setDeliveries([]);
+        console.error('Failed to load dispatches:', response.statusText);
+        setDispatches([]);
       }
     } catch (error) {
-      console.error('Failed to load deliveries:', error);
-      setDeliveries([]);
+      console.error('Failed to load dispatches:', error);
+      setDispatches([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filterAndSearchDeliveries = () => {
-    let filtered = [...deliveries];
+  const filterAndSearchDispatches = () => {
+    let filtered = [...dispatches];
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(delivery => {
-        const customerName = delivery.customer?.name || '';
-        const customerMobile = delivery.customer?.mobile || '';
-        const entryId = delivery.entryId || '';
+      filtered = filtered.filter(dispatch => {
+        const customerName = dispatch.customer?.name || '';
+        const customerMobile = dispatch.customer?.mobile || '';
+        const entryId = dispatch.entryId || '';
         
         return customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                customerMobile.includes(searchTerm) ||
@@ -157,7 +157,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
 
     // Location filter
     if (filterLocation !== 'all') {
-      filtered = filtered.filter(delivery => delivery.locationName === filterLocation);
+      filtered = filtered.filter(dispatch => dispatch.locationName === filterLocation);
     }
 
     // Date range filter
@@ -181,8 +181,8 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
       }
       
       if (filterDateRange !== 'all') {
-        filtered = filtered.filter(delivery => 
-          new Date(delivery.deliveryDate) >= cutoffDate
+        filtered = filtered.filter(dispatch => 
+          new Date(dispatch.deliveryDate) >= cutoffDate
         );
       }
     }
@@ -204,7 +204,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
       // Simulate export process
       await new Promise(resolve => setTimeout(resolve, 1500));
       // In real implementation, this would generate and download a CSV/Excel file
-      console.log('Exporting delivery history...');
+      console.log('Exporting dispatch history...');
     } catch (error) {
       console.error('Failed to export:', error);
     } finally {
@@ -212,7 +212,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
     }
   };
 
-  const totalDeliveries = deliveries.length;
+  const totalDeliveries = dispatches.length;
   const filteredCount = filteredDeliveries.length;
 
   if (isLoading) {
@@ -235,10 +235,10 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="h-5 w-5" />
-            <span>Delivery History</span>
+            <span>Dispatch History</span>
           </CardTitle>
           <CardDescription>
-            View and manage all delivery records
+            View and manage all dispatch records
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -292,7 +292,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           </div>
 
           <div className="flex items-center justify-between text-sm text-gray-600">
-            <span>Showing {filteredCount} of {totalDeliveries} deliveries</span>
+            <span>Showing {filteredCount} of {totalDeliveries} dispatches</span>
             {(searchTerm || filterLocation !== 'all' || filterDateRange !== 'all') && (
               <Button
                 variant="ghost"
@@ -317,30 +317,30 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Delivery ID</TableHead>
+                  <TableHead>Dispatch ID</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Pots</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Reason</TableHead>
-                  <TableHead>Delivery Date</TableHead>
+                  <TableHead>Dispatch Date</TableHead>
                   <TableHead>Operator</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDeliveries.map((delivery) => (
-                  <TableRow key={delivery.id}>
+                {filteredDeliveries.map((dispatch) => (
+                  <TableRow key={dispatch.id}>
                     <TableCell className="font-mono text-sm">
-                      {delivery.id.slice(-6)}
+                      {dispatch.id.slice(-6)}
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{delivery.customer.name}</div>
+                        <div className="font-medium">{dispatch.customer.name}</div>
                         <div className="text-sm text-gray-500">
-                          Entry: {delivery.entryId.slice(-6)}
+                          Entry: {dispatch.entryId.slice(-6)}
                         </div>
                       </div>
                     </TableCell>
@@ -348,48 +348,48 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                       <div className="space-y-1">
                         <div className="flex items-center space-x-1 text-sm">
                           <Phone className="h-3 w-3 text-gray-400" />
-                          <span>{delivery.customer.mobile}</span>
+                          <span>{dispatch.customer.mobile}</span>
                         </div>
                         <div className="flex items-center space-x-1 text-sm">
                           <MapPin className="h-3 w-3 text-gray-400" />
-                          <span>{delivery.customer.city}</span>
+                          <span>{dispatch.customer.city}</span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{delivery.locationName}</TableCell>
+                    <TableCell>{dispatch.locationName}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Package className="h-4 w-4 text-gray-400" />
-                        <span>{delivery.pots}</span>
+                        <span>{dispatch.pots}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <span className="font-medium">₹{delivery.amount || 0}</span>
+                        <span className="font-medium">₹{dispatch.amount || 0}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs">
                         <span className="text-sm text-gray-600">
-                          {delivery.reason || 'N/A'}
+                          {dispatch.reason || 'N/A'}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(delivery.deliveryDate)}</TableCell>
-                    <TableCell>{delivery.operatorName}</TableCell>
+                    <TableCell>{formatDate(dispatch.deliveryDate)}</TableCell>
+                    <TableCell>{dispatch.operatorName}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          Delivered
+                          Dispatched
                         </Badge>
                         <div className="flex space-x-1">
-                          {delivery.otpVerified && (
+                          {dispatch.otpVerified && (
                             <Badge variant="outline" className="text-xs">
                               OTP Verified
                             </Badge>
                           )}
-                          {delivery.smsSent && (
+                          {dispatch.smsSent && (
                             <Badge variant="outline" className="text-xs">
                               SMS Sent
                             </Badge>
@@ -415,11 +415,11 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
         <Card>
           <CardContent className="text-center py-8">
             <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 mb-2">No delivery records found</p>
+            <p className="text-gray-600 mb-2">No dispatch records found</p>
             <p className="text-sm text-gray-500">
               {searchTerm || filterLocation !== 'all' || filterDateRange !== 'all'
                 ? 'Try adjusting your filters'
-                : 'Start making deliveries to see them here'}
+                : 'Start making dispatches to see them here'}
             </p>
           </CardContent>
         </Card>
@@ -431,7 +431,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Package className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium">Total Deliveries</span>
+              <span className="text-sm font-medium">Total Dispatches</span>
             </div>
             <div className="text-2xl font-bold mt-1">{totalDeliveries}</div>
           </CardContent>

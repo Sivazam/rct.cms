@@ -63,6 +63,7 @@ interface InteractiveEntriesListProps {
   type: 'active' | 'pending' | 'dispatched';
   locationId?: string;
   dateRange?: { from: Date; to: Date };
+  onDataChanged?: () => void;
 }
 
 // Wrapper component for RenewalSystem with pre-selected entry
@@ -128,7 +129,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
   );
 }
 
-export default function InteractiveEntriesList({ type, locationId, dateRange }: InteractiveEntriesListProps) {
+export default function InteractiveEntriesList({ type, locationId, dateRange, onDataChanged }: InteractiveEntriesListProps) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -180,7 +181,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           statusFilter = 'active'; // We'll filter client-side for expired entries
           break;
         case 'dispatched':
-          statusFilter = 'delivered';
+          statusFilter = 'dispatched';
           break;
         default:
           statusFilter = 'active';
@@ -429,6 +430,10 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     setCustomerError('');
     // Refresh the data
     fetchData();
+    // Notify parent component that data has changed
+    if (onDataChanged) {
+      onDataChanged();
+    }
   };
 
   const filteredEntries = entries.filter(entry => {
@@ -475,6 +480,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       case 'active': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'expired': return 'bg-red-100 text-red-800 border-red-200';
       case 'delivered': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'dispatched': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'disposed': return 'bg-stone-100 text-stone-800 border-stone-200';
       default: return 'bg-stone-100 text-stone-800 border-stone-200';
     }
@@ -670,7 +676,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       {type === 'dispatched' && (
         <div>
           <h3 className="text-lg font-semibold text-amber-800">Dispatched Ash Pots</h3>
-          <p className="text-sm text-amber-600">Dispatched/delivered ash pot entries</p>
+          <p className="text-sm text-amber-600">Dispatched ash pot entries</p>
         </div>
       )}
 

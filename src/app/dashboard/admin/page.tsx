@@ -191,9 +191,9 @@ export default function AdminDashboard() {
       // Fetch deliveries count
       const deliveries = await getEntries({
         locationId: locationId,
-        status: 'delivered'
+        status: 'dispatched'
       });
-      console.log('Deliveries found:', deliveries.length);
+      console.log('Dispatched entries found:', deliveries.length);
       
       // Fetch recent entries for display (always show recent, not filtered by date range)
       const allEntries = await getEntries({
@@ -233,6 +233,12 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Callback function to refresh dashboard data when entries change
+  const handleEntriesDataChanged = () => {
+    console.log('AdminDashboard: Entries data changed, refreshing dashboard');
+    fetchDashboardData();
   };
 
   const handleTabChange = (tab: string) => {
@@ -699,7 +705,7 @@ export default function AdminDashboard() {
                       <CardDescription>
                         {expandedCard === 'active' && 'Currently active ash pot entries'}
                         {expandedCard === 'pending' && 'Entries pending renewal or processing'}
-                        {expandedCard === 'dispatched' && 'Dispatched/delivered ash pot entries'}
+                        {expandedCard === 'dispatched' && 'Dispatched ash pot entries'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -707,6 +713,7 @@ export default function AdminDashboard() {
                         type={expandedCard}
                         locationId={selectedLocation === 'all' ? undefined : selectedLocation}
                         dateRange={dateRange}
+                        onDataChanged={handleEntriesDataChanged}
                       />
                     </CardContent>
                   </Card>
