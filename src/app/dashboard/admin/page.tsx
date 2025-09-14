@@ -601,9 +601,9 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-3">
                           <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
                           <div className="hidden sm:block">
-                            <div className="text-xs text-orange-600">
+                            {/* <div className="text-xs text-orange-600">
                               {showWithDispatch ? 'Including dispatch collections' : 'Renewals only'}
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                         
