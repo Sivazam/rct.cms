@@ -21,6 +21,7 @@ import OTPVerification from '@/components/renewals/OTPVerification';
 import RenewalForm from '@/components/renewals/RenewalForm';
 import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
 import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
+import SendSMSButton from '@/components/admin/SendSMSButton';
 
 interface Entry {
   id: string;
@@ -838,26 +839,62 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                   >
                     {type === 'pending' && (
                       <TableCell>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleRenewClick(entry)}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <RefreshCw className="h-3 w-3 mr-1" />
-                          Renew
-                        </Button>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleRenewClick(entry)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Renew
+                          </Button>
+                          {user?.role === 'admin' && (
+                            <SendSMSButton 
+                              entry={{
+                                id: entry.id,
+                                customerName: entry.customerName,
+                                customerMobile: entry.customerMobile,
+                                customerCity: entry.customerCity,
+                                expiryDate: entry.expiryDate,
+                                locationId: entry.locationId,
+                                locationName: entry.locationName || '',
+                                status: entry.status,
+                                customerId: '' // This would need to be added to the entry interface
+                              }}
+                              onSMSsent={fetchData}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     )}
                     {(type === 'active' || type === 'pending') && (
                       <TableCell>
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleDispatchClick(entry)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          <Truck className="h-3 w-3 mr-1" />
-                          Dispatch
-                        </Button>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleDispatchClick(entry)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Truck className="h-3 w-3 mr-1" />
+                            Dispatch
+                          </Button>
+                          {user?.role === 'admin' && (
+                            <SendSMSButton 
+                              entry={{
+                                id: entry.id,
+                                customerName: entry.customerName,
+                                customerMobile: entry.customerMobile,
+                                customerCity: entry.customerCity,
+                                expiryDate: entry.expiryDate,
+                                locationId: entry.locationId,
+                                locationName: entry.locationName || '',
+                                status: entry.status,
+                                customerId: '' // This would need to be added to the entry interface
+                              }}
+                              onSMSsent={fetchData}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                     )}
                     <TableCell>

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import RenewalSearch from './RenewalSearch';
-import OTPVerification from './OTPVerification';
 import RenewalForm from './RenewalForm';
 import RenewalConfirmation from './RenewalConfirmation';
 import RenewalsList from './RenewalsList';
@@ -51,7 +50,7 @@ interface RenewalData {
   operatorId: string;
 }
 
-type Step = 'search' | 'otp' | 'form' | 'confirmation';
+type Step = 'search' | 'form' | 'confirmation';
 
 export default function RenewalSystem() {
   const [currentStep, setCurrentStep] = useState<Step>('search');
@@ -61,10 +60,6 @@ export default function RenewalSystem() {
 
   const handleEntrySelected = (entry: Entry) => {
     setSelectedEntry(entry);
-    setCurrentStep('otp');
-  };
-
-  const handleOTPVerified = () => {
     setCurrentStep('form');
   };
 
@@ -105,36 +100,6 @@ export default function RenewalSystem() {
               onEntrySelected={handleEntrySelected}
               loading={loading}
             />
-          </motion.div>
-        );
-
-      case 'otp':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-4">
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                className="mb-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Search
-              </Button>
-            </div>
-            {selectedEntry && (
-              <OTPVerification
-                mobile={selectedEntry.customerMobile}
-                entryId={selectedEntry.id}
-                type="renewal"
-                onVerified={handleOTPVerified}
-                onCancel={handleCancel}
-                loading={loading}
-              />
-            )}
           </motion.div>
         );
 
@@ -199,7 +164,7 @@ export default function RenewalSystem() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Renewal System</h1>
-              <p className="text-gray-600">Renew ash pot entries with OTP verification</p>
+              <p className="text-gray-600">Renew ash pot entries</p>
             </div>
           </div>
 
@@ -208,7 +173,6 @@ export default function RenewalSystem() {
             <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
               {[
                 { step: 'search', label: 'Search Entry', icon: Users },
-                { step: 'otp', label: 'OTP Verify', icon: RefreshCw },
                 { step: 'form', label: 'Renewal Details', icon: RefreshCw },
                 { step: 'confirmation', label: 'Confirmation', icon: RefreshCw }
               ].map((item, index) => (
@@ -229,7 +193,7 @@ export default function RenewalSystem() {
                   >
                     {item.label}
                   </span>
-                  {index < 3 && (
+                  {index < 2 && (
                     <div className="ml-2 sm:ml-4 w-8 h-0.5 bg-gray-300 hidden sm:block"></div>
                   )}
                 </div>
@@ -239,12 +203,11 @@ export default function RenewalSystem() {
             <div className="sm:hidden flex flex-col items-center space-y-2 mt-4 ml-4">
               {[
                 { step: 'search', label: 'Search Entry', icon: Users },
-                { step: 'otp', label: 'OTP Verify', icon: RefreshCw },
                 { step: 'form', label: 'Renewal Details', icon: RefreshCw },
                 { step: 'confirmation', label: 'Confirmation', icon: RefreshCw }
               ].map((item, index) => (
                 <div key={item.step} className="flex items-center">
-                  {index < 3 && (
+                  {index < 2 && (
                     <div className="w-0.5 h-8 bg-gray-300 ml-4"></div>
                   )}
                 </div>

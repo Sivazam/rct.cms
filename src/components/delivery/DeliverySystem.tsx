@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import { 
   Search, 
-  Shield, 
   Calculator,
   CheckCircle, 
   Calendar,
@@ -19,7 +18,6 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 import DeliverySearch from './DeliverySearch';
-import DeliveryOTP from './DeliveryOTP';
 import DeliveryPayment from './DeliveryPayment';
 import DeliveryConfirmation from './DeliveryConfirmation';
 import DeliveryHistory from './DeliveryHistory';
@@ -45,14 +43,13 @@ interface Entry {
   lastRenewalDate?: string;
 }
 
-type DeliveryStep = 'search' | 'otp' | 'payment' | 'confirmation' | 'history';
+type DeliveryStep = 'search' | 'payment' | 'confirmation' | 'history';
 
 export default function DeliverySystem() {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<DeliveryStep>('search');
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [deliveryData, setDeliveryData] = useState<{
-    otp: string;
     deliveryDate: string;
     operatorName: string;
   } | null>(null);
@@ -65,7 +62,6 @@ export default function DeliverySystem() {
 
   const steps = [
     { id: 'search', name: 'Search Entry', icon: Search },
-    { id: 'otp', name: 'OTP Verification', icon: Shield },
     { id: 'payment', name: 'Payment Processing', icon: Calculator },
     { id: 'confirmation', name: 'Dispatch Confirmation', icon: CheckCircle },
   ];
@@ -74,32 +70,13 @@ export default function DeliverySystem() {
 
   const handleEntrySelect = (entry: Entry) => {
     setSelectedEntry(entry);
-    setCurrentStep('otp');
-  };
-
-  const handleOTPVerified = async (otp: string) => {
-    if (selectedEntry && user) {
-      const deliveryDate = new Date().toISOString();
-      const operatorName = user.name || 'Operator';
-      
-      setDeliveryData({
-        otp,
-        deliveryDate,
-        operatorName
-      });
-      
-      // Move to payment step instead of directly to confirmation
-      setCurrentStep('payment');
-    }
+    setCurrentStep('payment');
   };
 
   const handleBack = () => {
     switch (currentStep) {
-      case 'otp':
-        setCurrentStep('search');
-        break;
       case 'payment':
-        setCurrentStep('otp');
+        setCurrentStep('search');
         break;
       case 'confirmation':
         setCurrentStep('payment');
@@ -126,7 +103,15 @@ export default function DeliverySystem() {
     dueAmount: number;
     reason?: string;
   }) => {
-    if (selectedEntry && deliveryData && user) {
+    if (selectedEntry && user) {
+      const deliveryDate = new Date().toISOString();
+      const operatorName = user.name || 'Operator';
+      
+      setDeliveryData({
+        deliveryDate,
+        operatorName
+      });
+      
       setPaymentData(payment);
       
       // Process delivery with payment using the actual API
@@ -140,8 +125,7 @@ export default function DeliverySystem() {
           body: JSON.stringify({
             entryId: selectedEntry.id,
             operatorId: user.uid,
-            operatorName: deliveryData.operatorName,
-            otp: deliveryData.otp,
+            operatorName: operatorName,
             amountPaid: payment.amountPaid,
             dueAmount: payment.dueAmount,
             reason: payment.reason
@@ -171,10 +155,8 @@ export default function DeliverySystem() {
     switch (currentStep) {
       case 'search':
         return 0;
-      case 'otp':
-        return 33;
       case 'payment':
-        return 66;
+        return 50;
       case 'confirmation':
         return 100;
       default:
@@ -191,16 +173,6 @@ export default function DeliverySystem() {
             loading={loading}
           />
         );
-      
-      case 'otp':
-        return selectedEntry ? (
-          <DeliveryOTP
-            entry={selectedEntry}
-            onOTPVerified={handleOTPVerified}
-            onBack={handleBack}
-            loading={loading}
-          />
-        ) : null;
       
       case 'payment':
         return selectedEntry ? (
@@ -258,7 +230,7 @@ export default function DeliverySystem() {
                 <span>Dispatch Management System</span>
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Secure Dispatch process with OTP verification and payment processing
+                Secure Dispatch process with payment processing
               </CardDescription>
             </CardHeader>
           </Card>
@@ -401,7 +373,7 @@ export default function DeliverySystem() {
               className="w-full"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to {currentStep === 'otp' ? 'Search' : currentStep === 'payment' ? 'OTP Verification' : 'Payment'}
+              Back to {currentStep === 'payment' ? 'Search' : 'Payment'}
             </Button>
           </motion.div>
         )}

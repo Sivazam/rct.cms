@@ -11,8 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Calculator, DollarSign, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { updateEntry } from '@/lib/firestore';
-import { sendSMS, SMSTemplates } from '@/lib/sms';
-import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
+import SMSService from '@/lib/sms-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 
@@ -49,7 +48,6 @@ interface RenewalFormProps {
 
 export default function RenewalForm({ entry, onSuccess, onCancel, loading = false }: RenewalFormProps) {
   const { user } = useAuth();
-  const { showSMSDialog } = useSMSDialog();
   const [formData, setFormData] = useState({
     renewalMonths: 1,
     paymentMethod: 'cash' as 'cash' | 'upi'
@@ -113,44 +111,22 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         status: 'active' // Reactivate if expired
       });
 
-      // Send SMS notifications (using dialogs for now)
-      // TODO: Replace with actual Fast2SMS integration when credentials are available
-      // SMS to Admin - currently showing dialog instead of sending
-      showSMSDialog(
-        process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
-        SMSTemplates.renewalConfirmation(
-          user.name || 'Operator',
-          entry.customerName,
-          formData.renewalMonths,
-          renewalSummary.amount,
-          entry.id
-        ),
-        'renewalConfirmation',
-        {
-          operatorName: user.name || 'Operator',
-          customerName: entry.customerName,
-          months: formData.renewalMonths,
-          amount: renewalSummary.amount,
-          entryId: entry.id
-        },
+      // Send SMS notification to admin
+      await SMSService.getInstance().sendRenewalNotification(
+        entry.customerName,
+        entry.locationId, // This should be location name, we'll need to fetch it
+        renewalSummary.amount,
         entry.id
       );
 
-      // TODO: Replace with actual Fast2SMS integration when credentials are available
-      // SMS to customer - currently showing dialog instead of sending
-      showSMSDialog(
+      // Send SMS notification to customer
+      await SMSService.getInstance().sendEntryReminder(
         entry.customerMobile,
-        SMSTemplates.customerRenewalConfirmation(
-          entry.id,
-          formatDate(renewalSummary.newExpiryDate),
-          renewalSummary.amount
-        ),
-        'customerRenewalConfirmation',
-        {
-          entryId: entry.id,
-          newExpiryDate: formatDate(renewalSummary.newExpiryDate),
-          amount: renewalSummary.amount
-        },
+        entry.customerName,
+        entry.locationId, // This should be location name
+        formatDate(renewalSummary.newExpiryDate),
+        user?.name || 'Operator',
+        0, // 0 days since it's a renewal confirmation
         entry.id
       );
 
@@ -379,12 +355,12 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
               {submitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Processing Renewal...
+                  Submitting...
                 </>
               ) : (
                 <>
                   <Calendar className="h-4 w-4 mr-2" />
-                  Process Renewal
+                  Submit
                 </>
               )}
             </Button>

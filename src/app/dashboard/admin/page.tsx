@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import LocationManagement from '@/components/admin/LocationManagement';
 import OperatorManagement from '@/components/admin/OperatorManagement';
 import OperatorPerformance from '@/components/admin/OperatorPerformance';
+import SMSLogsTable from '@/components/admin/SMSLogsTable';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
@@ -969,7 +970,7 @@ export default function AdminDashboard() {
               {/* Analytics Tab */}
               {activeTab === 'analytics' && <OperatorPerformance />}
 
-              {/* Settings Tab - Location management only */}
+              {/* Settings Tab - Location management and SMS logs */}
               {activeTab === 'settings' && (
                 <div className="space-y-6">
                   {/* Locations Management */}
@@ -987,6 +988,9 @@ export default function AdminDashboard() {
                       <LocationManagement onLocationsUpdated={fetchDashboardData} />
                     </CardContent>
                   </Card>
+
+                  {/* SMS Logs */}
+                  <SMSLogsTable />
                 </div>
               )}
           </div>
