@@ -178,9 +178,24 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error processing dispatch:', error);
+    console.error('Detailed error processing dispatch:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    console.error('Error name:', error.name);
+    
+    // Try to extract more specific error information
+    let errorMessage = 'Failed to process dispatch';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      errorMessage = JSON.stringify(error);
+    }
+    
+    console.error('Final error message to return:', errorMessage);
     return NextResponse.json(
-      { error: 'Failed to process dispatch' },
+      { error: errorMessage, details: error.toString() },
       { status: 500 }
     );
   }
