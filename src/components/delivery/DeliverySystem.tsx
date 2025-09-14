@@ -50,7 +50,7 @@ export default function DeliverySystem() {
   const [currentStep, setCurrentStep] = useState<DispatchStep>('search');
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [dispatchData, setDispatchData] = useState<{
-    deliveryDate: string;
+    dispatchDate: string;
     operatorName: string;
   } | null>(null);
   const [paymentData, setPaymentData] = useState<{
@@ -87,7 +87,7 @@ export default function DeliverySystem() {
     }
   };
 
-  const handleNewDelivery = () => {
+  const handleNewDispatch = () => {
     setSelectedEntry(null);
     setDispatchData(null);
     setPaymentData(null);
@@ -104,11 +104,11 @@ export default function DeliverySystem() {
     reason?: string;
   }) => {
     if (selectedEntry && user) {
-      const deliveryDate = new Date().toISOString();
+      const dispatchDate = new Date().toISOString();
       const operatorName = user.name || 'Operator';
       
       setDispatchData({
-        deliveryDate,
+        dispatchDate,
         operatorName
       });
       
@@ -194,7 +194,7 @@ export default function DeliverySystem() {
               dueAmount: paymentData.dueAmount,
               reason: paymentData.reason
             }}
-            onNewDelivery={handleNewDelivery}
+            onNewDelivery={handleNewDispatch}
             onViewHistory={handleViewHistory}
             loading={loading}
           />

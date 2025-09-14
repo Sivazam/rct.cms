@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       deliveryDate: deliveryDate,
       deliveredBy: operatorId,
       deliveredAt: serverTimestamp(),
+      dispatchReason: reason || null, // Store the reason in the entry
       payments: [...existingPayments, newPayment],
       lastModifiedAt: serverTimestamp()
     });

@@ -30,11 +30,13 @@ interface Entry {
   numberOfPots: number;
   entryDate: any;
   expiryDate: any;
-  status: 'active' | 'expired' | 'delivered' | 'disposed';
+  status: 'active' | 'expired' | 'dispatched' | 'disposed';
   locationId: string;
   locationName?: string;
   operatorId: string;
   operatorName?: string;
+  deliveryDate?: any; // Added for dispatched entries
+  dispatchReason?: string; // Added for dispatched entries
   payments: Array<{
     amount: number;
     date: any;
@@ -479,7 +481,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
     switch (status) {
       case 'active': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'expired': return 'bg-red-100 text-red-800 border-red-200';
-      case 'delivered': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'delivered': return 'bg-amber-100 text-amber-800 border-amber-200'; // Keep for backward compatibility
       case 'dispatched': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'disposed': return 'bg-stone-100 text-stone-800 border-stone-200';
       default: return 'bg-stone-100 text-stone-800 border-stone-200';
@@ -491,7 +493,12 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
     return formatFirestoreDate(date);
   };
 
-  const getExpiryStatusColor = (expiryDate: any) => {
+  const getExpiryStatusColor = (expiryDate: any, entryStatus?: string) => {
+    // Don't show expiry colors for dispatched entries
+    if (entryStatus === 'dispatched') {
+      return '';
+    }
+    
     if (!expiryDate) return '';
     
     const now = new Date();
@@ -519,7 +526,12 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
     return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
   };
 
-  const isExpiringSoon = (expiryDate: any) => {
+  const isExpiringSoon = (expiryDate: any, entryStatus?: string) => {
+    // Don't show expiry warnings for dispatched entries
+    if (entryStatus === 'dispatched') {
+      return false;
+    }
+    
     const daysUntil = getDaysUntilExpiry(expiryDate);
     return daysUntil !== null && daysUntil <= 7 && daysUntil > 0;
   };
@@ -738,7 +750,9 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
               <TableHead>Operator</TableHead>
               <TableHead>Pots</TableHead>
               <TableHead>Entry Date</TableHead>
-              <TableHead>Expiry Date</TableHead>
+              {type === 'dispatched' && <TableHead>Dispatched Date</TableHead>}
+              {type === 'dispatched' && <TableHead>Reason</TableHead>}
+              {type !== 'dispatched' && <TableHead>Expiry Date</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead>Payments</TableHead>
             </TableRow>
@@ -749,6 +763,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                 <TableCell colSpan={
                   (type === 'pending' ? 1 : 0) + 
                   (type === 'active' ? 1 : 0) + 
+                  (type === 'dispatched' ? 2 : 0) + 
                   9
                 } className="text-center py-12">
                   <div className="flex flex-col items-center space-y-4">
@@ -783,7 +798,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
             ) : (
               filteredEntries.map((entry, index) => {
                 const typeInfo = getTypeSpecificInfo(entry);
-                const expiryColorClass = type === 'active' || type === 'pending' ? getExpiryStatusColor(entry.expiryDate) : '';
+                const expiryColorClass = type === 'active' || type === 'pending' ? getExpiryStatusColor(entry.expiryDate, entry.status) : '';
                 return (
                   <motion.tr
                     key={entry.id}
@@ -883,17 +898,36 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                         <span>{formatDate(entry.entryDate)}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate) ? 'text-red-600 font-medium' : ''}`}>
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>{formatDate(entry.expiryDate)}</span>
-                        {isExpiringSoon(entry.expiryDate) && (
-                          <Badge variant="destructive" className="ml-2 text-xs">
-                            Expiring Soon
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
+                    {type === 'dispatched' && (
+                      <TableCell>
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-4 w-4 text-blue-400" />
+                          <span>{formatDate(entry.deliveryDate)}</span>
+                        </div>
+                      </TableCell>
+                    )}
+                    {type === 'dispatched' && (
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <span className="text-sm text-gray-600">
+                            {entry.dispatchReason || 'N/A'}
+                          </span>
+                        </div>
+                      </TableCell>
+                    )}
+                    {type !== 'dispatched' && (
+                      <TableCell>
+                        <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate, entry.status) ? 'text-red-600 font-medium' : ''}`}>
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span>{formatDate(entry.expiryDate)}</span>
+                          {isExpiringSoon(entry.expiryDate, entry.status) && (
+                            <Badge variant="destructive" className="ml-2 text-xs">
+                              Expiring Soon
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
                         {entry.status}
@@ -937,7 +971,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         ) : (
           filteredEntries.map((entry, index) => {
             const typeInfo = getTypeSpecificInfo(entry);
-            const expiryColorClass = type === 'active' || type === 'pending' ? getExpiryStatusColor(entry.expiryDate) : '';
+            const expiryColorClass = type === 'active' || type === 'pending' ? getExpiryStatusColor(entry.expiryDate, entry.status) : '';
             return (
               <motion.div
                 key={entry.id}
@@ -972,11 +1006,26 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                     <Calendar className="h-3 w-3 text-gray-400" />
                     <span className="text-xs">{formatDate(entry.entryDate)}</span>
                   </div>
-                  <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate) ? 'text-red-600' : ''}`}>
-                    <Calendar className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs">{formatDate(entry.expiryDate)}</span>
-                  </div>
+                  {type === 'dispatched' && (
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-3 w-3 text-blue-400" />
+                      <span className="text-xs">{formatDate(entry.deliveryDate)}</span>
+                    </div>
+                  )}
+                  {type !== 'dispatched' && (
+                    <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate, entry.status) ? 'text-red-600' : ''}`}>
+                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs">{formatDate(entry.expiryDate)}</span>
+                    </div>
+                  )}
                 </div>
+
+                {type === 'dispatched' && entry.dispatchReason && (
+                  <div className="mb-3 p-2 bg-gray-50 rounded text-xs">
+                    <div className="font-medium text-gray-700 mb-1">Reason:</div>
+                    <div className="text-gray-600">{entry.dispatchReason}</div>
+                  </div>
+                )}
 
                 {type === 'pending' && (
                   <div className="space-y-2">

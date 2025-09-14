@@ -39,7 +39,7 @@ interface DispatchRecord {
   entryId: string;
   customerId: string;
   customer: Customer;
-  deliveryDate: string;
+  dispatchDate: string;
   operatorName: string;
   operatorId: string;
   locationName: string;
@@ -62,7 +62,7 @@ interface DeliveryHistoryProps {
 
 export default function DeliveryHistory({ onClose, loading = false }: DeliveryHistoryProps) {
   const [dispatches, setDispatches] = useState<DispatchRecord[]>([]);
-  const [filteredDeliveries, setFilteredDeliveries] = useState<DispatchRecord[]>([]);
+  const [filteredDispatches, setFilteredDispatches] = useState<DispatchRecord[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLocation, setFilterLocation] = useState('all');
@@ -110,7 +110,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
             mobile: delivery.customerMobile,
             city: delivery.customerCity || ''
           },
-          deliveryDate: delivery.deliveryDate,
+          dispatchDate: delivery.deliveryDate,
           operatorName: delivery.operatorName,
           operatorId: delivery.operatorId,
           locationName: delivery.locationName,
@@ -182,12 +182,12 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
       
       if (filterDateRange !== 'all') {
         filtered = filtered.filter(dispatch => 
-          new Date(dispatch.deliveryDate) >= cutoffDate
+          new Date(dispatch.dispatchDate) >= cutoffDate
         );
       }
     }
 
-    setFilteredDeliveries(filtered);
+    setFilteredDispatches(filtered);
   };
 
   const formatDate = (dateString: string) => {
@@ -212,8 +212,8 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
     }
   };
 
-  const totalDeliveries = dispatches.length;
-  const filteredCount = filteredDeliveries.length;
+  const totalDispatches = dispatches.length;
+  const filteredCount = filteredDispatches.length;
 
   if (isLoading) {
     return (
@@ -292,7 +292,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           </div>
 
           <div className="flex items-center justify-between text-sm text-gray-600">
-            <span>Showing {filteredCount} of {totalDeliveries} dispatches</span>
+            <span>Showing {filteredCount} of {totalDispatches} dispatches</span>
             {(searchTerm || filterLocation !== 'all' || filterDateRange !== 'all') && (
               <Button
                 variant="ghost"
@@ -310,7 +310,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
         </CardContent>
       </Card>
 
-      {/* Delivery Table */}
+      {/* Dispatch Table */}
       <Card>
         <CardContent className="p-0">
           <ScrollArea className="h-[600px]">
@@ -331,7 +331,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDeliveries.map((dispatch) => (
+                {filteredDispatches.map((dispatch) => (
                   <TableRow key={dispatch.id}>
                     <TableCell className="font-mono text-sm">
                       {dispatch.id.slice(-6)}
@@ -375,7 +375,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(dispatch.deliveryDate)}</TableCell>
+                    <TableCell>{formatDate(dispatch.dispatchDate)}</TableCell>
                     <TableCell>{dispatch.operatorName}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
@@ -411,7 +411,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
         </CardContent>
       </Card>
 
-      {filteredDeliveries.length === 0 && (
+      {filteredDispatches.length === 0 && (
         <Card>
           <CardContent className="text-center py-8">
             <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
@@ -433,7 +433,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
               <Package className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium">Total Dispatches</span>
             </div>
-            <div className="text-2xl font-bold mt-1">{totalDeliveries}</div>
+            <div className="text-2xl font-bold mt-1">{totalDispatches}</div>
           </CardContent>
         </Card>
         <Card>
@@ -443,7 +443,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
               <span className="text-sm font-medium">OTP Verified</span>
             </div>
             <div className="text-2xl font-bold mt-1">
-              {deliveries.filter(d => d.otpVerified).length}
+              {dispatches.filter(d => d.otpVerified).length}
             </div>
           </CardContent>
         </Card>
@@ -454,11 +454,11 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
               <span className="text-sm font-medium">This Month</span>
             </div>
             <div className="text-2xl font-bold mt-1">
-              {deliveries.filter(d => {
-                const deliveryDate = new Date(d.deliveryDate);
+              {dispatches.filter(d => {
+                const dispatchDate = new Date(d.dispatchDate);
                 const now = new Date();
-                return deliveryDate.getMonth() === now.getMonth() && 
-                       deliveryDate.getFullYear() === now.getFullYear();
+                return dispatchDate.getMonth() === now.getMonth() && 
+                       dispatchDate.getFullYear() === now.getFullYear();
               }).length}
             </div>
           </CardContent>
@@ -470,7 +470,7 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
               <span className="text-sm font-medium">Unique Customers</span>
             </div>
             <div className="text-2xl font-bold mt-1">
-              {new Set(deliveries.map(d => d.customerId)).size}
+              {new Set(dispatches.map(d => d.customerId)).size}
             </div>
           </CardContent>
         </Card>
