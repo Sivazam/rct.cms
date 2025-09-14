@@ -775,7 +775,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
         <Table>
           <TableHeader>
             <TableRow>
-              {type === 'pending' && <TableHead className="w-24">Action</TableHead>}
+              {type === 'pending' && <TableHead className="w-40">Actions</TableHead>}
               {type === 'active' && <TableHead className="w-24">Dispatch</TableHead>}
               <TableHead>Customer</TableHead>
               <TableHead>Contact</TableHead>
@@ -848,12 +848,6 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                             <RefreshCw className="h-3 w-3 mr-1" />
                             Renew
                           </Button>
-                        </div>
-                      </TableCell>
-                    )}
-                    {type === 'active' && (
-                      <TableCell>
-                        <div className="flex space-x-1">
                           <Button 
                             size="sm" 
                             onClick={() => handleDispatchClick(entry)}
@@ -878,6 +872,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                               onSMSsent={fetchData}
                             />
                           )}
+                        </div>
+                      </TableCell>
+                    )}
+                    {type === 'active' && (
+                      <TableCell>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleDispatchClick(entry)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Truck className="h-3 w-3 mr-1" />
+                            Dispatch
+                          </Button>
                         </div>
                       </TableCell>
                     )}
@@ -1016,14 +1024,42 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                 </div>
 
                 {type === 'pending' && (
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleRenewClick(entry)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white mb-2"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Renew Entry
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleRenewClick(entry)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Renew Entry
+                    </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleDispatchClick(entry)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Truck className="h-3 w-3 mr-1" />
+                        Dispatch
+                      </Button>
+                      {user?.role === 'admin' && (
+                        <SendSMSButton 
+                          entry={{
+                            id: entry.id,
+                            customerName: entry.customerName,
+                            customerMobile: entry.customerMobile,
+                            customerCity: entry.customerCity,
+                            expiryDate: entry.expiryDate,
+                            locationId: entry.locationId,
+                            locationName: entry.locationName || '',
+                            status: entry.status,
+                            customerId: '' // This would need to be added to the entry interface
+                          }}
+                          onSMSsent={fetchData}
+                        />
+                      )}
+                    </div>
+                  </div>
                 )}
                 {type === 'active' && (
                   <Button 
@@ -1302,7 +1338,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                   Cancel
                 </Button>
                 <Button onClick={handleSendOTPForRenewal}>
-                  Send OTP & Continue
+                  Verify and Submit
                 </Button>
               </div>
             </div>
@@ -1560,7 +1596,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                   }
                   className="flex-1 order-1 sm:order-2"
                 >
-                  {type === 'active' ? 'Send OTP & Free Dispatch' : 'Send OTP & Dispatch'}
+                  {type === 'active' ? 'Verify and Submit (Free Dispatch)' : 'Verify and Submit (Dispatch)'}
                 </Button>
               </div>
             </div>
