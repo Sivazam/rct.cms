@@ -331,10 +331,12 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       });
 
       const data = await response.json();
+      console.log('Full API Response:', data);
 
       if (!response.ok) {
         console.error('API Error:', data);
-        throw new Error(data.error || 'Failed to process renewal');
+        const errorMessage = data.error || data.message || 'Failed to process renewal';
+        throw new Error(errorMessage);
       }
 
       console.log('Renewal processed successfully:', data);
@@ -393,10 +395,12 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
       });
 
       const data = await response.json();
+      console.log('Full API Response:', data);
 
       if (!response.ok) {
         console.error('API Error:', data);
-        throw new Error(data.error || 'Failed to process dispatch');
+        const errorMessage = data.error || data.message || 'Failed to process dispatch';
+        throw new Error(errorMessage);
       }
 
       console.log('Dispatch processed successfully:', data);
@@ -420,7 +424,6 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     setShowRenewalDetailsDialog(false);
     setShowDispatchDialog(false);
     setSelectedEntryForDispatch(null);
-    setDispatchData(null);
     setFoundCustomer(null);
     setMobileNumber('');
     setCustomerError('');

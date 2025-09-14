@@ -8,7 +8,10 @@ export async function POST(request: NextRequest) {
   try {
     const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason } = await request.json();
 
+    console.log('Dispatch request received:', { entryId, operatorId, operatorName, amountPaid, dueAmount, reason });
+
     if (!entryId || !operatorId || !operatorName) {
+      console.log('Missing required fields:', { entryId, operatorId, operatorName });
       return NextResponse.json(
         { error: 'Entry ID, Operator ID, and Operator Name are required' },
         { status: 400 }
@@ -20,6 +23,7 @@ export async function POST(request: NextRequest) {
     const entryDoc = await getDoc(entryRef);
 
     if (!entryDoc.exists()) {
+      console.log('Entry not found for ID:', entryId);
       return NextResponse.json(
         { error: 'Entry not found' },
         { status: 404 }
@@ -27,8 +31,17 @@ export async function POST(request: NextRequest) {
     }
 
     const entryData = entryDoc.data();
+    console.log('Entry found:', { 
+      id: entryDoc.id, 
+      status: entryData.status,
+      customerName: entryData.customerName,
+      hasCustomerId: !!entryData.customerId,
+      hasLocationName: !!entryData.locationName,
+      pots: entryData.numberOfPots || entryData.pots
+    });
 
     if (entryData.status !== 'active') {
+      console.log('Entry not active:', entryData.status);
       return NextResponse.json(
         { error: 'Entry is not active and cannot be dispatched' },
         { status: 400 }
@@ -39,16 +52,16 @@ export async function POST(request: NextRequest) {
     const deliveryDate = new Date().toISOString();
     const deliveryRecord = {
       entryId,
-      customerId: entryData.customerId,
-      customerName: entryData.customerName,
-      customerMobile: entryData.customerMobile,
-      customerCity: entryData.customerCity,
+      customerId: entryData.customerId || '',
+      customerName: entryData.customerName || '',
+      customerMobile: entryData.customerMobile || '',
+      customerCity: entryData.customerCity || '',
       deliveryDate,
       operatorId,
       operatorName,
-      locationId: entryData.locationId,
-      locationName: entryData.locationName,
-      pots: entryData.pots,
+      locationId: entryData.locationId || '',
+      locationName: entryData.locationName || '',
+      pots: entryData.numberOfPots || entryData.pots || 1, // Handle both field names
       otpVerified: false, // No OTP verification needed
       smsSent: false, // Will be updated after sending SMS
       entryDate: entryData.entryDate,
