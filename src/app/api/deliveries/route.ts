@@ -34,18 +34,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the entry details
-    const entriesRef = collection(db, 'entries');
-    const entryQuery = query(entriesRef, where('id', '==', entryId));
-    const entrySnapshot = await getDocs(entryQuery);
+    const entryRef = doc(db, 'entries', entryId);
+    const entryDoc = await getDoc(entryRef);
 
-    if (entrySnapshot.empty) {
+    if (!entryDoc.exists()) {
       return NextResponse.json(
         { error: 'Entry not found' },
         { status: 404 }
       );
     }
 
-    const entryDoc = entrySnapshot.docs[0];
     const entryData = entryDoc.data();
 
     if (entryData.status !== 'active') {
@@ -99,7 +97,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Update entry status to dispatched and add payment
-    await updateDoc(doc(db, 'entries', entryDoc.id), {
+    await updateDoc(doc(db, 'entries', entryId), {
       status: 'dispatched', // Changed from 'delivered' to 'dispatched'
       deliveryDate: deliveryDate,
       deliveredBy: operatorId,

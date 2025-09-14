@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 
@@ -18,13 +18,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if entry exists and is active
-    const entriesRef = collection(db, 'entries');
-    const q = query(entriesRef, where('id', '==', entryId));
-    const querySnapshot = await getDocs(q);
+    const entryRef = doc(db, 'entries', entryId);
+    const entryDoc = await getDoc(entryRef);
 
-    console.log('Query snapshot size:', querySnapshot.size);
+    console.log('Entry document exists:', entryDoc.exists());
 
-    if (querySnapshot.empty) {
+    if (!entryDoc.exists()) {
       console.log('Entry not found for ID:', entryId);
       
       // Check if there are any entries at all
@@ -53,7 +52,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entryDoc = querySnapshot.docs[0];
     const entryData = entryDoc.data();
     
     console.log('Entry found:', { 
