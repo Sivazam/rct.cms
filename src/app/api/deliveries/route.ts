@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc ,addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { formatDate } from '@/lib/date-utils';
