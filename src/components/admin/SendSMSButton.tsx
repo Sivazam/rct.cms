@@ -12,9 +12,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 import { TEMPLATE_NAMES } from '@/lib/sms-templates';
 
-// Import Firebase Functions
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/lib/firebase';
+// Import the secure SMS service
+import SMSService from '@/lib/sms-service';
+const smsService = SMSService.getInstance();
 
 interface SendSMSButtonProps {
   entry: {
@@ -78,95 +78,101 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
     setResult(null);
 
     try {
-      // Initialize Firebase Functions callable
-      const sendSMSFunction = httpsCallable(functions, 'sendSMS');
+      // Initialize the secure SMS service
+      smsService.initialize();
 
       // Prepare variables based on template type
       const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
       const formattedExpiryDate = formatDate(expiryDate);
       
-      let variables: any = {};
+      let smsResult;
 
       switch (selectedType) {
         case 'threeDayReminder':
-          variables = {
-            deceasedPersonName: entry.customerName,
-            locationName: entry.locationName,
-            date: formattedExpiryDate,
-            mobile: '9876543210', // Admin mobile - should be configurable
-          };
+          smsResult = await smsService.sendThreeDayReminder(
+            entry.customerMobile,
+            entry.customerName,
+            entry.locationName,
+            formattedExpiryDate,
+            '9876543210', // Admin mobile - should be configurable from location
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
           break;
           
         case 'lastdayRenewal':
-          variables = {
-            deceasedPersonName: entry.customerName,
-            locationName: entry.locationName,
-            date: formattedExpiryDate,
-            mobile: '9876543210', // Admin mobile - should be configurable
-          };
+          smsResult = await smsService.sendLastDayRenewalReminder(
+            entry.customerMobile,
+            entry.customerName,
+            entry.locationName,
+            formattedExpiryDate,
+            '9876543210', // Admin mobile - should be configurable from location
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
           break;
           
         case 'renewalConfirmCustomer':
-          variables = {
-            deceasedPersonName: entry.customerName,
-            locationName: entry.locationName,
-            date: formattedExpiryDate, // This would be the extended expiry date
-            mobile: '9876543210', // Admin mobile - should be configurable
-          };
+          smsResult = await smsService.sendRenewalConfirmationCustomer(
+            entry.customerMobile,
+            entry.customerName,
+            entry.locationName,
+            formattedExpiryDate, // This would be the extended expiry date
+            '9876543210', // Admin mobile - should be configurable from location
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
           break;
           
         case 'dispatchConfirmCustomer':
           const deliveryDate = new Date();
           deliveryDate.setDate(deliveryDate.getDate() + 3); // Example: 3 days from now
-          variables = {
-            deceasedPersonName: entry.customerName,
-            locationName: entry.locationName,
-            date: formatDate(deliveryDate),
-            contactPersonName: entry.customerName, // Using customer name as contact person
-            mobile: entry.customerMobile,
-            adminMobile: '9876543210', // Admin mobile - should be configurable
-          };
+          smsResult = await smsService.sendDispatchConfirmationCustomer(
+            entry.customerMobile,
+            entry.customerName,
+            entry.locationName,
+            formatDate(deliveryDate),
+            entry.customerName, // Using customer name as contact person
+            entry.customerMobile,
+            '9876543210', // Admin mobile - should be configurable from location
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
           break;
           
         case 'finalDisposalReminder':
-          variables = {
-            deceasedPersonName: entry.customerName,
-            locationName: entry.locationName,
-          };
+          smsResult = await smsService.sendFinalDisposalReminder(
+            entry.customerMobile,
+            entry.customerName,
+            entry.locationName,
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
           break;
           
         default:
           throw new Error('Invalid SMS type');
       }
 
-      console.log('Sending SMS via Firebase Functions:', {
-        templateKey: selectedType,
-        recipient: entry.customerMobile,
-        variables,
-        entryId: entry.id,
-        customerId: entry.customerId,
-        locationId: entry.locationId
-      });
-
-      // Call Firebase Functions
-      const result = await sendSMSFunction({
-        templateKey: selectedType,
-        recipient: entry.customerMobile,
-        variables,
-        entryId: entry.id,
-        customerId: entry.customerId,
-        locationId: entry.locationId
-      });
-
-      console.log('Firebase Functions result:', result.data);
+      console.log('Secure SMS result:', smsResult);
 
       setResult({
-        success: result.data.success,
-        message: result.data.success ? 'SMS sent successfully' : 'Failed to send SMS',
-        error: result.data.error
+        success: smsResult.success,
+        message: smsResult.success ? 'SMS sent successfully' : 'Failed to send SMS',
+        error: smsResult.error
       });
 
-      if (result.data.success && onSMSsent) {
+      if (smsResult.success && onSMSsent) {
         onSMSsent();
       }
 

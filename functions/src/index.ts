@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import SMSService, { SMSServiceResult, SMSErrorType } from '../src/lib/sms-service';
+import axios from 'axios';
+import SMSTemplatesService from '../src/lib/sms-templates';
 import SMSLogsService from '../src/lib/sms-logs';
-import { TemplateVariables } from '../src/lib/sms-templates';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -14,6 +14,127 @@ const db = admin.firestore();
 const DAILY_CHECK_HOUR = 10; // 10 AM as requested
 const TIME_ZONE = 'Asia/Kolkata';
 const EXPIRY_REMINDER_DAYS = 3; // 3 days before expiry
+
+// FastSMS Configuration - Securely loaded from environment
+const FASTSMS_CONFIG = {
+  apiKey: functions.config().fastsms?.api_key,
+  senderId: functions.config().fastsms?.sender_id,
+  entityId: functions.config().fastsms?.entity_id,
+  baseUrl: 'https://www.fastsms.com/dev/bulkV2'
+};
+
+// Retry configuration
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 5000; // 5 seconds
+const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
+
+// Validate FastSMS configuration
+function validateFastSMSConfig() {
+  if (!FASTSMS_CONFIG.apiKey) {
+    throw new Error('FastSMS API key not configured. Please run: firebase functions:config:set fastsms.api_key="YOUR_API_KEY"');
+  }
+  if (!FASTSMS_CONFIG.senderId) {
+    throw new Error('FastSMS sender ID not configured. Please run: firebase functions:config:set fastsms.sender_id="YOUR_SENDER_ID"');
+  }
+  if (!FASTSMS_CONFIG.entityId) {
+    throw new Error('FastSMS entity ID not configured. Please run: firebase functions:config:set fastsms.entity_id="YOUR_ENTITY_ID"');
+  }
+}
+
+// Secure SMS sending function (server-side only)
+async function sendSMSAPI(recipient: string, templateId: string, variablesValues: string, attempt: number = 1) {
+  try {
+    validateFastSMSConfig();
+    
+    const apiUrl = new URL(FASTSMS_CONFIG.baseUrl);
+    apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
+    apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
+    apiUrl.searchParams.append('message', templateId);
+    apiUrl.searchParams.append('variables_values', variablesValues);
+    apiUrl.searchParams.append('route', 'dlt');
+    apiUrl.searchParams.append('numbers', recipient);
+
+    console.log(`FastSMS API Call (Attempt ${attempt}):`, {
+      recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
+      templateId,
+      variablesValues: variablesValues.substring(0, 20) + '...',
+      url: apiUrl.toString().substring(0, 100) + '...'
+    });
+
+    const response = await axios.get(apiUrl.toString(), {
+      timeout: REQUEST_TIMEOUT_MS,
+      headers: {
+        'User-Agent': 'Rotary-CMS/1.0'
+      }
+    });
+
+    console.log('FastSMS API Response:', response.data);
+
+    if (response.data.return === true) {
+      return {
+        success: true,
+        messageId: response.data.request_id
+      };
+    } else {
+      throw {
+        type: 'API_ERROR',
+        message: response.data.message || 'SMS sending failed',
+        code: 'API_ERROR',
+        details: response.data,
+        timestamp: new Date()
+      };
+    }
+
+  } catch (error) {
+    console.error('FastSMS API Error:', error);
+
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.message;
+
+      let errorType = 'API_ERROR';
+      if (status === 401) errorType = 'AUTHENTICATION_ERROR';
+      else if (status === 429) errorType = 'RATE_LIMIT_ERROR';
+      else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        errorType = 'NETWORK_ERROR';
+      }
+
+      return {
+        success: false,
+        error: {
+          type: errorType,
+          message: `FastSMS API Error: ${message}`,
+          code: status?.toString(),
+          details: error.response?.data,
+          timestamp: new Date()
+        }
+      };
+    } else {
+      return {
+        success: false,
+        error: {
+          type: 'UNKNOWN',
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          timestamp: new Date()
+        }
+      };
+    }
+  }
+}
+
+// Helper function to get template ID by key
+function getTemplateIdByKey(templateKey: string): string {
+  const template = SMSTemplatesService.getInstance().getTemplateByKey(templateKey as any);
+  if (!template) {
+    throw new Error(`Template not found: ${templateKey}`);
+  }
+  return template.id;
+}
+
+// Helper function to format variables for API
+function formatVariablesForAPI(templateKey: string, variables: any): string {
+  return SMSTemplatesService.getInstance().formatVariablesForAPI(templateKey as any, variables);
+}
 
 /**
  * Callable function to send SMS securely from front-end
@@ -122,23 +243,102 @@ export const sendSMS = functions
         role: user.role
       });
 
-      // Send SMS using the service
-      const result = await SMSService.getInstance().sendSMSWithRetry({
-        templateKey,
-        recipient,
-        variables,
-        entryId,
-        customerId,
-        locationId,
-        operatorId: context.auth.uid
-      });
+      // Get template ID and format variables
+      const templateId = getTemplateIdByKey(templateKey);
+      const variablesValues = formatVariablesForAPI(templateKey, variables);
 
-      console.log('SMS sending result:', {
-        success: result.success,
-        messageId: result.messageId,
-        error: result.error?.message,
-        attempt: result.attempt
-      });
+      let lastError: any = undefined;
+      let finalResult: any = undefined;
+
+      // Retry mechanism
+      for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+        try {
+          console.log(`SMS Send Attempt ${attempt}/${MAX_RETRY_ATTEMPTS} for template ${templateKey}`);
+
+          const apiResult = await sendSMSAPI(recipient, templateId, variablesValues, attempt);
+
+          if (apiResult.success) {
+            // Log successful SMS
+            await logSMS({
+              type: templateKey,
+              recipient,
+              templateId,
+              message: variablesValues,
+              status: 'sent',
+              timestamp: new Date(),
+              retryCount: attempt - 1,
+              entryId,
+              customerId,
+              locationId,
+              operatorId: context.auth.uid
+            });
+
+            finalResult = {
+              success: true,
+              messageId: apiResult.messageId,
+              timestamp: new Date().toISOString()
+            };
+
+            console.log(`SMS sent successfully on attempt ${attempt}. Message ID: ${apiResult.messageId}`);
+            break;
+          } else {
+            lastError = apiResult.error;
+            
+            // Log failed attempt
+            await logSMS({
+              type: templateKey,
+              recipient,
+              templateId,
+              message: variablesValues,
+              status: 'failed',
+              errorMessage: lastError.message,
+              timestamp: new Date(),
+              retryCount: attempt,
+              entryId,
+              customerId,
+              locationId,
+              operatorId: context.auth.uid
+            });
+
+            if (attempt < MAX_RETRY_ATTEMPTS) {
+              console.log(`SMS failed on attempt ${attempt}, retrying in ${RETRY_DELAY_MS}ms...`);
+              await delay(RETRY_DELAY_MS);
+            }
+          }
+
+        } catch (error) {
+          lastError = error;
+          
+          // Log exception
+          await logSMS({
+            type: templateKey,
+            recipient,
+            templateId,
+            message: variablesValues,
+            status: 'failed',
+            errorMessage: lastError.message || 'Unexpected error',
+            timestamp: new Date(),
+            retryCount: attempt,
+            entryId,
+            customerId,
+            locationId,
+            operatorId: context.auth.uid
+          });
+
+          if (attempt < MAX_RETRY_ATTEMPTS) {
+            console.log(`Exception on attempt ${attempt}, retrying in ${RETRY_DELAY_MS}ms...`);
+            await delay(RETRY_DELAY_MS);
+          }
+        }
+      }
+
+      if (!finalResult) {
+        finalResult = {
+          success: false,
+          error: lastError.message,
+          timestamp: new Date().toISOString()
+        };
+      }
 
       // Log the function call for audit purposes
       await db.collection('smsFunctionCalls').add({
@@ -149,19 +349,13 @@ export const sendSMS = functions
         entryId,
         customerId,
         locationId,
-        success: result.success,
-        messageId: result.messageId,
-        error: result.error?.message,
+        success: finalResult.success,
+        messageId: finalResult.messageId,
+        error: finalResult.error,
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      return {
-        success: result.success,
-        messageId: result.messageId,
-        error: result.error?.message,
-        timestamp: result.timestamp.toISOString(),
-        attempt: result.attempt
-      };
+      return finalResult;
 
     } catch (error) {
       console.error('Error in sendSMS function:', error);
@@ -263,20 +457,20 @@ export const dailyExpiryCheck = functions
           const isExpiringIn3Days = expiryDate.toDateString() === threeDaysFromNow.toDateString();
           const isExpiringToday = expiryDate.toDateString() === today.toDateString();
 
-          let smsResult: SMSServiceResult | null = null;
+          let smsResult: any = null;
 
           if (isExpiringIn3Days) {
             console.log(`Sending 3-day reminder for entry ${doc.id}`);
             
-            smsResult = await SMSService.getInstance().sendThreeDayReminder(
+            smsResult = await sendSMSAPI(
               customer.mobile,
-              customer.name,
-              location.venueName,
-              expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-              location.contactNumber || '9876543210', // Fallback admin mobile
-              doc.id,
-              entry.customerId,
-              entry.locationId
+              getTemplateIdByKey('threeDayReminder'),
+              formatVariablesForAPI('threeDayReminder', {
+                deceasedPersonName: customer.name,
+                locationName: location.venueName,
+                date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                mobile: location.contactNumber || '9876543210'
+              })
             );
             
             results.entries3Days++;
@@ -285,15 +479,15 @@ export const dailyExpiryCheck = functions
           } else if (isExpiringToday) {
             console.log(`Sending same-day reminder for entry ${doc.id}`);
             
-            smsResult = await SMSService.getInstance().sendLastDayRenewalReminder(
+            smsResult = await sendSMSAPI(
               customer.mobile,
-              customer.name,
-              location.venueName,
-              expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-              location.contactNumber || '9876543210', // Fallback admin mobile
-              doc.id,
-              entry.customerId,
-              entry.locationId
+              getTemplateIdByKey('lastdayRenewal'),
+              formatVariablesForAPI('lastdayRenewal', {
+                deceasedPersonName: customer.name,
+                locationName: location.venueName,
+                date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                mobile: location.contactNumber || '9876543210'
+              })
             );
             
             results.entriesToday++;
@@ -400,7 +594,7 @@ export const retryFailedSMS = functions
     }
 
     try {
-      const { maxRetryCount = 2, limit = 50 } = data;
+      const { maxRetryCount = 2, limit = 50 } = data || {};
       
       // Get failed SMS logs with retry count less than max
       const failedLogs = await SMSLogsService.getInstance().getFailedSMSLogs(maxRetryCount);
@@ -507,7 +701,12 @@ export const getSMSStatistics = functions
         success: true,
         statistics: stats,
         recentExecutions,
-        serviceStatus: SMSService.getInstance().getServiceStatus()
+        serviceStatus: {
+          isInitialized: true,
+          templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
+          functionsAvailable: true,
+          configValid: !!FASTSMS_CONFIG.apiKey && !!FASTSMS_CONFIG.senderId && !!FASTSMS_CONFIG.entityId
+        }
       };
 
     } catch (error) {
@@ -529,19 +728,35 @@ export const smsHealthCheck = functions
   })
   .https.onRequest(async (request, response) => {
     try {
-      const serviceStatus = SMSService.getInstance().getServiceStatus();
-      
       // Check if we can access Firestore
       await db.collection('smsHealthChecks').add({
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         status: 'healthy'
       });
 
+      // Validate FastSMS configuration
+      let configValid = false;
+      let configError = null;
+      
+      try {
+        validateFastSMSConfig();
+        configValid = true;
+      } catch (error) {
+        configError = error instanceof Error ? error.message : 'Configuration error';
+      }
+
       response.status(200).json({
         status: 'healthy',
         service: 'SMS Service',
         timestamp: new Date().toISOString(),
-        details: serviceStatus
+        details: {
+          isInitialized: true,
+          templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
+          functionsAvailable: true,
+          configValid,
+          configError,
+          fastsmsConfigured: !!FASTSMS_CONFIG.apiKey
+        }
       });
 
     } catch (error) {
@@ -555,3 +770,17 @@ export const smsHealthCheck = functions
       });
     }
   });
+
+// Helper functions
+async function logSMS(logData: any): Promise<void> {
+  try {
+    await SMSLogsService.getInstance().logSMS(logData);
+    console.log('SMS logged successfully to Firestore');
+  } catch (error) {
+    console.error('Error logging SMS to Firestore:', error);
+  }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
