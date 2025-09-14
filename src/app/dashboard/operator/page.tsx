@@ -159,7 +159,7 @@ export default function OperatorDashboard() {
         setRecentEntries([]);
         setExpiringEntries([]);
       } else if (selectedLocation) {
-        // Fetch comprehensive statistics for selected location
+        // Fetch comprehensive statistics for selected location and current operator
         const [activeEntries, pendingRenewalsEntries, deliveredEntries, allEntries, expiringSoonEntries] = await Promise.all([
           getEntries({
             locationId: selectedLocation,
@@ -182,13 +182,20 @@ export default function OperatorDashboard() {
           })
         ]);
         
+        // Filter entries to only include those made by the current operator
+        const operatorEntries = allEntries.filter(entry => entry.operatorId === user?.uid);
+        const operatorActiveEntries = activeEntries.filter(entry => entry.operatorId === user?.uid);
+        const operatorPendingRenewalsEntries = pendingRenewalsEntries.filter(entry => entry.operatorId === user?.uid);
+        const operatorDeliveredEntries = deliveredEntries.filter(entry => entry.operatorId === user?.uid);
+        const operatorExpiringSoonEntries = expiringSoonEntries.filter(entry => entry.operatorId === user?.uid);
+        
         // Calculate today's entries and revenue
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         
-        const todayEntries = allEntries.filter(entry => {
+        const todayEntries = operatorEntries.filter(entry => {
           const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
           return entryDate && entryDate >= today && entryDate < tomorrow;
         });
@@ -205,7 +212,7 @@ export default function OperatorDashboard() {
         currentMonth.setDate(1);
         currentMonth.setHours(0, 0, 0, 0);
         
-        const monthlyRevenue = allEntries.reduce((sum, entry) => {
+        const monthlyRevenue = operatorEntries.reduce((sum, entry) => {
           return sum + (entry.payments?.reduce((paymentSum: number, payment: any) => {
             const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
             return paymentSum + (paymentDate && paymentDate >= currentMonth ? payment.amount : 0);
@@ -213,31 +220,29 @@ export default function OperatorDashboard() {
         }, 0);
         
         // Calculate pending tasks (expiring entries + entries needing delivery)
-        const pendingTasks = expiringSoonEntries.length + activeEntries.filter(entry => {
+        const pendingTasks = operatorExpiringSoonEntries.length + operatorActiveEntries.filter(entry => {
           const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
           return expiryDate && expiryDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         }).length;
         
-          const statsData = await getSystemStats(selectedLocation, dateRange);
-        
         setStats({
-          totalEntries: statsData?.totalEntries || 0,
-          totalRenewals: statsData?.totalRenewals || 0,
-          totalDeliveries: statsData?.totalDeliveries || 0,
-          expiringIn7Days: statsData?.expiringIn7Days || 0,
-          monthlyRevenue: statsData?.renewalCollections || 0,
+          totalEntries: operatorActiveEntries.length,
+          totalRenewals: operatorPendingRenewalsEntries.length,
+          totalDeliveries: operatorDeliveredEntries.length,
+          expiringIn7Days: operatorExpiringSoonEntries.length,
+          monthlyRevenue: monthlyRevenue, // Use the calculated monthly revenue instead of statsData
           todayEntries: todayEntries.length,
           todayRevenue: todayRevenue,
           pendingTasks: pendingTasks
         });
         
-        setRecentEntries(allEntries.slice(0, 5)); // Show last 5 entries
-        setExpiringEntries(expiringSoonEntries);
+        setRecentEntries(operatorEntries.slice(0, 5)); // Show last 5 entries from this operator
+        setExpiringEntries(operatorExpiringSoonEntries);
         
         console.log('Operator stats updated:', {
-          totalEntries: activeEntries.length,
-          totalRenewals: pendingRenewalsEntries.length,
-          totalDeliveries: deliveredEntries.length,
+          totalEntries: operatorActiveEntries.length,
+          totalRenewals: operatorPendingRenewalsEntries.length,
+          totalDeliveries: operatorDeliveredEntries.length,
           monthlyRevenue: monthlyRevenue,
           todayEntries: todayEntries.length,
           todayRevenue: todayRevenue,

@@ -503,7 +503,7 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
         totalDeliveries += 1; // Count as dispatched
       }
       
-      // Process payments for collections - separate renewal and delivery payments
+      // Process payments for collections - include entry, renewal and delivery payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
           const paymentDate = payment.date?.toDate?.();
@@ -511,7 +511,9 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
           
           // Only count payments within date range if specified
           if (!dateRange || (paymentDate && paymentDate >= dateRange.from && paymentDate <= dateRange.to)) {
-            if (payment.type === 'renewal') {
+            if (payment.type === 'entry') {
+              totalRenewalCollections += amount; // Add entry payments to collections
+            } else if (payment.type === 'renewal') {
               totalRenewalCollections += amount;
             } else if (payment.type === 'delivery') {
               totalDeliveryCollections += amount;
