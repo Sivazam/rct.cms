@@ -6,12 +6,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Send, AlertTriangle, CheckCircle, Phone, User, Calendar } from 'lucide-react';
+import { MessageSquare, Send, AlertTriangle, CheckCircle, Phone, User, Calendar, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import SMSService from '@/lib/sms-service';
-const smsService = SMSService.getInstance();
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
+import { TEMPLATE_NAMES } from '@/lib/sms-templates';
+
+// Import Firebase Functions
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/lib/firebase';
 
 interface SendSMSButtonProps {
   entry: {
@@ -37,33 +40,33 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
 
   const smsTypes = [
     {
-      value: '7_DAYS',
-      label: '7 Days Reminder',
-      description: 'Send reminder 7 days before expiry',
-      icon: Calendar
-    },
-    {
-      value: '3_DAYS',
-      label: '3 Days Reminder',
+      value: 'threeDayReminder',
+      label: TEMPLATE_NAMES.threeDayReminder,
       description: 'Send reminder 3 days before expiry',
       icon: Calendar
     },
     {
-      value: '0_DAYS',
-      label: '0 Days Reminder',
+      value: 'lastdayRenewal',
+      label: TEMPLATE_NAMES.lastdayRenewal,
       description: 'Send reminder on expiry day',
       icon: Calendar
     },
     {
-      value: 'DISPOSAL_WARNING',
-      label: 'Disposal Warning',
-      description: 'Send 60-day disposal warning',
-      icon: AlertTriangle
+      value: 'renewalConfirmCustomer',
+      label: TEMPLATE_NAMES.renewalConfirmCustomer,
+      description: 'Send renewal confirmation to customer',
+      icon: CheckCircle
     },
     {
-      value: 'FINAL_DISPOSAL',
-      label: 'Final Disposal',
-      description: 'Send final disposal notice',
+      value: 'dispatchConfirmCustomer',
+      label: TEMPLATE_NAMES.dispatchConfirmCustomer,
+      description: 'Send dispatch confirmation to customer',
+      icon: Truck
+    },
+    {
+      value: 'finalDisposalReminder',
+      label: TEMPLATE_NAMES.finalDisposalReminder,
+      description: 'Send final disposal reminder',
       icon: AlertTriangle
     }
   ];
@@ -75,82 +78,95 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
     setResult(null);
 
     try {
+      // Initialize Firebase Functions callable
+      const sendSMSFunction = httpsCallable(functions, 'sendSMS');
+
+      // Prepare variables based on template type
       const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
-      let smsResult;
+      const formattedExpiryDate = formatDate(expiryDate);
+      
+      let variables: any = {};
 
       switch (selectedType) {
-        case '7_DAYS':
-          smsResult = await smsService.sendEntryReminder(
-            entry.customerMobile,
-            entry.customerName,
-            entry.locationName,
-            formatDate(expiryDate),
-            'N/A',
-            7,
-            entry.id,
-            entry.customerId
-          );
+        case 'threeDayReminder':
+          variables = {
+            deceasedPersonName: entry.customerName,
+            locationName: entry.locationName,
+            date: formattedExpiryDate,
+            mobile: '9876543210', // Admin mobile - should be configurable
+          };
           break;
           
-        case '3_DAYS':
-          smsResult = await smsService.sendEntryReminder(
-            entry.customerMobile,
-            entry.customerName,
-            entry.locationName,
-            formatDate(expiryDate),
-            'N/A',
-            3,
-            entry.id,
-            entry.customerId
-          );
+        case 'lastdayRenewal':
+          variables = {
+            deceasedPersonName: entry.customerName,
+            locationName: entry.locationName,
+            date: formattedExpiryDate,
+            mobile: '9876543210', // Admin mobile - should be configurable
+          };
           break;
           
-        case '0_DAYS':
-          smsResult = await smsService.sendEntryReminder(
-            entry.customerMobile,
-            entry.customerName,
-            entry.locationName,
-            formatDate(expiryDate),
-            'N/A',
-            0,
-            entry.id,
-            entry.customerId
-          );
+        case 'renewalConfirmCustomer':
+          variables = {
+            deceasedPersonName: entry.customerName,
+            locationName: entry.locationName,
+            date: formattedExpiryDate, // This would be the extended expiry date
+            mobile: '9876543210', // Admin mobile - should be configurable
+          };
           break;
           
-        case 'DISPOSAL_WARNING':
-          const disposalDate = new Date();
-          disposalDate.setDate(disposalDate.getDate() + 3);
-          smsResult = await smsService.sendDisposalWarning(
-            entry.customerMobile,
-            entry.customerName,
-            formatDate(disposalDate),
-            entry.id,
-            entry.customerId
-          );
+        case 'dispatchConfirmCustomer':
+          const deliveryDate = new Date();
+          deliveryDate.setDate(deliveryDate.getDate() + 3); // Example: 3 days from now
+          variables = {
+            deceasedPersonName: entry.customerName,
+            locationName: entry.locationName,
+            date: formatDate(deliveryDate),
+            contactPersonName: entry.customerName, // Using customer name as contact person
+            mobile: entry.customerMobile,
+            adminMobile: '9876543210', // Admin mobile - should be configurable
+          };
           break;
           
-        case 'FINAL_DISPOSAL':
-          smsResult = await smsService.sendFinalDisposalNotice(
-            entry.customerMobile,
-            entry.customerName,
-            'River Godavari',
-            entry.id,
-            entry.customerId
-          );
+        case 'finalDisposalReminder':
+          variables = {
+            deceasedPersonName: entry.customerName,
+            locationName: entry.locationName,
+          };
           break;
           
         default:
           throw new Error('Invalid SMS type');
       }
 
-      setResult({
-        success: smsResult.success,
-        message: smsResult.success ? 'SMS sent successfully' : 'Failed to send SMS',
-        error: smsResult.error
+      console.log('Sending SMS via Firebase Functions:', {
+        templateKey: selectedType,
+        recipient: entry.customerMobile,
+        variables,
+        entryId: entry.id,
+        customerId: entry.customerId,
+        locationId: entry.locationId
       });
 
-      if (smsResult.success && onSMSsent) {
+      // Call Firebase Functions
+      const result = await sendSMSFunction({
+        templateKey: selectedType,
+        recipient: entry.customerMobile,
+        variables,
+        entryId: entry.id,
+        customerId: entry.customerId,
+        locationId: entry.locationId
+      });
+
+      console.log('Firebase Functions result:', result.data);
+
+      setResult({
+        success: result.data.success,
+        message: result.data.success ? 'SMS sent successfully' : 'Failed to send SMS',
+        error: result.data.error
+      });
+
+      if (result.data.success && onSMSsent) {
         onSMSsent();
       }
 

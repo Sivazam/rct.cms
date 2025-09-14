@@ -27,6 +27,7 @@ interface Entry {
   customerName: string;
   customerMobile: string;
   customerCity: string;
+  customerId: string; // Added customerId
   numberOfPots: number;
   entryDate: any;
   expiryDate: any;
@@ -866,7 +867,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                                 locationId: entry.locationId,
                                 locationName: entry.locationName || '',
                                 status: entry.status,
-                                customerId: '' // This would need to be added to the entry interface
+                                customerId: entry.customerId || '' // Include customerId
                               }}
                               onSMSsent={fetchData}
                             />

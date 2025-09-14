@@ -1,47 +1,59 @@
-// SMS Service for Fast2SMS integration
+// SMS Service for FastSMS DLT-Compliant API Integration
 import axios from 'axios';
 import SMSLogsService from './sms-logs';
+import SMSTemplatesService, { 
+  TEMPLATE_IDS, 
+  TemplateVariables, 
+  SMSRequest, 
+  SMSResponse 
+} from './sms-templates';
 import { SMSLog } from './sms-logs';
 
-// Environment variables
-const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY;
-const FAST2SMS_BASE_URL = process.env.FAST2SMS_BASE_URL || 'https://www.fast2sms.com/dev/bulkV2';
+// FastSMS API Configuration
+const FASTSMS_API_BASE_URL = 'https://www.fastsms.com/dev/bulkV2';
+const FASTSMS_API_KEY = 'QgRMDkEVHPoKaJcl3NbqyB8TW6rv9XudhY0Zj2izn57xF1wfICdGanl0ojySLuKHfrP9UDQYMsk41OC2';
+const FASTSMS_SENDER_ID = 'ROTCMS';
+const FASTSMS_ENTITY_ID = '1701175751242640436';
 
-// Template IDs
-const TEMPLATES = {
-  ENTRY_REMINDER_7_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_7_DAYS,
-  ENTRY_REMINDER_3_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_3_DAYS,
-  ENTRY_REMINDER_0_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_0_DAYS,
-  DISPOSAL_WARNING_60_DAYS: process.env.TEMPLATE_DISPOSAL_WARNING_60_DAYS,
-  FINAL_DISPOSAL_NOTICE: process.env.TEMPLATE_FINAL_DISPOSAL_NOTICE,
-  RENEWAL_NOTIFICATION: process.env.TEMPLATE_RENEWAL_NOTIFICATION,
-  DISPATCH_NOTIFICATION: process.env.TEMPLATE_DISPATCH_NOTIFICATION,
-};
+// Retry configuration
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 5000; // 5 seconds
+const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
 
-// Mobile numbers
-const ADMIN_MOBILE = process.env.ADMIN_MOBILE;
-const TECH_SUPPORT_MOBILE = process.env.TECH_SUPPORT_MOBILE;
+// SMS Service Error Types
+export enum SMSErrorType {
+  API_ERROR = 'API_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  RATE_LIMIT_ERROR = 'RATE_LIMIT_ERROR',
+  TEMPLATE_ERROR = 'TEMPLATE_ERROR'
+}
 
-// SMS Log interface
-export interface SMSLog {
-  id: string;
-  type: string;
-  recipient: string;
-  templateId: string;
+// Enhanced SMS Error interface
+export interface SMSError {
+  type: SMSErrorType;
   message: string;
-  status: 'sent' | 'failed' | 'pending';
-  errorMessage?: string;
+  code?: string;
+  details?: any;
   timestamp: Date;
-  retryCount: number;
-  entryId?: string;
-  customerId?: string;
+}
+
+// SMS Service Result interface
+export interface SMSServiceResult {
+  success: boolean;
+  messageId?: string;
+  error?: SMSError;
+  timestamp: Date;
+  attempt: number;
+  templateUsed: string;
+  recipient: string;
 }
 
 // SMS Service class
 class SMSService {
   private static instance: SMSService;
-  private retryAttempts = 3;
-  private retryDelay = 5000; // 5 seconds
+  private isInitialized = false;
 
   private constructor() {}
 
@@ -53,325 +65,556 @@ class SMSService {
   }
 
   /**
-   * Send SMS using Fast2SMS API
+   * Initialize SMS service with configuration validation
    */
-  private async sendSMS(
+  public initialize(): void {
+    if (this.isInitialized) {
+      return;
+    }
+
+    // Validate required configuration
+    const requiredConfig = [
+      { key: 'API_KEY', value: FASTSMS_API_KEY, name: 'FastSMS API Key' },
+      { key: 'SENDER_ID', value: FASTSMS_SENDER_ID, name: 'Sender ID' },
+      { key: 'ENTITY_ID', value: FASTSMS_ENTITY_ID, name: 'Entity ID' }
+    ];
+
+    for (const config of requiredConfig) {
+      if (!config.value || config.value === 'YOUR_' + config.key || config.value.length === 0) {
+        throw new Error(`${config.name} not configured. Please set the ${config.key} environment variable.`);
+      }
+    }
+
+    this.isInitialized = true;
+    console.log('SMS Service initialized successfully with DLT-compliant FastSMS API');
+  }
+
+  /**
+   * Send SMS using FastSMS DLT API
+   */
+  private async sendSMSAPI(
     recipient: string,
     templateId: string,
-    variables: string[],
-    entryId?: string,
-    customerId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    variablesValues: string,
+    attempt: number = 1
+  ): Promise<{ success: boolean; messageId?: string; error?: SMSError }> {
     try {
-      // Validate environment variables
-      if (!FAST2SMS_API_KEY || FAST2SMS_API_KEY === 'YOUR_FAST2SMS_API_KEY') {
-        throw new Error('Fast2SMS API key not configured. Please set FAST2SMS_API_KEY environment variable.');
+      if (!this.isInitialized) {
+        this.initialize();
       }
 
-      if (!templateId || templateId === 'YOUR_TEMPLATE_ID') {
-        throw new Error('SMS template not configured. Please set the appropriate TEMPLATE_ environment variable.');
+      // Validate mobile number
+      if (!this.validateMobileNumber(recipient)) {
+        throw {
+          type: SMSErrorType.VALIDATION_ERROR,
+          message: `Invalid mobile number format: ${recipient}`,
+          timestamp: new Date()
+        } as SMSError;
       }
 
-      const message = this.formatMessage(templateId, variables);
-      
-      const payload = {
-        route: 'dlt',
-        sender_id: 'YOUR_SENDER_ID', // To be configured
-        message: message,
-        language: 'telugu',
-        numbers: recipient,
-        template_id: templateId,
-        variables: variables,
-        variables_values: variables
-      };
+      // Prepare API request using GET method as per FastSMS documentation
+      const apiUrl = new URL(FASTSMS_API_BASE_URL);
+      apiUrl.searchParams.append('authorization', FASTSMS_API_KEY);
+      apiUrl.searchParams.append('sender_id', FASTSMS_SENDER_ID);
+      apiUrl.searchParams.append('message', templateId);
+      apiUrl.searchParams.append('variables_values', variablesValues);
+      apiUrl.searchParams.append('route', 'dlt');
+      apiUrl.searchParams.append('numbers', recipient);
 
-      const headers = {
-        'Authorization': FAST2SMS_API_KEY,
-        'Content-Type': 'application/json'
-      };
+      console.log(`Sending SMS (Attempt ${attempt}):`, {
+        recipient,
+        templateId,
+        variablesValues,
+        url: apiUrl.toString().substring(0, 100) + '...' // Log partial URL for security
+      });
 
-      const response = await axios.post(FAST2SMS_BASE_URL, payload, { headers });
-
-      if (response.data.return) {
-        // Log successful SMS
-        await this.logSMS({
-          type: this.getSMSType(templateId),
-          recipient,
-          templateId,
-          message,
-          status: 'sent',
-          timestamp: new Date(),
-          retryCount: 0,
-          entryId,
-          customerId
-        });
-
-        // Send parallel SMS to admin for renew/dispatch events
-        if (templateId === TEMPLATES.RENEWAL_NOTIFICATION || templateId === TEMPLATES.DISPATCH_NOTIFICATION) {
-          await this.sendAdminNotification(templateId, message, entryId);
+      const response = await axios.get(apiUrl.toString(), {
+        timeout: REQUEST_TIMEOUT_MS,
+        headers: {
+          'User-Agent': 'Rotary-CMS/1.0'
         }
+      });
 
+      console.log('FastSMS API Response:', response.data);
+
+      if (response.data.return === true) {
         return {
           success: true,
           messageId: response.data.request_id
         };
       } else {
-        throw new Error(response.data.message || 'SMS sending failed');
+        throw {
+          type: SMSErrorType.API_ERROR,
+          message: response.data.message || 'SMS sending failed',
+          code: 'API_ERROR',
+          details: response.data,
+          timestamp: new Date()
+        } as SMSError;
       }
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('SMS API Error:', error);
+
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const message = error.response?.data?.message || error.message;
+
+        let errorType = SMSErrorType.API_ERROR;
+        if (status === 401) errorType = SMSErrorType.AUTHENTICATION_ERROR;
+        else if (status === 429) errorType = SMSErrorType.RATE_LIMIT_ERROR;
+        else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+          errorType = SMSErrorType.NETWORK_ERROR;
+        }
+
+        return {
+          success: false,
+          error: {
+            type: errorType,
+            message: `FastSMS API Error: ${message}`,
+            code: status?.toString(),
+            details: error.response?.data,
+            timestamp: new Date()
+          }
+        };
+      } else {
+        return {
+          success: false,
+          error: {
+            type: SMSErrorType.UNKNOWN,
+            message: error instanceof Error ? error.message : 'Unknown error occurred',
+            timestamp: new Date()
+          }
+        };
+      }
+    }
+  }
+
+  /**
+   * Send SMS with retry mechanism and comprehensive logging
+   */
+  public async sendSMSWithRetry(
+    request: SMSRequest
+  ): Promise<SMSServiceResult> {
+    const { templateKey, recipient, variables, entryId, customerId, locationId, operatorId } = request;
+
+    try {
+      // Get template details
+      const template = SMSTemplatesService.getInstance().getTemplateByKey(templateKey);
+      if (!template) {
+        throw {
+          type: SMSErrorType.TEMPLATE_ERROR,
+          message: `Template not found: ${templateKey}`,
+          timestamp: new Date()
+        } as SMSError;
+      }
+
+      // Validate template variables
+      const validation = SMSTemplatesService.getInstance().validateTemplateVariables(templateKey, variables);
+      if (!validation.isValid) {
+        throw {
+          type: SMSErrorType.VALIDATION_ERROR,
+          message: `Template validation failed: ${validation.errors.join(', ')}`,
+          timestamp: new Date()
+        } as SMSError;
+      }
+
+      // Format variables for API
+      const variablesValues = SMSTemplatesService.getInstance().formatVariablesForAPI(templateKey, variables);
+
+      let lastError: SMSError | undefined;
+      let finalResult: SMSServiceResult | undefined;
+
+      // Retry mechanism
+      for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+        try {
+          console.log(`SMS Send Attempt ${attempt}/${MAX_RETRY_ATTEMPTS} for template ${templateKey}`);
+
+          const apiResult = await this.sendSMSAPI(recipient, template.id, variablesValues, attempt);
+
+          if (apiResult.success) {
+            // Log successful SMS
+            await this.logSMS({
+              type: templateKey,
+              recipient,
+              templateId: template.id,
+              message: variablesValues,
+              status: 'sent',
+              timestamp: new Date(),
+              retryCount: attempt - 1,
+              entryId,
+              customerId,
+              locationId,
+              operatorId
+            });
+
+            finalResult = {
+              success: true,
+              messageId: apiResult.messageId,
+              timestamp: new Date(),
+              attempt,
+              templateUsed: templateKey,
+              recipient
+            };
+
+            console.log(`SMS sent successfully on attempt ${attempt}. Message ID: ${apiResult.messageId}`);
+            break;
+          } else {
+            lastError = apiResult.error;
+            
+            // Log failed attempt
+            await this.logSMS({
+              type: templateKey,
+              recipient,
+              templateId: template.id,
+              message: variablesValues,
+              status: 'failed',
+              errorMessage: lastError.message,
+              timestamp: new Date(),
+              retryCount: attempt,
+              entryId,
+              customerId,
+              locationId,
+              operatorId
+            });
+
+            if (attempt < MAX_RETRY_ATTEMPTS) {
+              console.log(`SMS failed on attempt ${attempt}, retrying in ${RETRY_DELAY_MS}ms...`);
+              await this.delay(RETRY_DELAY_MS);
+            }
+          }
+
+        } catch (error) {
+          lastError = error as SMSError;
+          
+          // Log exception
+          await this.logSMS({
+            type: templateKey,
+            recipient,
+            templateId: template.id,
+            message: variablesValues,
+            status: 'failed',
+            errorMessage: lastError.message,
+            timestamp: new Date(),
+            retryCount: attempt,
+            entryId,
+            customerId,
+            locationId,
+            operatorId
+          });
+
+          if (attempt < MAX_RETRY_ATTEMPTS) {
+            console.log(`Exception on attempt ${attempt}, retrying in ${RETRY_DELAY_MS}ms...`);
+            await this.delay(RETRY_DELAY_MS);
+          }
+        }
+      }
+
+      if (!finalResult) {
+        finalResult = {
+          success: false,
+          error: lastError,
+          timestamp: new Date(),
+          attempt: MAX_RETRY_ATTEMPTS,
+          templateUsed: templateKey,
+          recipient
+        };
+      }
+
+      return finalResult;
+
+    } catch (error) {
+      const smsError = error as SMSError;
       
-      // Log failed SMS
+      // Log unexpected errors
       await this.logSMS({
-        type: this.getSMSType(templateId),
+        type: templateKey,
         recipient,
-        templateId,
-        message: this.formatMessage(templateId, variables),
+        templateId: TEMPLATE_IDS[templateKey],
+        message: 'ERROR',
         status: 'failed',
-        errorMessage,
+        errorMessage: smsError.message || 'Unexpected error',
         timestamp: new Date(),
         retryCount: 0,
         entryId,
-        customerId
+        customerId,
+        locationId,
+        operatorId
       });
-
-      // Notify tech support about failure
-      await this.notifyTechSupport(templateId, recipient, errorMessage);
 
       return {
         success: false,
-        error: errorMessage
+        error: smsError,
+        timestamp: new Date(),
+        attempt: 1,
+        templateUsed: templateKey,
+        recipient
       };
     }
   }
 
   /**
-   * Send SMS with retry mechanism
+   * Send 3-day expiry reminder
    */
-  public async sendSMSWithRetry(
+  public async sendThreeDayReminder(
     recipient: string,
-    templateId: string,
-    variables: string[],
-    entryId?: string,
-    customerId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    let lastError: string | undefined;
-    
-    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
-      const result = await this.sendSMS(recipient, templateId, variables, entryId, customerId);
-      
-      if (result.success) {
-        return result;
-      }
-      
-      lastError = result.error;
-      
-      // Update retry count in log
-      await this.updateSMSRetryCount(recipient, templateId, attempt);
-      
-      if (attempt < this.retryAttempts) {
-        await this.delay(this.retryDelay);
-      }
-    }
-    
-    return {
-      success: false,
-      error: lastError || 'All retry attempts failed'
-    };
-  }
-
-  /**
-   * Send entry reminder SMS
-   */
-  public async sendEntryReminder(
-    recipient: string,
-    customerName: string,
+    deceasedPersonName: string,
     locationName: string,
     expiryDate: string,
-    contactNumber: string,
-    daysRemaining: number,
+    adminMobile: string,
     entryId?: string,
-    customerId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    let templateId: string;
-    
-    if (daysRemaining === 7) {
-      templateId = TEMPLATES.ENTRY_REMINDER_7_DAYS;
-    } else if (daysRemaining === 3) {
-      templateId = TEMPLATES.ENTRY_REMINDER_3_DAYS;
-    } else if (daysRemaining === 0) {
-      templateId = TEMPLATES.ENTRY_REMINDER_0_DAYS;
-    } else {
-      return { success: false, error: 'Invalid days remaining for reminder' };
-    }
-
-    const variables = [customerName, locationName, expiryDate, contactNumber, locationName];
-    
-    return await this.sendSMSWithRetry(recipient, templateId, variables, entryId, customerId);
-  }
-
-  /**
-   * Send disposal warning SMS
-   */
-  public async sendDisposalWarning(
-    recipient: string,
-    customerName: string,
-    disposalDate: string,
-    entryId?: string,
-    customerId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const templateId = TEMPLATES.DISPOSAL_WARNING_60_DAYS;
-    const variables = [customerName, disposalDate];
-    
-    return await this.sendSMSWithRetry(recipient, templateId, variables, entryId, customerId);
-  }
-
-  /**
-   * Send final disposal notice SMS
-   */
-  public async sendFinalDisposalNotice(
-    recipient: string,
-    customerName: string,
-    riverName: string = 'River Godavari',
-    entryId?: string,
-    customerId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const templateId = TEMPLATES.FINAL_DISPOSAL_NOTICE;
-    const variables = [customerName, riverName];
-    
-    return await this.sendSMSWithRetry(recipient, templateId, variables, entryId, customerId);
-  }
-
-  /**
-   * Send renewal notification to admin
-   */
-  public async sendRenewalNotification(
-    customerName: string,
-    locationName: string,
-    amount: number,
-    entryId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const templateId = TEMPLATES.RENEWAL_NOTIFICATION;
-    const variables = [customerName, locationName, amount.toString()];
-    
-    return await this.sendSMSWithRetry(ADMIN_MOBILE, templateId, variables, entryId);
-  }
-
-  /**
-   * Send dispatch notification to admin
-   */
-  public async sendDispatchNotification(
-    customerName: string,
-    locationName: string,
-    operatorName: string,
-    entryId?: string
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const templateId = TEMPLATES.DISPATCH_NOTIFICATION;
-    const variables = [customerName, locationName, operatorName];
-    
-    return await this.sendSMSWithRetry(ADMIN_MOBILE, templateId, variables, entryId);
-  }
-
-  /**
-   * Format message based on template
-   */
-  private formatMessage(templateId: string, variables: string[]): string {
-    // This is a simplified version - in production, you'd fetch the actual template from Fast2SMS
-    const templates = {
-      [TEMPLATES.ENTRY_REMINDER_7_DAYS]: `నమస్తే, దివంగత ${variables[0]} గారి అస్థికలు ${variables[1]} లో ${variables[2]} న గడువు ముగుస్తుంది. కొనసాగింపు కోసం ${variables[3]} కి సంప్రదించండి లేదా మా వద్దకు రండి. – ${variables[4]}`,
-      [TEMPLATES.ENTRY_REMINDER_3_DAYS]: `నమస్తే, దివంగత ${variables[0]} గారి అస్థికలు ${variables[1]} లో ${variables[2]} న గడువు ముగుస్తుంది. కొనసాగింపు కోసం ${variables[3]} కి సంప్రదించండి లేదా మా వద్దకు రండి. – ${variables[4]}`,
-      [TEMPLATES.ENTRY_REMINDER_0_DAYS]: `నమస్తే, దివంగత ${variables[0]} గారి అస్థికలు ${variables[1]} లో ${variables[2]} న గడువు ముగుస్తుంది. కొనసాగింపు కోసం ${variables[3]} కి సంప్రదించండి లేదా మా వద్దకు రండి. – ${variables[4]}`,
-      [TEMPLATES.DISPOSAL_WARNING_60_DAYS]: `నమస్తే, దివంగత ${variables[0]} గారి అస్థికలు ${variables[1]} నుండి 3 రోజుల్లో పంపిణీ చేయబడతాయి. దయచేసి చివరి గడువు ముందు సేకరించండి.`,
-      [TEMPLATES.FINAL_DISPOSAL_NOTICE]: `నమస్తే, దివంగత ${variables[0]} గారి అస్థికలు నేడు ${variables[1]} లో పంపిణీ చేయబడతాయి.`,
-      [TEMPLATES.RENEWAL_NOTIFICATION]: `పునరుద్ధరణ: ${variables[0]} - ${variables[1]} - ₹${variables[2]}`,
-      [TEMPLATES.DISPATCH_NOTIFICATION]: `పంపిణీ: ${variables[0]} - ${variables[1]} - ${variables[2]}`
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName,
+      date: expiryDate,
+      mobile: adminMobile
     };
 
-    return templates[templateId] || 'Template not found';
+    return await this.sendSMSWithRetry({
+      templateKey: 'threeDayReminder',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
   }
 
   /**
-   * Get SMS type based on template ID
+   * Send last day renewal reminder
    */
-  private getSMSType(templateId: string): string {
-    const typeMap = {
-      [TEMPLATES.ENTRY_REMINDER_7_DAYS]: 'ENTRY_REMINDER_7_DAYS',
-      [TEMPLATES.ENTRY_REMINDER_3_DAYS]: 'ENTRY_REMINDER_3_DAYS',
-      [TEMPLATES.ENTRY_REMINDER_0_DAYS]: 'ENTRY_REMINDER_0_DAYS',
-      [TEMPLATES.DISPOSAL_WARNING_60_DAYS]: 'DISPOSAL_WARNING_60_DAYS',
-      [TEMPLATES.FINAL_DISPOSAL_NOTICE]: 'FINAL_DISPOSAL_NOTICE',
-      [TEMPLATES.RENEWAL_NOTIFICATION]: 'RENEWAL_NOTIFICATION',
-      [TEMPLATES.DISPATCH_NOTIFICATION]: 'DISPATCH_NOTIFICATION'
+  public async sendLastDayRenewalReminder(
+    recipient: string,
+    deceasedPersonName: string,
+    locationName: string,
+    expiryDate: string,
+    adminMobile: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName,
+      date: expiryDate,
+      mobile: adminMobile
     };
 
-    return typeMap[templateId] || 'UNKNOWN';
+    return await this.sendSMSWithRetry({
+      templateKey: 'lastdayRenewal',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
   }
 
   /**
-   * Log SMS to database
+   * Send renewal confirmation to customer
+   */
+  public async sendRenewalConfirmationCustomer(
+    recipient: string,
+    deceasedPersonName: string,
+    locationName: string,
+    extendedExpiryDate: string,
+    adminMobile: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName,
+      date: extendedExpiryDate,
+      mobile: adminMobile
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'renewalConfirmCustomer',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Send renewal confirmation to admin
+   */
+  public async sendRenewalConfirmationAdmin(
+    recipient: string,
+    locationName: string,
+    deceasedPersonName: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'renewalConfirmAdmin',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Send dispatch confirmation to customer
+   */
+  public async sendDispatchConfirmationCustomer(
+    recipient: string,
+    deceasedPersonName: string,
+    locationName: string,
+    deliveryDate: string,
+    contactPersonName: string,
+    contactMobile: string,
+    adminMobile: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName,
+      date: deliveryDate,
+      contactPersonName,
+      mobile: contactMobile,
+      adminMobile
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'dispatchConfirmCustomer',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Send delivery confirmation to admin
+   */
+  public async sendDeliveryConfirmationAdmin(
+    recipient: string,
+    deceasedPersonName: string,
+    locationName: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'deliveryConfirmAdmin',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Send final disposal reminder
+   */
+  public async sendFinalDisposalReminder(
+    recipient: string,
+    deceasedPersonName: string,
+    locationName: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'finalDisposalReminder',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Send final disposal reminder to admin
+   */
+  public async sendFinalDisposalReminderAdmin(
+    recipient: string,
+    locationName: string,
+    deceasedPersonName: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'finalDisposalReminderAdmin',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Validate mobile number format
+   */
+  private validateMobileNumber(mobile: string): boolean {
+    // Indian mobile number validation (10 digits, starting with 6-9)
+    const mobileRegex = /^[6-9]\d{9}$/;
+    return mobileRegex.test(mobile.replace(/\s/g, ''));
+  }
+
+  /**
+   * Log SMS to Firestore
    */
   private async logSMS(logData: Omit<SMSLog, 'id'>): Promise<void> {
     try {
       await SMSLogsService.getInstance().logSMS(logData);
       console.log('SMS logged successfully to Firestore');
     } catch (error) {
-      console.error('Error logging SMS:', error);
-    }
-  }
-
-  /**
-   * Update SMS retry count
-   */
-  private async updateSMSRetryCount(recipient: string, templateId: string, retryCount: number): Promise<void> {
-    try {
-      // Get the most recent SMS log for this recipient and template
-      const logs = await SMSLogsService.getInstance().getSMSLogs({
-        recipient,
-        type: this.getSMSType(templateId)
-      });
-      
-      if (logs.length > 0) {
-        const latestLog = logs[0];
-        await SMSLogsService.getInstance().updateSMSLog(latestLog.id!, { retryCount });
-        console.log(`Updated retry count for SMS ${latestLog.id}: ${retryCount}`);
-      }
-    } catch (error) {
-      console.error('Error updating SMS retry count:', error);
-    }
-  }
-
-  /**
-   * Send admin notification for renew/dispatch events
-   */
-  private async sendAdminNotification(templateId: string, message: string, entryId?: string): Promise<void> {
-    try {
-      if (!ADMIN_MOBILE) {
-        console.warn('Admin mobile number not configured. Skipping admin notification.');
-        return;
-      }
-
-      const adminMessage = `Admin Alert: ${message}`;
-      // Send to admin mobile
-      await this.sendSMS(ADMIN_MOBILE, templateId, [adminMessage], entryId);
-    } catch (error) {
-      console.error('Error sending admin notification:', error);
-    }
-  }
-
-  /**
-   * Notify tech support about SMS failure
-   */
-  private async notifyTechSupport(templateId: string, recipient: string, errorMessage: string): Promise<void> {
-    try {
-      if (!TECH_SUPPORT_MOBILE) {
-        console.warn('Tech support mobile number not configured. Skipping tech support notification.');
-        return;
-      }
-
-      const techMessage = `SMS Failed: Template ${templateId} to ${recipient}. Error: ${errorMessage}`;
-      await this.sendSMS(TECH_SUPPORT_MOBILE, TEMPLATES.FINAL_DISPOSAL_NOTICE || 'FINAL_DISPOSAL_NOTICE', [techMessage]);
-    } catch (error) {
-      console.error('Error notifying tech support:', error);
+      console.error('Error logging SMS to Firestore:', error);
+      // Don't throw here - SMS sending should not fail due to logging issues
     }
   }
 
@@ -380,6 +623,25 @@ class SMSService {
    */
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get SMS service status
+   */
+  public getServiceStatus(): {
+    isInitialized: boolean;
+    templatesCount: number;
+    maxRetries: number;
+    retryDelay: number;
+    timeout: number;
+  } {
+    return {
+      isInitialized: this.isInitialized,
+      templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
+      maxRetries: MAX_RETRY_ATTEMPTS,
+      retryDelay: RETRY_DELAY_MS,
+      timeout: REQUEST_TIMEOUT_MS
+    };
   }
 }
 
