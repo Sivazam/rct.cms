@@ -9,14 +9,14 @@ export async function POST(request: NextRequest) {
     const { 
       entryId, 
       months, 
+      amount,
       paymentMethod, 
-      otpId, 
       operatorId, 
       operatorName 
     } = body;
 
     // Validate required fields
-    if (!entryId || !months || !paymentMethod || !otpId || !operatorId) {
+    if (!entryId || !months || !paymentMethod || !operatorId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -40,18 +40,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate amount and new expiry date
-    const amount = 300 * months;
+    const renewalAmount = amount || (300 * months);
     const newExpiryDate = new Date(Date.now() + (months * 30 * 24 * 60 * 60 * 1000));
 
     // Create renewal record
     const renewalRecord = {
       date: new Date(),
       months: months,
-      amount: amount,
+      amount: renewalAmount,
       method: paymentMethod,
       operatorId: operatorId,
       newExpiryDate: newExpiryDate,
-      otpUsed: otpId
+      otpUsed: 'no_otp_required' // No OTP verification needed
     };
 
     // Update entry with renewal
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       expiryDate: newExpiryDate,
       renewals: [renewalRecord],
       payments: [{
-        amount: amount,
+        amount: renewalAmount,
         date: new Date(),
         type: 'renewal',
         method: paymentMethod,
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       renewalId: `ren_${Date.now()}`,
       newExpiryDate: newExpiryDate.toISOString(),
-      amount: amount,
+      amount: renewalAmount,
       message: 'Renewal processed successfully' 
     });
   } catch (error: any) {

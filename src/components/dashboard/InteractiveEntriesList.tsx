@@ -17,7 +17,6 @@ import { getEntries, getLocations, getUsers, getCustomerByMobile } from '@/lib/f
 import { formatFirestoreDate } from '@/lib/date-utils';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
-import OTPVerification from '@/components/renewals/OTPVerification';
 import RenewalForm from '@/components/renewals/RenewalForm';
 import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
 import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
@@ -68,13 +67,9 @@ interface InteractiveEntriesListProps {
 
 // Wrapper component for RenewalSystem with pre-selected entry
 function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; onBack: () => void }) {
-  const [currentStep, setCurrentStep] = useState<'otp' | 'form' | 'confirmation'>('otp');
+  const [currentStep, setCurrentStep] = useState<'form' | 'confirmation'>('form');
   const [completedRenewal, setCompletedRenewal] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-
-  const handleOTPVerified = () => {
-    setCurrentStep('form');
-  };
 
   const handleRenewalSuccess = (renewalData: any) => {
     setCompletedRenewal(renewalData);
@@ -86,7 +81,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
   };
 
   const handleNewRenewal = () => {
-    setCurrentStep('otp');
+    setCurrentStep('form');
     setCompletedRenewal(null);
   };
 
@@ -96,20 +91,6 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
 
   const renderStep = () => {
     switch (currentStep) {
-      case 'otp':
-        return (
-          <div className="mb-4">
-            <OTPVerification
-              mobile={entry.customerMobile}
-              entryId={entry.id}
-              type="renewal"
-              onVerified={handleOTPVerified}
-              onCancel={handleCancel}
-              loading={loading}
-            />
-          </div>
-        );
-
       case 'form':
         return (
           <div className="mb-4">
@@ -173,8 +154,6 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
   const [dispatchAmount, setDispatchAmount] = useState('');
   const [dispatchReason, setDispatchReason] = useState('');
   const [dispatchPaymentMethod, setDispatchPaymentMethod] = useState<'cash' | 'upi'>('cash');
-  const [dispatchData, setDispatchData] = useState<any>(null);
-  const [showOTPVerification, setShowOTPVerification] = useState(false);
   const RENEWAL_RATE_PER_MONTH = 300;
 
   // Determine if location filter should be shown
@@ -318,9 +297,56 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     setShowRenewalDetailsDialog(true);
   };
 
-  const handleSendOTPForRenewal = () => {
-    setShowRenewalDetailsDialog(false);
-    setShowRenewal(true);
+  const handleSendOTPForRenewal = async () => {
+    if (!selectedEntryForRenewal) {
+      console.log('No selected entry for renewal');
+      return;
+    }
+
+    try {
+      console.log('Processing renewal directly:', {
+        entryId: selectedEntryForRenewal.id,
+        customerName: selectedEntryForRenewal.customerName,
+        months: renewalMonths,
+        paymentMethod: renewalPaymentMethod
+      });
+
+      // Calculate renewal amount
+      const renewalAmount = renewalMonths * RENEWAL_RATE_PER_MONTH;
+      
+      // Process renewal directly without OTP
+      const response = await fetch('/api/renewals/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entryId: selectedEntryForRenewal.id,
+          months: renewalMonths,
+          amount: renewalAmount,
+          paymentMethod: renewalPaymentMethod,
+          operatorId: user?.uid,
+          operatorName: user?.name || 'Operator'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('API Error:', data);
+        throw new Error(data.error || 'Failed to process renewal');
+      }
+
+      console.log('Renewal processed successfully:', data);
+      
+      // Show success message and refresh data
+      alert('Renewal processed successfully!');
+      handleBackToList();
+      
+    } catch (error: any) {
+      console.error('Error processing renewal:', error);
+      alert('Failed to process renewal: ' + error.message);
+    }
   };
 
   const handleDispatchClick = (entry: Entry) => {
@@ -338,24 +364,31 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     }
 
     try {
-      console.log('Sending OTP for dispatch:', {
+      console.log('Processing dispatch directly:', {
         entryId: selectedEntryForDispatch.id,
         customerName: selectedEntryForDispatch.customerName,
-        customerMobile: selectedEntryForDispatch.customerMobile,
-        operatorId: selectedEntryForDispatch.operatorId
+        amount: dispatchAmount,
+        reason: dispatchReason,
+        paymentMethod: dispatchPaymentMethod
       });
 
-      // Send OTP using the deliveries API
-      const response = await fetch('/api/deliveries/otp', {
+      // Calculate final amount (0 for active entries, specified amount for pending)
+      const finalAmount = type === 'active' ? 0 : (dispatchAmount ? parseFloat(dispatchAmount) : 0);
+      
+      // Process dispatch directly without OTP
+      const response = await fetch('/api/deliveries', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           entryId: selectedEntryForDispatch.id,
-          customerMobile: selectedEntryForDispatch.customerMobile,
           operatorId: selectedEntryForDispatch.operatorId,
-          operatorName: selectedEntryForDispatch.operatorName || 'Operator'
+          operatorName: selectedEntryForDispatch.operatorName || 'Operator',
+          otp: 'no_otp_required', // Pass dummy OTP since we're removing verification
+          amountPaid: finalAmount,
+          dueAmount: calculateDueAmount(selectedEntryForDispatch),
+          reason: type === 'active' ? 'Free dispatch - active entry' : dispatchReason
         }),
       });
 
@@ -363,47 +396,18 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
 
       if (!response.ok) {
         console.error('API Error:', data);
-        throw new Error(data.error || 'Failed to send OTP');
+        throw new Error(data.error || 'Failed to process dispatch');
       }
 
-      console.log('OTP API Response:', data);
-
-      // OTP sent successfully, close dispatch dialog and show OTP verification
-      setShowDispatchDialog(false);
+      console.log('Dispatch processed successfully:', data);
       
-      // For active entries, force amount to 0 regardless of input
-      const finalAmount = type === 'active' ? 0 : (dispatchAmount ? parseFloat(dispatchAmount) : 0);
+      // Show success message and refresh data
+      alert('Dispatch processed successfully!');
+      handleBackToList();
       
-      // Store the dispatch data and show OTP verification
-      setDispatchData({
-        entryId: selectedEntryForDispatch.id,
-        customerMobile: selectedEntryForDispatch.customerMobile,
-        amount: finalAmount,
-        reason: type === 'active' ? 'Free dispatch - active entry' : dispatchReason,
-        paymentMethod: type === 'active' ? 'cash' : dispatchPaymentMethod,
-        otpId: data.otpId || '' // Store OTP ID if returned
-      });
-      
-      setShowOTPVerification(true);
-      
-      console.log('OTP sent successfully for dispatch:', data);
     } catch (error: any) {
-      console.error('Error sending OTP for dispatch:', error);
-      
-      // Handle specific error messages
-      let errorMessage = 'Failed to send OTP';
-      
-      if (error.message.includes('No entries found in database')) {
-        errorMessage = 'No entries found in database. Please create some customer entries first.';
-      } else if (error.message.includes('Entry not found')) {
-        errorMessage = 'Entry not found. Please refresh and try again.';
-      } else if (error.message.includes('Entry is not active')) {
-        errorMessage = 'Entry is not active and cannot be delivered.';
-      } else {
-        errorMessage = error.message || 'Failed to send OTP';
-      }
-      
-      alert(errorMessage);
+      console.error('Error processing dispatch:', error);
+      alert('Failed to process dispatch: ' + error.message);
     }
   };
 
@@ -415,7 +419,6 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
     setShowCustomerFoundDialog(false);
     setShowRenewalDetailsDialog(false);
     setShowDispatchDialog(false);
-    setShowOTPVerification(false);
     setSelectedEntryForDispatch(null);
     setDispatchData(null);
     setFoundCustomer(null);
@@ -632,63 +635,6 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           </Button>
         </div>
         <RenewalSystemWithPreselectedEntry entry={selectedEntryForRenewal} onBack={handleBackToList} />
-      </div>
-    );
-  }
-
-  // Show OTP Verification if Send OTP is clicked for dispatch
-  if (showOTPVerification && dispatchData && selectedEntryForDispatch) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-blue-800">Dispatch Verification</h3>
-            <p className="text-sm text-blue-600">Verify OTP for dispatch of {selectedEntryForDispatch.customerName}</p>
-          </div>
-          <Button variant="outline" onClick={handleBackToList}>
-            ← Back to List
-          </Button>
-        </div>
-        <OTPVerification
-          mobile={selectedEntryForDispatch.customerMobile}
-          entryId={selectedEntryForDispatch.id}
-          type="dispatch"
-          onVerified={async (otp: string) => {
-            try {
-              // Process the dispatch after OTP verification
-              const response = await fetch('/api/deliveries', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  entryId: selectedEntryForDispatch.id,
-                  operatorId: selectedEntryForDispatch.operatorId,
-                  operatorName: selectedEntryForDispatch.operatorName || 'Operator',
-                  otp: otp,
-                  amountPaid: dispatchData.amount,
-                  dueAmount: calculateDueAmount(selectedEntryForDispatch),
-                  reason: dispatchData.reason
-                }),
-              });
-
-              const data = await response.json();
-
-              if (!response.ok) {
-                throw new Error(data.error || 'Failed to process dispatch');
-              }
-
-              // Dispatch processed successfully
-              alert('Dispatch processed successfully!');
-              handleBackToList();
-            } catch (error: any) {
-              console.error('Error processing dispatch:', error);
-              alert('Failed to process dispatch: ' + error.message);
-            }
-          }}
-          onCancel={handleBackToList}
-          loading={loading}
-        />
       </div>
     );
   }

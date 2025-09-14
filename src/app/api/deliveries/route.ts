@@ -8,27 +8,9 @@ export async function POST(request: NextRequest) {
   try {
     const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason } = await request.json();
 
-    if (!entryId || !operatorId || !operatorName || !otp) {
+    if (!entryId || !operatorId || !operatorName) {
       return NextResponse.json(
-        { error: 'Entry ID, Operator ID, Operator Name, and OTP are required' },
-        { status: 400 }
-      );
-    }
-
-    // Verify OTP first
-    const otpRef = collection(db, 'otpVerifications');
-    const otpQuery = query(
-      otpRef, 
-      where('entryId', '==', entryId),
-      where('purpose', '==', 'delivery'),
-      where('isVerified', '==', true),
-      where('otp', '==', otp)
-    );
-    const otpSnapshot = await getDocs(otpQuery);
-
-    if (otpSnapshot.empty) {
-      return NextResponse.json(
-        { error: 'Invalid or unverified OTP. Please verify OTP first.' },
+        { error: 'Entry ID, Operator ID, and Operator Name are required' },
         { status: 400 }
       );
     }
@@ -67,7 +49,7 @@ export async function POST(request: NextRequest) {
       locationId: entryData.locationId,
       locationName: entryData.locationName,
       pots: entryData.pots,
-      otpVerified: true,
+      otpVerified: false, // No OTP verification needed
       smsSent: false, // Will be updated after sending SMS
       entryDate: entryData.entryDate,
       expiryDate: entryData.expiryDate,
