@@ -338,7 +338,7 @@ export default function AdminDashboard() {
                       : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
                   }`}
                 >
-                  Overview
+                  Dashboard
                 </button>
                 <button
                   onClick={() => handleTabChange('operators')}
@@ -417,13 +417,13 @@ export default function AdminDashboard() {
 
           {/* Responsive Content - Works for both desktop and mobile */}
           <div className="space-y-6">
-            {/* Overview Tab */}
+            {/* Dashboard Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Date Range Picker */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-orange-200">
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-lg font-semibold text-orange-800">Dashboard Overview</h3>
+                    <h3 className="text-lg font-semibold text-orange-800">Dashboard Dashboard</h3>
                     <p className="text-sm text-orange-600">
                       {dateRange 
                         ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`

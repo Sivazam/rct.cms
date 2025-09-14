@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import WheelLoading from '@/components/ui/wheel-loading';
+import NavigationLoading from '@/components/ui/navigation-loading';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -29,10 +29,8 @@ export default function DashboardPage() {
   }, [user, loading, router]);
 
   return (
-    <WheelLoading 
+    <NavigationLoading 
       message="Redirecting to dashboard..."
-      showMantra={true}
-      size="lg"
     />
   );
 }

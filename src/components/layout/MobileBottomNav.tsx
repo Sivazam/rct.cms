@@ -57,7 +57,7 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
   const adminNavItems: NavItem[] = [
     {
       id: 'overview',
-      label: 'Overview',
+      label: 'Dashboard',
       icon: <Home className="h-5 w-5" />,
       href: '/dashboard/admin?tab=overview',
       isMain: true
@@ -88,7 +88,7 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
   const operatorNavItems: NavItem[] = [
     {
       id: 'overview',
-      label: 'Overview',
+      label: 'Dashboard',
       icon: <Home className="h-5 w-5" />,
       href: '/dashboard/operator?tab=overview',
       isMain: true

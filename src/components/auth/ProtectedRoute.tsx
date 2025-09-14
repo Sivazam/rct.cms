@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import WheelLoading from '@/components/ui/wheel-loading';
+import NavigationLoading from '@/components/ui/navigation-loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -77,10 +77,8 @@ export default function ProtectedRoute({
 
   if (loading) {
     return (
-      <WheelLoading 
+      <NavigationLoading 
         message="Verifying access..."
-        showMantra={true}
-        size="lg"
       />
     );
   }

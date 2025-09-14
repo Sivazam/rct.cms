@@ -1,42 +1,47 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getTeluguDeathMantra, getTeluguSoulMantra } from '@/lib/spiritual-texts';
-import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SplashScreenProps {
   onSplashComplete: () => void;
 }
 
 export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
-  const [rotation, setRotation] = useState(0);
-  const [currentMantra, setCurrentMantra] = useState("");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [appLoaded, setAppLoaded] = useState(false);
+
+  const splashImages = [
+    '/splash1.jpg',
+    '/splash2.jpg', 
+    '/splash3.jpg',
+    '/splash4.jpg'
+  ].map(img => {
+    // Ensure the image path is correct
+    console.log('SplashScreen: Image path:', img);
+    return img;
+  });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRotation(prev => (prev + 2) % 360);
-    }, 50);
+    console.log('SplashScreen: Component mounted');
+    console.log('SplashScreen: Available images:', splashImages);
+    
+    // Auto-advance carousel every 3 seconds
+    const carouselInterval = setInterval(() => {
+      setCurrentImageIndex((prev) => {
+        const newIndex = (prev + 1) % splashImages.length;
+        console.log('SplashScreen: Changing to image', newIndex, splashImages[newIndex]);
+        return newIndex;
+      });
+    }, 3000);
 
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // Set initial mantra
-    const mantras = [
-      getTeluguDeathMantra(),
-      getTeluguSoulMantra(),
-      "నైనం ఛిన్దన్తి శస్త్రాణి నైనం దహతి పావకః",
-      "న జాయతే మ్రియతే వా కదాచిన్నాయం భూత్వా భవితా వా న భూయః",
-      "జాతస్య హి ధ్రువో మృత్యుర్ధ్రువం జన్మ మృతస్య చ",
-      "అవినాశి తు వద్ధి నైనం నిత్యం యః అజః శాశ్వతోఽయం పురాణో",
-    ];
-    setCurrentMantra(mantras[Math.floor(Math.random() * mantras.length)]);
-  }, []);
+    return () => clearInterval(carouselInterval);
+  }, [splashImages.length]);
 
   useEffect(() => {
-    // Progress timer for 5-7 seconds
-    const duration = 6000; // 6 seconds
+    // Progress timer for 10 seconds
+    const duration = 10000; // 10 seconds
     const startTime = Date.now();
     
     const progressInterval = setInterval(() => {
@@ -46,113 +51,135 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
       
       if (newProgress >= 100) {
         clearInterval(progressInterval);
-        setTimeout(() => {
-          onSplashComplete();
-        }, 500); // Small delay before completing
+        // Check if app is loaded before completing
+        if (appLoaded) {
+          setTimeout(() => {
+            onSplashComplete();
+          }, 500);
+        }
       }
-    }, 50);
+    }, 100);
 
     return () => clearInterval(progressInterval);
-  }, [onSplashComplete]);
+  }, [appLoaded, onSplashComplete]);
+
+  // Simulate app loading check
+  useEffect(() => {
+    // In a real app, this would check actual loading state
+    const loadCheck = setTimeout(() => {
+      setAppLoaded(true);
+    }, 3000); // Simulate 3 seconds loading time
+
+    return () => clearTimeout(loadCheck);
+  }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50">
-      {/* Background spiritual elements */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-10 left-10 text-8xl text-orange-600 animate-pulse">ॐ</div>
-        <div className="absolute top-20 right-20 text-6xl text-red-600 animate-pulse" style={{ animationDelay: '1s' }}>卍</div>
-        <div className="absolute bottom-20 left-20 text-7xl text-amber-600 animate-pulse" style={{ animationDelay: '2s' }}>🔥</div>
-        <div className="absolute bottom-10 right-10 text-5xl text-orange-700 animate-pulse" style={{ animationDelay: '3s' }}>𑀰𑀺𑀪𑁆𑀢</div>
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center space-y-8 max-w-md mx-auto px-4">
-        {/* Rotating Wheel */}
-        <div className="relative">
-          <div 
-            className="w-32 h-32 transition-transform duration-100 ease-linear"
-            style={{
-              transform: `rotate(${rotation}deg)`
-            }}
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Carousel Background */}
+      <div className="relative w-full h-full bg-gradient-to-br from-orange-900 via-amber-900 to-red-900">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentImageIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="absolute inset-0"
           >
-            <Image
-              src="/wheel.png"
-              alt="Sacred Wheel"
-              width={128}
-              height={128}
-              className="w-full h-full object-contain"
+            <div 
+              className="w-full h-full bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url(${splashImages[currentImageIndex]})`
+              }}
               onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const fallback = document.createElement('div');
-                fallback.className = 'w-full h-full rounded-full border-4 border-amber-600 border-t-amber-800 animate-spin';
-                fallback.style.background = 'conic-gradient(from 0deg, #d97706, #92400e, #d97706)';
-                target.parentNode?.appendChild(fallback);
+                console.error('Background image failed to load:', splashImages[currentImageIndex]);
               }}
             />
-          </div>
-          
-          {/* Om symbol overlay */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-4xl text-amber-600 opacity-80">ॐ</div>
-          </div>
-        </div>
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Black Tint Overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-60" />
 
-        {/* Sacred Mantra */}
-        <div className="text-center space-y-4">
-          <div className="text-3xl text-amber-500 animate-pulse">ॐ</div>
-          <div className="text-lg text-telugu text-amber-700 font-medium leading-relaxed">
-            {currentMantra}
-          </div>
-        </div>
+        {/* Content Overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {/* Logo */}
+          <div className="relative z-10 flex flex-col items-center space-y-8">
+            <motion.div
+              initial={{ y: 0 }}
+              animate={{ y: [-10, 0, -10] }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              className="relative"
+            >
+              <img
+                src="/logo-placeholder.png"
+                alt="Logo"
+                width={160}
+                height={160}
+                style={{"border-radius":"8px"}}
+                className="w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-2xl"
+                onError={(e) => {
+                  // Simply hide the broken image, don't show fallback text
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </motion.div>
 
-        {/* App Title */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl md:text-3xl font-bold text-orange-900">
-            ॐ Cremation Management System ॐ
-          </h1>
-          {/* <p className="text-sm text-orange-700">
-            
-          </p> */}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full max-w-xs space-y-2">
-          <div className="flex justify-between text-xs text-orange-600">
-            <span>Initializing System</span>
-            <span>{Math.round(progress)}%</span>
+            {/* Animated Loading Bar */}
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 300, opacity: 1 }}
+              transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+              className="w-72 max-w-full"
+            >
+              <div className="relative">
+                {/* Background track */}
+                <div className="w-full h-2 bg-gray-600 rounded-full overflow-hidden">
+                  {/* Progress fill */}
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
+                </div>
+                
+                {/* Animated shine effect */}
+                <motion.div
+                  className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '100%' }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+              
+              {/* Progress percentage */}
+              <div className="text-center mt-2">
+                <span className="text-white text-sm font-medium">
+                  {Math.round(progress)}%
+                </span>
+              </div>
+            </motion.div>
           </div>
-          <div className="w-full bg-orange-200 rounded-full h-2 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-orange-500 to-amber-600 h-full rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Loading Messages */}
-        <div className="text-center space-y-1">
-          <div className="text-sm text-orange-800 font-medium">
-            {progress < 25 && "Connecting to sacred services..."}
-            {progress >= 25 && progress < 50 && "Loading spiritual components..."}
-            {progress >= 50 && progress < 75 && "Preparing management system..."}
-            {progress >= 75 && progress < 100 && "Almost ready..."}
-            {progress >= 100 && "Welcome"}
-          </div>
-        </div>
-
-        {/* Animated dots */}
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          {/* Build by Harte Labs - Bottom */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 1, ease: "easeOut" }}
+            className="absolute bottom-8 left-0 right-0 text-center"
+          >
+            <p className="text-white/80 text-sm font-light tracking-wide">
+              Build by Harte Labs
+            </p>
+          </motion.div>
         </div>
       </div>
-
-      <style jsx>{`
-        .text-telugu {
-          font-family: 'Noto Sans Telugu', serif;
-        }
-      `}</style>
     </div>
   );
 }

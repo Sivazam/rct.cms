@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import SpiritualLoading from '@/components/ui/spiritual-loading';
+import NavigationLoading from '@/components/ui/navigation-loading';
 import SplashScreen from '@/components/ui/splash-screen';
 
 export default function Home() {
@@ -54,21 +54,15 @@ export default function Home() {
 
   if (loading) {
     return (
-      <SpiritualLoading 
+      <NavigationLoading 
         message="Connecting to Cremation Management System..."
-        mantra="ॐ శాంతిః శాంతిః శాంతిః"
-        teluguOnly={true}
-        useWheel={true}
       />
     );
   }
 
   return (
-    <SpiritualLoading 
+    <NavigationLoading 
       message="Loading Cremation Management System..."
-      mantra="ॐ భూర్భువః స్వః"
-      teluguOnly={true}
-      useWheel={true}
     />
   );
 }

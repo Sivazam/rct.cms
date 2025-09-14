@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import WheelLoading from '@/components/ui/wheel-loading';
+import NavigationLoading from '@/components/ui/navigation-loading';
 
 export default function AuthTestPage() {
   const { user, loading, logout } = useAuth();
@@ -15,10 +15,8 @@ export default function AuthTestPage() {
 
   if (loading) {
     return (
-      <WheelLoading 
+      <NavigationLoading 
         message="Loading authentication test..."
-        showMantra={true}
-        size="lg"
       />
     );
   }

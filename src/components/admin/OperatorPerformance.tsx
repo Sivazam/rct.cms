@@ -297,7 +297,7 @@ export default function OperatorPerformance() {
         </CardContent>
       </Card>
 
-      {/* Performance Overview */}
+      {/* Performance Dashboard */}
       {selectedOperatorData && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <motion.div
