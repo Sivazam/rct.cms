@@ -4,6 +4,11 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Firebase is properly initialized
+    if (!db) {
+      throw new Error('Firebase not initialized');
+    }
+
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
@@ -31,9 +36,9 @@ export async function GET(request: NextRequest) {
         console.log('Found users:', results.users.length);
         console.log('Operators:', results.operators.length);
         console.log('Admin users:', results.adminUsers.length);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching users:', error);
-        results.users = [{ error: 'Failed to fetch users' }];
+        results.users = [{ error: 'Failed to fetch users', details: error.message }];
       }
 
       // Check locations collection
@@ -44,9 +49,9 @@ export async function GET(request: NextRequest) {
           ...doc.data()
         }));
         console.log('Found locations:', results.locations.length);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching locations:', error);
-        results.locations = [{ error: 'Failed to fetch locations' }];
+        results.locations = [{ error: 'Failed to fetch locations', details: error.message }];
       }
 
       // Check entries collection
@@ -57,9 +62,9 @@ export async function GET(request: NextRequest) {
           ...doc.data()
         }));
         console.log('Found entries:', results.entries.length);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching entries:', error);
-        results.entries = [{ error: 'Failed to fetch entries' }];
+        results.entries = [{ error: 'Failed to fetch entries', details: error.message }];
       }
 
       return NextResponse.json({
@@ -134,6 +139,15 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Firestore debug error:', error);
+    
+    // Check if it's a Firebase initialization error
+    if (error.code === 'auth/invalid-api-key') {
+      return NextResponse.json({ 
+        error: 'Firebase API key not configured. Please check environment variables.',
+        code: error.code 
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({ 
       error: error.message,
       code: error.code 

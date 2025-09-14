@@ -6,6 +6,11 @@ export async function GET() {
   try {
     console.log('Debug: Checking database entries...');
     
+    // Check if Firebase is properly initialized
+    if (!db) {
+      throw new Error('Firebase not initialized');
+    }
+    
     // Check entries collection
     const entriesRef = collection(db, 'entries');
     const entriesSnapshot = await getDocs(entriesRef);
@@ -66,11 +71,21 @@ export async function GET() {
       }
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Debug endpoint error:', error);
+    
+    // Check if it's a Firebase initialization error
+    if (error.code === 'auth/invalid-api-key') {
+      return NextResponse.json({
+        success: false,
+        error: 'Firebase API key not configured. Please check environment variables.',
+        code: error.code
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({
       success: false,
-      error: error.message
+      error: error.message || 'Unknown error occurred'
     }, { status: 500 });
   }
 }

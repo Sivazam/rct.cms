@@ -5,6 +5,11 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Firebase is properly initialized
+    if (!auth || !db) {
+      throw new Error('Firebase not initialized');
+    }
+
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
@@ -80,6 +85,15 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Auth debug error:', error);
+    
+    // Check if it's a Firebase initialization error
+    if (error.code === 'auth/invalid-api-key') {
+      return NextResponse.json({ 
+        error: 'Firebase API key not configured. Please check environment variables.',
+        code: error.code 
+      }, { status: 500 });
+    }
+    
     return NextResponse.json({ 
       error: error.message,
       code: error.code 

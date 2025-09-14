@@ -1,6 +1,9 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDoc, getDocs, updateDoc, deleteDoc, doc, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 
+// Export the db instance for use in other modules
+export { db };
+
 // Location Management
 export const addLocation = async (locationData: {
   venueName: string;
