@@ -1,25 +1,26 @@
 // SMS Service for Fast2SMS integration
 import axios from 'axios';
-import SMSLogsService, { SMSLog } from './sms-logs';
+import SMSLogsService from './sms-logs';
+import { SMSLog } from './sms-logs';
 
-// Environment variables (to be set in .env file)
-const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'YOUR_FAST2SMS_API_KEY';
-const FAST2SMS_BASE_URL = 'https://www.fast2sms.com/dev/bulkV2';
+// Environment variables
+const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY;
+const FAST2SMS_BASE_URL = process.env.FAST2SMS_BASE_URL || 'https://www.fast2sms.com/dev/bulkV2';
 
-// Template IDs (to be set in .env file)
+// Template IDs
 const TEMPLATES = {
-  ENTRY_REMINDER_7_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_7_DAYS || 'YOUR_TEMPLATE_ID',
-  ENTRY_REMINDER_3_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_3_DAYS || 'YOUR_TEMPLATE_ID',
-  ENTRY_REMINDER_0_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_0_DAYS || 'YOUR_TEMPLATE_ID',
-  DISPOSAL_WARNING_60_DAYS: process.env.TEMPLATE_DISPOSAL_WARNING_60_DAYS || 'YOUR_TEMPLATE_ID',
-  FINAL_DISPOSAL_NOTICE: process.env.TEMPLATE_FINAL_DISPOSAL_NOTICE || 'YOUR_TEMPLATE_ID',
-  RENEWAL_NOTIFICATION: process.env.TEMPLATE_RENEWAL_NOTIFICATION || 'YOUR_TEMPLATE_ID',
-  DISPATCH_NOTIFICATION: process.env.TEMPLATE_DISPATCH_NOTIFICATION || 'YOUR_TEMPLATE_ID',
+  ENTRY_REMINDER_7_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_7_DAYS,
+  ENTRY_REMINDER_3_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_3_DAYS,
+  ENTRY_REMINDER_0_DAYS: process.env.TEMPLATE_ENTRY_REMINDER_0_DAYS,
+  DISPOSAL_WARNING_60_DAYS: process.env.TEMPLATE_DISPOSAL_WARNING_60_DAYS,
+  FINAL_DISPOSAL_NOTICE: process.env.TEMPLATE_FINAL_DISPOSAL_NOTICE,
+  RENEWAL_NOTIFICATION: process.env.TEMPLATE_RENEWAL_NOTIFICATION,
+  DISPATCH_NOTIFICATION: process.env.TEMPLATE_DISPATCH_NOTIFICATION,
 };
 
-// Mobile numbers (to be set in .env file)
-const ADMIN_MOBILE = process.env.ADMIN_MOBILE || '9014882779';
-const TECH_SUPPORT_MOBILE = process.env.TECH_SUPPORT_MOBILE || '9999999999';
+// Mobile numbers
+const ADMIN_MOBILE = process.env.ADMIN_MOBILE;
+const TECH_SUPPORT_MOBILE = process.env.TECH_SUPPORT_MOBILE;
 
 // SMS Log interface
 export interface SMSLog {
@@ -62,6 +63,15 @@ class SMSService {
     customerId?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
+      // Validate environment variables
+      if (!FAST2SMS_API_KEY || FAST2SMS_API_KEY === 'YOUR_FAST2SMS_API_KEY') {
+        throw new Error('Fast2SMS API key not configured. Please set FAST2SMS_API_KEY environment variable.');
+      }
+
+      if (!templateId || templateId === 'YOUR_TEMPLATE_ID') {
+        throw new Error('SMS template not configured. Please set the appropriate TEMPLATE_ environment variable.');
+      }
+
       const message = this.formatMessage(templateId, variables);
       
       const payload = {
@@ -335,6 +345,11 @@ class SMSService {
    */
   private async sendAdminNotification(templateId: string, message: string, entryId?: string): Promise<void> {
     try {
+      if (!ADMIN_MOBILE) {
+        console.warn('Admin mobile number not configured. Skipping admin notification.');
+        return;
+      }
+
       const adminMessage = `Admin Alert: ${message}`;
       // Send to admin mobile
       await this.sendSMS(ADMIN_MOBILE, templateId, [adminMessage], entryId);
@@ -348,8 +363,13 @@ class SMSService {
    */
   private async notifyTechSupport(templateId: string, recipient: string, errorMessage: string): Promise<void> {
     try {
+      if (!TECH_SUPPORT_MOBILE) {
+        console.warn('Tech support mobile number not configured. Skipping tech support notification.');
+        return;
+      }
+
       const techMessage = `SMS Failed: Template ${templateId} to ${recipient}. Error: ${errorMessage}`;
-      await this.sendSMS(TECH_SUPPORT_MOBILE, TEMPLATES.FINAL_DISPOSAL_NOTICE, [techMessage]);
+      await this.sendSMS(TECH_SUPPORT_MOBILE, TEMPLATES.FINAL_DISPOSAL_NOTICE || 'FINAL_DISPOSAL_NOTICE', [techMessage]);
     } catch (error) {
       console.error('Error notifying tech support:', error);
     }
@@ -363,4 +383,4 @@ class SMSService {
   }
 }
 
-export default SMSService.getInstance();
+export default SMSService;

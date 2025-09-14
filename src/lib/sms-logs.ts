@@ -318,4 +318,4 @@ class SMSLogsService {
   }
 }
 
-export default SMSLogsService.getInstance();
+export default SMSLogsService;

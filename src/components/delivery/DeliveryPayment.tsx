@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { Calculator, AlertTriangle, ArrowLeft, IndianRupee, Clock } from 'lucide-react';
 import SMSService from '@/lib/sms-service';
+const smsService = SMSService.getInstance();
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
@@ -126,7 +127,7 @@ export default function DeliveryPayment({
       };
 
       // Send SMS notification to admin
-      await SMSService.getInstance().sendDispatchNotification(
+      await smsService.sendDispatchNotification(
         entry.customer.name,
         entry.locationName,
         user?.name || 'Operator',
@@ -134,7 +135,7 @@ export default function DeliveryPayment({
       );
 
       // Send SMS notification to customer
-      await SMSService.getInstance().sendFinalDisposalNotice(
+      await smsService.sendFinalDisposalNotice(
         entry.customer.mobile,
         entry.customer.name,
         'River Godavari',

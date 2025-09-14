@@ -12,6 +12,7 @@ import { Calendar, Calculator, DollarSign, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { updateEntry } from '@/lib/firestore';
 import SMSService from '@/lib/sms-service';
+const smsService = SMSService.getInstance();
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 
@@ -112,7 +113,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
       });
 
       // Send SMS notification to admin
-      await SMSService.getInstance().sendRenewalNotification(
+      await smsService.sendRenewalNotification(
         entry.customerName,
         entry.locationId, // This should be location name, we'll need to fetch it
         renewalSummary.amount,
@@ -120,7 +121,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
       );
 
       // Send SMS notification to customer
-      await SMSService.getInstance().sendEntryReminder(
+      await smsService.sendEntryReminder(
         entry.customerMobile,
         entry.customerName,
         entry.locationId, // This should be location name

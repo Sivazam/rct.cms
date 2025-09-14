@@ -776,7 +776,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
           <TableHeader>
             <TableRow>
               {type === 'pending' && <TableHead className="w-24">Action</TableHead>}
-              {(type === 'active' || type === 'pending') && <TableHead className="w-24">Dispatch</TableHead>}
+              {type === 'active' && <TableHead className="w-24">Dispatch</TableHead>}
               <TableHead>Customer</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Location</TableHead>
@@ -793,7 +793,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
               <TableRow>
                 <TableCell colSpan={
                   (type === 'pending' ? 1 : 0) + 
-                  ((type === 'active' || type === 'pending') ? 1 : 0) + 
+                  (type === 'active' ? 1 : 0) + 
                   9
                 } className="text-center py-12">
                   <div className="flex flex-col items-center space-y-4">
@@ -848,26 +848,10 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                             <RefreshCw className="h-3 w-3 mr-1" />
                             Renew
                           </Button>
-                          {user?.role === 'admin' && (
-                            <SendSMSButton 
-                              entry={{
-                                id: entry.id,
-                                customerName: entry.customerName,
-                                customerMobile: entry.customerMobile,
-                                customerCity: entry.customerCity,
-                                expiryDate: entry.expiryDate,
-                                locationId: entry.locationId,
-                                locationName: entry.locationName || '',
-                                status: entry.status,
-                                customerId: '' // This would need to be added to the entry interface
-                              }}
-                              onSMSsent={fetchData}
-                            />
-                          )}
                         </div>
                       </TableCell>
                     )}
-                    {(type === 'active' || type === 'pending') && (
+                    {type === 'active' && (
                       <TableCell>
                         <div className="flex space-x-1">
                           <Button 
@@ -1041,7 +1025,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange }: 
                     Renew Entry
                   </Button>
                 )}
-                {(type === 'active' || type === 'pending') && (
+                {type === 'active' && (
                   <Button 
                     size="sm" 
                     onClick={() => handleDispatchClick(entry)}

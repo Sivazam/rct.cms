@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Send, AlertTriangle, CheckCircle, Phone, User, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SMSService from '@/lib/sms-service';
+const smsService = SMSService.getInstance();
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 
@@ -79,7 +80,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
 
       switch (selectedType) {
         case '7_DAYS':
-          smsResult = await SMSService.getInstance().sendEntryReminder(
+          smsResult = await smsService.sendEntryReminder(
             entry.customerMobile,
             entry.customerName,
             entry.locationName,
@@ -92,7 +93,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           break;
           
         case '3_DAYS':
-          smsResult = await SMSService.getInstance().sendEntryReminder(
+          smsResult = await smsService.sendEntryReminder(
             entry.customerMobile,
             entry.customerName,
             entry.locationName,
@@ -105,7 +106,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           break;
           
         case '0_DAYS':
-          smsResult = await SMSService.getInstance().sendEntryReminder(
+          smsResult = await smsService.sendEntryReminder(
             entry.customerMobile,
             entry.customerName,
             entry.locationName,
@@ -120,7 +121,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
         case 'DISPOSAL_WARNING':
           const disposalDate = new Date();
           disposalDate.setDate(disposalDate.getDate() + 3);
-          smsResult = await SMSService.getInstance().sendDisposalWarning(
+          smsResult = await smsService.sendDisposalWarning(
             entry.customerMobile,
             entry.customerName,
             formatDate(disposalDate),
@@ -130,7 +131,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           break;
           
         case 'FINAL_DISPOSAL':
-          smsResult = await SMSService.getInstance().sendFinalDisposalNotice(
+          smsResult = await smsService.sendFinalDisposalNotice(
             entry.customerMobile,
             entry.customerName,
             'River Godavari',

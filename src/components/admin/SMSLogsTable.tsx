@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SMSLogsService, { SMSLog, SMSLogFilters } from '@/lib/sms-logs';
+const smsLogsService = SMSLogsService.getInstance();
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -51,7 +52,7 @@ export default function SMSLogsTable({ className }: SMSLogsTableProps) {
       setLoading(true);
       setError('');
       
-      const logsData = await SMSLogsService.getInstance().getSMSLogs(filters);
+      const logsData = await smsLogsService.getSMSLogs(filters);
       setLogs(logsData);
     } catch (error) {
       console.error('Error fetching SMS logs:', error);
@@ -210,24 +211,24 @@ export default function SMSLogsTable({ className }: SMSLogsTableProps) {
               </div>
             </div>
             
-            <Select value={filters.status || ''} onValueChange={(value) => setFilters({ ...filters, status: value || undefined })}>
+            <Select value={filters.status || 'all'} onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? undefined : value })}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="sent">Sent</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={filters.type || ''} onValueChange={(value) => setFilters({ ...filters, type: value || undefined })}>
+            <Select value={filters.type || 'all'} onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? undefined : value })}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="ENTRY_REMINDER_7_DAYS">7 Days Reminder</SelectItem>
                 <SelectItem value="ENTRY_REMINDER_3_DAYS">3 Days Reminder</SelectItem>
                 <SelectItem value="ENTRY_REMINDER_0_DAYS">0 Days Reminder</SelectItem>
