@@ -78,6 +78,18 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
     setResult(null);
 
     try {
+      console.log('🔍 [DEBUG] Starting SMS send process...');
+      console.log('🔍 [DEBUG] User:', { uid: user.uid, email: user.email, role: user.role });
+      console.log('🔍 [DEBUG] Selected template:', selectedType);
+      console.log('🔍 [DEBUG] Entry data:', {
+        id: entry.id,
+        customerName: entry.customerName,
+        customerMobile: entry.customerMobile,
+        locationName: entry.locationName,
+        expiryDate: entry.expiryDate,
+        status: entry.status
+      });
+
       console.log('Initializing SMS service...');
       // Initialize the secure SMS service
       smsService.initialize();
@@ -87,11 +99,20 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
       const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
       const formattedExpiryDate = formatDate(expiryDate);
       
+      console.log('🔍 [DEBUG] Formatted expiry date:', formattedExpiryDate);
       console.log('Sending SMS with template:', selectedType);
       let smsResult;
 
+      // Log template-specific debugging information
       switch (selectedType) {
         case 'threeDayReminder':
+          console.log('🔍 [DEBUG] Three Day Reminder variables:', {
+            customerMobile: entry.customerMobile,
+            customerName: entry.customerName,
+            locationName: entry.locationName,
+            formattedExpiryDate,
+            entryId: entry.id
+          });
           smsResult = await smsService.sendThreeDayReminder(
             entry.customerMobile,
             entry.customerName,
@@ -105,6 +126,13 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           break;
           
         case 'lastdayRenewal':
+          console.log('🔍 [DEBUG] Last Day Renewal variables:', {
+            customerMobile: entry.customerMobile,
+            customerName: entry.customerName,
+            locationName: entry.locationName,
+            formattedExpiryDate,
+            entryId: entry.id
+          });
           smsResult = await smsService.sendLastDayRenewalReminder(
             entry.customerMobile,
             entry.customerName,
@@ -118,11 +146,18 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           break;
           
         case 'renewalConfirmCustomer':
+          console.log('🔍 [DEBUG] Renewal Confirmation Customer variables:', {
+            customerMobile: entry.customerMobile,
+            customerName: entry.customerName,
+            locationName: entry.locationName,
+            formattedExpiryDate,
+            entryId: entry.id
+          });
           smsResult = await smsService.sendRenewalConfirmationCustomer(
             entry.customerMobile,
             entry.customerName,
             entry.locationName,
-            formattedExpiryDate, // This would be the extended expiry date
+            formattedExpiryDate,
             entry.id,
             entry.customerId,
             entry.locationId,
@@ -132,13 +167,22 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           
         case 'dispatchConfirmCustomer':
           const deliveryDate = new Date();
-          deliveryDate.setDate(deliveryDate.getDate() + 3); // Example: 3 days from now
+          deliveryDate.setDate(deliveryDate.getDate() + 3);
+          console.log('🔍 [DEBUG] Dispatch Confirmation Customer variables:', {
+            customerMobile: entry.customerMobile,
+            customerName: entry.customerName,
+            locationName: entry.locationName,
+            deliveryDate: formatDate(deliveryDate),
+            contactPerson: entry.customerName,
+            contactMobile: entry.customerMobile,
+            entryId: entry.id
+          });
           smsResult = await smsService.sendDispatchConfirmationCustomer(
             entry.customerMobile,
             entry.customerName,
             entry.locationName,
             formatDate(deliveryDate),
-            entry.customerName, // Using customer name as contact person
+            entry.customerName,
             entry.customerMobile,
             entry.id,
             entry.customerId,
@@ -148,6 +192,13 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           break;
           
         case 'finalDisposalReminder':
+          console.log('🔍 [DEBUG] Final Disposal Reminder variables:', {
+            recipient: entry.customerMobile,
+            deceasedPersonName: entry.customerName,
+            locationName: entry.locationName,
+            entryId: entry.id
+          });
+          console.log('🔍 [DEBUG] About to call sendFinalDisposalReminder...');
           smsResult = await smsService.sendFinalDisposalReminder(
             entry.customerMobile,
             entry.customerName,
@@ -157,13 +208,22 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
             entry.locationId,
             user.uid
           );
+          console.log('🔍 [DEBUG] sendFinalDisposalReminder completed');
           break;
           
         default:
           throw new Error('Invalid SMS type');
       }
 
-      console.log('Secure SMS result:', smsResult);
+      console.log('🔍 [DEBUG] Secure SMS result:', {
+        success: smsResult.success,
+        messageId: smsResult.messageId,
+        error: smsResult.error,
+        timestamp: smsResult.timestamp,
+        attempt: smsResult.attempt,
+        templateUsed: smsResult.templateUsed,
+        recipient: smsResult.recipient
+      });
 
       setResult({
         success: smsResult.success,
@@ -176,11 +236,13 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
       }
 
     } catch (error) {
-      console.error('Error sending SMS:', error);
-      console.error('Error details:', {
+      console.error('🔍 [DEBUG] Error sending SMS:', error);
+      console.error('🔍 [DEBUG] Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : 'No stack trace',
-        error: error
+        error: error,
+        type: typeof error,
+        constructor: error?.constructor?.name
       });
       
       setResult({

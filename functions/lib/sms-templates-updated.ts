@@ -14,8 +14,7 @@ export const TEMPLATE_IDS = {
   renewalConfirmAdmin: '198610',        // Fast2SMS Message ID
   dispatchConfirmCustomer: '198611',    // Fast2SMS Message ID
   deliveryConfirmAdmin: '198612',      // Fast2SMS Message ID
-  finalDisposalReminder: '198613',      // Fast2SMS Message ID (Customer)
-  finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
+  finalDisposalReminderAdmin: '198613', // Fast2SMS Message ID
 } as const;
 
 // Template key to template name mapping for display purposes
@@ -26,7 +25,6 @@ export const TEMPLATE_NAMES = {
   renewalConfirmAdmin: 'Renewal Confirmation (Admin)',
   dispatchConfirmCustomer: 'Dispatch Confirmation (Customer)',
   deliveryConfirmAdmin: 'Delivery Confirmation (Admin)',
-  finalDisposalReminder: 'Final Disposal Reminder (Customer)',
   finalDisposalReminderAdmin: 'Final Disposal Reminder (Admin)',
 } as const;
 
@@ -315,10 +313,10 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     category: 'confirmation'
   },
   {
-    key: 'finalDisposalReminder',
-    id: TEMPLATE_IDS.finalDisposalReminder,
-    name: TEMPLATE_NAMES.finalDisposalReminder,
-    description: 'Send final disposal reminder to customer',
+    key: 'finalDisposalReminderAdmin',
+    id: TEMPLATE_IDS.finalDisposalReminderAdmin,
+    name: TEMPLATE_NAMES.finalDisposalReminderAdmin,
+    description: 'Send final disposal reminder to admin',
     variables: [
       {
         name: 'var1',
@@ -343,31 +341,6 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
       }
     ],
     variableCount: 3,
-    isActive: true,
-    category: 'disposal'
-  },
-  {
-    key: 'finalDisposalReminderAdmin',
-    id: TEMPLATE_IDS.finalDisposalReminderAdmin,
-    name: TEMPLATE_NAMES.finalDisposalReminderAdmin,
-    description: 'Send final disposal reminder to admin',
-    variables: [
-      {
-        name: 'var1',
-        description: 'Location name, at which that Deceased person storage renewals hasnt happened for last 2months',
-        example: 'లాకర్-A',
-        required: true,
-        position: 1
-      },
-      {
-        name: 'var2',
-        description: 'That Deceased person name',
-        example: 'రాముడు',
-        required: true,
-        position: 2
-      }
-    ],
-    variableCount: 2,
     isActive: true,
     category: 'disposal'
   }

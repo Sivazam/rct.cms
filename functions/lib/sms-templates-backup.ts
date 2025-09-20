@@ -1,21 +1,21 @@
-// SMS Template Management System - Updated with Fast2SMS Message IDs
-// This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
+// SMS Template Management System - Firebase Admin SDK Compatible Version
+// This is a simplified version for Firebase Functions use
 
 /**
- * Fast2SMS Message ID Registry - All approved templates with their correct Message IDs
- * These Message IDs are used in the "message" parameter of Fast2SMS API calls
+ * DLT Template Registry - All approved templates with their IDs and variable structures
+ * This file contains the official DLT-approved templates for the Cremation Management System
  */
 
-// Template key to Fast2SMS Message ID mapping (CORRECTED)
+// Template key to template ID mapping
 export const TEMPLATE_IDS = {
-  threeDayReminder: '198607',           // Fast2SMS Message ID
-  lastdayRenewal: '198608',             // Fast2SMS Message ID
-  renewalConfirmCustomer: '198609',     // Fast2SMS Message ID
-  renewalConfirmAdmin: '198610',        // Fast2SMS Message ID
-  dispatchConfirmCustomer: '198611',    // Fast2SMS Message ID
-  deliveryConfirmAdmin: '198612',      // Fast2SMS Message ID
-  finalDisposalReminder: '198613',      // Fast2SMS Message ID (Customer)
-  finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
+  threeDayReminder: '1707175786299400837',
+  lastdayRenewal: '1707175786326312933',
+  renewalConfirmCustomer: '1707175786362862204',
+  renewalConfirmAdmin: '1707175786389503209',
+  dispatchConfirmCustomer: '1707175786420863806',
+  deliveryConfirmAdmin: '1707175786441865610',
+  finalDisposalReminder: '1707175786481546224',
+  finalDisposalReminderAdmin: '1707175786495860514',
 } as const;
 
 // Template key to template name mapping for display purposes
@@ -26,7 +26,7 @@ export const TEMPLATE_NAMES = {
   renewalConfirmAdmin: 'Renewal Confirmation (Admin)',
   dispatchConfirmCustomer: 'Dispatch Confirmation (Customer)',
   deliveryConfirmAdmin: 'Delivery Confirmation (Admin)',
-  finalDisposalReminder: 'Final Disposal Reminder (Customer)',
+  finalDisposalReminder: 'Final Disposal Reminder',
   finalDisposalReminderAdmin: 'Final Disposal Reminder (Admin)',
 } as const;
 
@@ -42,7 +42,7 @@ export interface TemplateVariable {
 // Template definition interface
 export interface SMSTemplate {
   key: keyof typeof TEMPLATE_IDS;
-  id: string; // This is now the Fast2SMS Message ID
+  id: string;
   name: string;
   description: string;
   variables: TemplateVariable[];
@@ -64,8 +64,8 @@ export interface TemplateVariables {
   var7?: string; // {#var#} - Position 7 (optional for some templates)
 }
 
-// Fast2SMS Template definitions with exact variable structures as per user requirements
-export const FASTSMS_TEMPLATES: SMSTemplate[] = [
+// DLT Template definitions with exact variable structures as approved
+export const DLT_TEMPLATES: SMSTemplate[] = [
   {
     key: 'threeDayReminder',
     id: TEMPLATE_IDS.threeDayReminder,
@@ -74,36 +74,36 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name (entry name)',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location (location this entry got registered)',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Date of expiry of storage',
-        example: '2025-09-25',
+        description: 'Expiry date',
+        example: '24/09/2025',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Admin contact number',
-        example: '919014882779',
+        description: 'Mobile number',
+        example: '9876543210',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Location (location this entry got registered) - repeated',
-        example: 'లాకర్-A',
+        description: 'Location name (signature)',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 5
       }
@@ -120,36 +120,36 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name (entry name)',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location (location this entry got registered)',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Date of expiry of storage',
-        example: '2025-09-25',
+        description: 'Expiry date (today)',
+        example: '24/09/2025',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Admin contact number',
-        example: '919014882779',
+        description: 'Mobile number',
+        example: '9876543210',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Location (location this entry got registered) - repeated',
-        example: 'లాకర్-A',
+        description: 'Location name (signature)',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 5
       }
@@ -166,36 +166,36 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name (entry name)',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location (location this entry got registered)',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'New Date of expiry of storage after renewal',
-        example: '2025-12-25',
+        description: 'Extended expiry date',
+        example: '24/12/2025',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Admin contact number',
-        example: '919014882779',
+        description: 'Mobile number',
+        example: '9876543210',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Location (location this entry got registered) - repeated',
-        example: 'లాకర్-A',
+        description: 'Location name (signature)',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 5
       }
@@ -212,15 +212,15 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Location renewal happened',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Deceased person name whose renewal has happened',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 2
       }
@@ -237,50 +237,50 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name (entry name)',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location (location this entry got registered)',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Date of dispatch happened',
-        example: '2025-09-25',
+        description: 'Delivery date',
+        example: '27/09/2025',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Contact person name who handed over the pot',
-        example: 'సీత',
+        description: 'Contact person name',
+        example: 'సురేష్ కుమార్',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Contact person mobile number who handed over the pot',
-        example: '919876543210',
+        description: 'Contact mobile number',
+        example: '9876543210',
         required: true,
         position: 5
       },
       {
         name: 'var6',
-        description: 'Admin contact number',
-        example: '919014882779',
+        description: 'Admin mobile number',
+        example: '9876543210',
         required: true,
         position: 6
       },
       {
         name: 'var7',
-        description: 'Location (location this entry got registered) - repeated',
-        example: 'లాకర్-A',
+        description: 'Location name (signature)',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 7
       }
@@ -297,15 +297,15 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name (entry name) whose dispatch/delivery have happened',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location (location this entry got registered) whose dispatched',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       }
@@ -318,26 +318,26 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     key: 'finalDisposalReminder',
     id: TEMPLATE_IDS.finalDisposalReminder,
     name: TEMPLATE_NAMES.finalDisposalReminder,
-    description: 'Send final disposal reminder to customer',
+    description: 'Send final disposal reminder',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name (entry name)',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location (location this entry got registered)',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Location (location this entry got registered) - repeated',
-        example: 'లాకర్-A',
+        description: 'Location name (signature)',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 3
       }
@@ -354,15 +354,15 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variables: [
       {
         name: 'var1',
-        description: 'Location name, at which that Deceased person storage renewals hasnt happened for last 2months',
-        example: 'లాకర్-A',
+        description: 'Location name',
+        example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'That Deceased person name',
-        example: 'రాముడు',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 2
       }
@@ -386,31 +386,31 @@ class SMSTemplatesService {
   }
 
   /**
-   * Get all available Fast2SMS templates
+   * Get all available DLT templates
    */
   public getAllTemplates(): SMSTemplate[] {
-    return FASTSMS_TEMPLATES;
+    return DLT_TEMPLATES;
   }
 
   /**
    * Get template by key
    */
   public getTemplateByKey(key: keyof typeof TEMPLATE_IDS): SMSTemplate | undefined {
-    return FASTSMS_TEMPLATES.find(template => template.key === key);
+    return DLT_TEMPLATES.find(template => template.key === key);
   }
 
   /**
    * Get template by ID
    */
   public getTemplateById(id: string): SMSTemplate | undefined {
-    return FASTSMS_TEMPLATES.find(template => template.id === id);
+    return DLT_TEMPLATES.find(template => template.id === id);
   }
 
   /**
    * Get active templates by category
    */
   public getTemplatesByCategory(category: 'reminder' | 'confirmation' | 'disposal'): SMSTemplate[] {
-    return FASTSMS_TEMPLATES.filter(template => template.category === category && template.isActive);
+    return DLT_TEMPLATES.filter(template => template.category === category && template.isActive);
   }
 
   /**
@@ -512,7 +512,7 @@ class SMSTemplatesService {
       disposal: number;
     };
   } {
-    const templates = FASTSMS_TEMPLATES;
+    const templates = DLT_TEMPLATES;
     
     return {
       total: templates.length,
