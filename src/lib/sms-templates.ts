@@ -1,20 +1,33 @@
-// SMS Template Management System - DLT Compliant Templates for FastSMS
+// SMS Template Management System - Updated with Fast2SMS Message IDs
+// This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
 
 /**
- * DLT Template Registry - All approved templates with their IDs and variable structures
- * This file contains the official DLT-approved templates for the Cremation Management System
+ * Fast2SMS Message ID Registry - All approved templates with their correct Message IDs
+ * These Message IDs are used in the "message" parameter of Fast2SMS API calls
  */
 
-// Template key to template ID mapping
+// Template key to Fast2SMS Message ID mapping (CORRECTED)
 export const TEMPLATE_IDS = {
-  threeDayReminder: '1707175786299400837',
-  lastdayRenewal: '1707175786326312933',
-  renewalConfirmCustomer: '1707175786362862204',
-  renewalConfirmAdmin: '1707175786389503209',
-  dispatchConfirmCustomer: '1707175786420863806',
-  deliveryConfirmAdmin: '1707175786441865610',
-  finalDisposalReminder: '1707175786481546224',
-  finalDisposalReminderAdmin: '1707175786495860514',
+  threeDayReminder: '198607',           // Fast2SMS Message ID
+  lastdayRenewal: '198608',             // Fast2SMS Message ID
+  renewalConfirmCustomer: '198609',     // Fast2SMS Message ID
+  renewalConfirmAdmin: '198610',        // Fast2SMS Message ID
+  dispatchConfirmCustomer: '198611',    // Fast2SMS Message ID
+  deliveryConfirmAdmin: '198612',      // Fast2SMS Message ID
+  finalDisposalReminder: '198613',      // Fast2SMS Message ID (Customer)
+  finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
+} as const;
+
+// Template key to DLT Template ID mapping (for reference and admin purposes)
+export const DLT_TEMPLATE_IDS = {
+  threeDayReminder: '1707175786299400837',     // DLT Template ID
+  lastdayRenewal: '1707175786326312933',       // DLT Template ID
+  renewalConfirmCustomer: '1707175786362862204', // DLT Template ID
+  renewalConfirmAdmin: '1707175786389503209',    // DLT Template ID
+  dispatchConfirmCustomer: '1707175786420863806', // DLT Template ID
+  deliveryConfirmAdmin: '1707175786441865610',  // DLT Template ID
+  finalDisposalReminder: '1707175786481540000', // DLT Template ID (Customer)
+  finalDisposalReminderAdmin: '1707175786495860000', // DLT Template ID (Admin)
 } as const;
 
 // Template key to template name mapping for display purposes
@@ -25,7 +38,7 @@ export const TEMPLATE_NAMES = {
   renewalConfirmAdmin: 'Renewal Confirmation (Admin)',
   dispatchConfirmCustomer: 'Dispatch Confirmation (Customer)',
   deliveryConfirmAdmin: 'Delivery Confirmation (Admin)',
-  finalDisposalReminder: 'Final Disposal Reminder',
+  finalDisposalReminder: 'Final Disposal Reminder (Customer)',
   finalDisposalReminderAdmin: 'Final Disposal Reminder (Admin)',
 } as const;
 
@@ -41,15 +54,14 @@ export interface TemplateVariable {
 // Template definition interface
 export interface SMSTemplate {
   key: keyof typeof TEMPLATE_IDS;
-  id: string;
+  id: string; // This is now the Fast2SMS Message ID
+  dltId: string; // DLT Template ID for reference
   name: string;
   description: string;
   variables: TemplateVariable[];
   variableCount: number;
   isActive: boolean;
   category: 'reminder' | 'confirmation' | 'disposal';
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 // Template variable data interface for sending SMS - DLT Compliant Format
@@ -86,328 +98,380 @@ export interface SMSResponse {
   recipient: string;
 }
 
-// DLT Template definitions with exact variable structures as approved in Excel sheet
-export const DLT_TEMPLATES: SMSTemplate[] = [
+// Mobile number validation and cleaning utility
+export class MobileNumberUtils {
+  /**
+   * Clean and validate mobile number for Fast2SMS API
+   * @param mobileNumber - Raw mobile number input
+   * @returns Cleaned 10-digit mobile number
+   * @throws Error if mobile number is invalid
+   */
+  static cleanAndValidate(mobileNumber: string): string {
+    if (!mobileNumber || typeof mobileNumber !== 'string') {
+      throw new Error('Mobile number is required and must be a string');
+    }
+
+    // Remove all non-digit characters
+    const cleaned = mobileNumber.replace(/\D/g, '');
+    
+    // Remove country code if present (91)
+    let finalNumber = cleaned;
+    if (cleaned.length === 12 && cleaned.startsWith('91')) {
+      finalNumber = cleaned.substring(2);
+    } else if (cleaned.length === 13 && cleaned.startsWith('91')) {
+      finalNumber = cleaned.substring(2);
+    } else if (cleaned.length > 10) {
+      // If longer than 10 digits and doesn't start with 91, take last 10 digits
+      finalNumber = cleaned.slice(-10);
+    }
+
+    // Validate final format
+    if (!/^[6-9]\d{9}$/.test(finalNumber)) {
+      throw new Error(`Invalid mobile number format: ${mobileNumber}. Must be 10 digits starting with 6-9`);
+    }
+
+    return finalNumber;
+  }
+
+  /**
+   * Format mobile number for display (with masking for privacy)
+   * @param mobileNumber - Clean 10-digit mobile number
+   * @returns Masked mobile number for display
+   */
+  static maskForDisplay(mobileNumber: string): string {
+    const cleaned = this.cleanAndValidate(mobileNumber);
+    return cleaned.substring(0, 4) + '****' + cleaned.substring(-4);
+  }
+
+  /**
+   * Check if mobile number is valid (without throwing error)
+   * @param mobileNumber - Mobile number to validate
+   * @returns True if valid, false otherwise
+   */
+  static isValid(mobileNumber: string): boolean {
+    try {
+      this.cleanAndValidate(mobileNumber);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// Fast2SMS Template definitions with exact variable structures as per user requirements
+export const FASTSMS_TEMPLATES: SMSTemplate[] = [
   {
     key: 'threeDayReminder',
     id: TEMPLATE_IDS.threeDayReminder,
+    dltId: DLT_TEMPLATE_IDS.threeDayReminder,
     name: TEMPLATE_NAMES.threeDayReminder,
-    description: 'Send reminder 3 days before expiry - DLT Approved',
+    description: 'Send reminder 3 days before expiry',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name (entry name)',
+        example: 'రాముడు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered)',
+        example: 'లాకర్-A',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Expiry date',
-        example: '24/09/2025',
+        description: 'Date of expiry of storage',
+        example: '2025-09-25',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Mobile number',
-        example: '9876543210',
+        description: 'Admin contact number',
+        example: '919014882779',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Location name (signature)',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered) - repeated',
+        example: 'లాకర్-A',
         required: true,
         position: 5
       }
     ],
     variableCount: 5,
     isActive: true,
-    category: 'reminder',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'reminder'
   },
   {
     key: 'lastdayRenewal',
     id: TEMPLATE_IDS.lastdayRenewal,
+    dltId: DLT_TEMPLATE_IDS.lastdayRenewal,
     name: TEMPLATE_NAMES.lastdayRenewal,
-    description: 'Send reminder on expiry day - DLT Approved',
+    description: 'Send reminder on expiry day',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name (entry name)',
+        example: 'రాముడు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered)',
+        example: 'లాకర్-A',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Expiry date (today)',
-        example: '24/09/2025',
+        description: 'Date of expiry of storage',
+        example: '2025-09-25',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Mobile number',
-        example: '9876543210',
+        description: 'Admin contact number',
+        example: '919014882779',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Location name (signature)',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered) - repeated',
+        example: 'లాకర్-A',
         required: true,
         position: 5
       }
     ],
     variableCount: 5,
     isActive: true,
-    category: 'reminder',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'reminder'
   },
   {
     key: 'renewalConfirmCustomer',
     id: TEMPLATE_IDS.renewalConfirmCustomer,
+    dltId: DLT_TEMPLATE_IDS.renewalConfirmCustomer,
     name: TEMPLATE_NAMES.renewalConfirmCustomer,
-    description: 'Send renewal confirmation to customer - DLT Approved',
+    description: 'Send renewal confirmation to customer',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name (entry name)',
+        example: 'రాముడు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered)',
+        example: 'లాకర్-A',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Extended expiry date',
-        example: '24/12/2025',
+        description: 'New Date of expiry of storage after renewal',
+        example: '2025-12-25',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Mobile number',
-        example: '9876543210',
+        description: 'Admin contact number',
+        example: '919014882779',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Location name (signature)',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered) - repeated',
+        example: 'లాకర్-A',
         required: true,
         position: 5
       }
     ],
     variableCount: 5,
     isActive: true,
-    category: 'confirmation',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'confirmation'
   },
   {
     key: 'renewalConfirmAdmin',
     id: TEMPLATE_IDS.renewalConfirmAdmin,
+    dltId: DLT_TEMPLATE_IDS.renewalConfirmAdmin,
     name: TEMPLATE_NAMES.renewalConfirmAdmin,
-    description: 'Send renewal confirmation to admin - DLT Approved',
+    description: 'Send renewal confirmation to admin',
     variables: [
       {
         name: 'var1',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location renewal happened',
+        example: 'లాకర్-A',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name whose renewal has happened',
+        example: 'రాముడు',
         required: true,
         position: 2
       }
     ],
     variableCount: 2,
     isActive: true,
-    category: 'confirmation',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'confirmation'
   },
   {
     key: 'dispatchConfirmCustomer',
     id: TEMPLATE_IDS.dispatchConfirmCustomer,
+    dltId: DLT_TEMPLATE_IDS.dispatchConfirmCustomer,
     name: TEMPLATE_NAMES.dispatchConfirmCustomer,
-    description: 'Send dispatch confirmation to customer - DLT Approved',
+    description: 'Send dispatch confirmation to customer',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name (entry name)',
+        example: 'రాముడు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered)',
+        example: 'లాకర్-A',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Delivery date',
-        example: '27/09/2025',
+        description: 'Date of dispatch happened',
+        example: '2025-09-25',
         required: true,
         position: 3
       },
       {
         name: 'var4',
-        description: 'Contact person name',
-        example: 'సురేష్ కుమార్',
+        description: 'Contact person name who handed over the pot',
+        example: 'సీత',
         required: true,
         position: 4
       },
       {
         name: 'var5',
-        description: 'Contact mobile number',
-        example: '9876543210',
+        description: 'Contact person mobile number who handed over the pot',
+        example: '919876543210',
         required: true,
         position: 5
       },
       {
         name: 'var6',
-        description: 'Admin mobile number',
-        example: '9876543210',
+        description: 'Admin contact number',
+        example: '919014882779',
         required: true,
         position: 6
       },
       {
         name: 'var7',
-        description: 'Location name (signature)',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered) - repeated',
+        example: 'లాకర్-A',
         required: true,
         position: 7
       }
     ],
     variableCount: 7,
     isActive: true,
-    category: 'confirmation',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'confirmation'
   },
   {
     key: 'deliveryConfirmAdmin',
     id: TEMPLATE_IDS.deliveryConfirmAdmin,
+    dltId: DLT_TEMPLATE_IDS.deliveryConfirmAdmin,
     name: TEMPLATE_NAMES.deliveryConfirmAdmin,
-    description: 'Send delivery confirmation to admin - DLT Approved',
+    description: 'Send delivery confirmation to admin',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name (entry name) whose dispatch/delivery have happened',
+        example: 'రాముడు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered) whose dispatched',
+        example: 'లాకర్-A',
         required: true,
         position: 2
       }
     ],
     variableCount: 2,
     isActive: true,
-    category: 'confirmation',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'confirmation'
   },
   {
     key: 'finalDisposalReminder',
     id: TEMPLATE_IDS.finalDisposalReminder,
+    dltId: DLT_TEMPLATE_IDS.finalDisposalReminder,
     name: TEMPLATE_NAMES.finalDisposalReminder,
-    description: 'Send final disposal reminder - DLT Approved',
+    description: 'Send final disposal reminder to customer',
     variables: [
       {
         name: 'var1',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'Deceased person name (entry name)',
+        example: 'రాముడు',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered)',
+        example: 'లాకర్-A',
         required: true,
         position: 2
       },
       {
         name: 'var3',
-        description: 'Location name (signature)',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location (location this entry got registered) - repeated',
+        example: 'లాకర్-A',
         required: true,
         position: 3
       }
     ],
     variableCount: 3,
     isActive: true,
-    category: 'disposal',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'disposal'
   },
   {
     key: 'finalDisposalReminderAdmin',
     id: TEMPLATE_IDS.finalDisposalReminderAdmin,
+    dltId: DLT_TEMPLATE_IDS.finalDisposalReminderAdmin,
     name: TEMPLATE_NAMES.finalDisposalReminderAdmin,
-    description: 'Send final disposal reminder to admin - DLT Approved',
+    description: 'Send final disposal reminder to admin',
     variables: [
       {
         name: 'var1',
-        description: 'Location name',
-        example: 'కోటిలింగలు-కైలాసభూమి',
+        description: 'Location name, at which that Deceased person storage renewals hasnt happened for last 2months',
+        example: 'లాకర్-A',
         required: true,
         position: 1
       },
       {
         name: 'var2',
-        description: 'Deceased person name',
-        example: 'రాఘవ రావు',
+        description: 'That Deceased person name',
+        example: 'రాముడు',
         required: true,
         position: 2
       }
     ],
     variableCount: 2,
     isActive: true,
-    category: 'disposal',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    category: 'disposal'
   }
 ];
 
@@ -424,31 +488,38 @@ class SMSTemplatesService {
   }
 
   /**
-   * Get all available DLT templates
+   * Get all available Fast2SMS templates
    */
   public getAllTemplates(): SMSTemplate[] {
-    return DLT_TEMPLATES;
+    return FASTSMS_TEMPLATES;
   }
 
   /**
    * Get template by key
    */
   public getTemplateByKey(key: keyof typeof TEMPLATE_IDS): SMSTemplate | undefined {
-    return DLT_TEMPLATES.find(template => template.key === key);
+    return FASTSMS_TEMPLATES.find(template => template.key === key);
   }
 
   /**
-   * Get template by ID
+   * Get template by Fast2SMS Message ID
    */
   public getTemplateById(id: string): SMSTemplate | undefined {
-    return DLT_TEMPLATES.find(template => template.id === id);
+    return FASTSMS_TEMPLATES.find(template => template.id === id);
+  }
+
+  /**
+   * Get template by DLT Template ID
+   */
+  public getTemplateByDLTId(dltId: string): SMSTemplate | undefined {
+    return FASTSMS_TEMPLATES.find(template => template.dltId === dltId);
   }
 
   /**
    * Get active templates by category
    */
   public getTemplatesByCategory(category: 'reminder' | 'confirmation' | 'disposal'): SMSTemplate[] {
-    return DLT_TEMPLATES.filter(template => template.category === category && template.isActive);
+    return FASTSMS_TEMPLATES.filter(template => template.category === category && template.isActive);
   }
 
   /**
@@ -481,7 +552,7 @@ class SMSTemplatesService {
   }
 
   /**
-   * Validate template variables for DLT compliance
+   * Validate template variables with enhanced mobile number validation
    */
   public validateTemplateVariables(templateKey: keyof typeof TEMPLATE_IDS, variables: TemplateVariables): { isValid: boolean; errors: string[] } {
     const template = this.getTemplateByKey(templateKey);
@@ -504,23 +575,22 @@ class SMSTemplatesService {
       }
     }
 
-    // Validate mobile number format for any variable that contains a mobile number
-    // Check var4, var5, var6 as they commonly contain mobile numbers
-    const mobileVarPositions = [4, 5, 6];
+    // Enhanced mobile number validation for variables that contain mobile numbers
+    const mobileVarPositions = [4, 5, 6]; // Common positions for mobile numbers
     for (const pos of mobileVarPositions) {
       const varName = `var${pos}` as keyof TemplateVariables;
       const value = variables[varName];
-      if (value && typeof value === 'string' && /^[6-9]\d{9}$/.test(value.trim()) === false) {
-        // Only validate if it looks like a mobile number (10 digits starting with 6-9)
-        if (/^\d{10}$/.test(value.trim())) {
-          errors.push(`Invalid mobile number format for '${varName}': ${value}. Must start with 6-9`);
+      if (value && typeof value === 'string') {
+        try {
+          MobileNumberUtils.cleanAndValidate(value);
+        } catch (error) {
+          errors.push(`Invalid mobile number format for '${varName}': ${error instanceof Error ? error.message : value}`);
         }
       }
     }
 
     // Validate date format for variables that likely contain dates
-    // Check var3 as it commonly contains dates
-    const dateVarPositions = [3];
+    const dateVarPositions = [3]; // Common position for dates
     for (const pos of dateVarPositions) {
       const varName = `var${pos}` as keyof TemplateVariables;
       const value = variables[varName];
@@ -550,7 +620,7 @@ class SMSTemplatesService {
       disposal: number;
     };
   } {
-    const templates = DLT_TEMPLATES;
+    const templates = FASTSMS_TEMPLATES;
     
     return {
       total: templates.length,
@@ -564,85 +634,20 @@ class SMSTemplatesService {
   }
 
   /**
-   * Preview template with sample data
+   * Get template ID mapping information
    */
-  public previewTemplate(templateKey: keyof typeof TEMPLATE_IDS, sampleData?: Partial<TemplateVariables>): string {
-    const template = this.getTemplateByKey(templateKey);
-    if (!template) {
-      return 'Template not found';
-    }
-
-    // Default sample data based on template variable count
-    const getDefaultSampleData = (): TemplateVariables => {
-      switch (template.variableCount) {
-        case 2:
-          return {
-            var1: 'రాఘవ రావు',
-            var2: 'కోటిలింగలు-కైలాసభూమి'
-          };
-        case 3:
-          return {
-            var1: 'రాఘవ రావు',
-            var2: 'కోటిలింగలు-కైలాసభూమి',
-            var3: 'కోటిలింగలు-కైలాసభూమి'
-          };
-        case 5:
-          return {
-            var1: 'రాఘవ రావు',
-            var2: 'కోటిలింగలు-కైలాసభూమి',
-            var3: '24/09/2025',
-            var4: '9876543210',
-            var5: 'కోటిలింగలు-కైలాసభూమి'
-          };
-        case 7:
-          return {
-            var1: 'రాఘవ రావు',
-            var2: 'కోటిలింగలు-కైలాసభూమి',
-            var3: '27/09/2025',
-            var4: 'సురేష్ కుమార్',
-            var5: '9876543210',
-            var6: '9876543210',
-            var7: 'కోటిలింగలు-కైలాసభూమి'
-          };
-        default:
-          return {
-            var1: 'రాఘవ రావు',
-            var2: 'కోటిలింగలు-కైలాసభూమి'
-          };
-      }
-    };
-
-    const defaultData = getDefaultSampleData();
-    const data = { ...defaultData, ...sampleData };
-    
-    try {
-      const formattedVariables = this.formatVariablesForAPI(templateKey, data);
-      const variableArray = formattedVariables.split('|');
-      
-      // Create a generic preview message structure
-      let preview = '';
-      switch (template.category) {
-        case 'reminder':
-          preview = `Reminder: ${variableArray[0]} - ${variableArray[1]} - Expiry: ${variableArray[2]}`;
-          break;
-        case 'confirmation':
-          if (templateKey.includes('renewal')) {
-            preview = `Renewal Confirmed: ${variableArray[0]} at ${variableArray[1]}`;
-          } else if (templateKey.includes('dispatch') || templateKey.includes('delivery')) {
-            preview = `Delivery Confirmed: ${variableArray[0]} from ${variableArray[1]} on ${variableArray[2]}`;
-          }
-          break;
-        case 'disposal':
-          preview = `Disposal Notice: ${variableArray[0]} - ${variableArray[1]}`;
-          break;
-        default:
-          preview = `SMS Preview: ${formattedVariables}`;
-      }
-      
-      return preview;
-    } catch (error) {
-      return `Preview Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    }
+  public getTemplateIDMapping(): Array<{
+    key: string;
+    fast2smsId: string;
+    dltId: string;
+    name: string;
+  }> {
+    return FASTSMS_TEMPLATES.map(template => ({
+      key: template.key,
+      fast2smsId: template.id,
+      dltId: template.dltId,
+      name: template.name
+    }));
   }
 }
 

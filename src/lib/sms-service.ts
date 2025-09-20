@@ -1,7 +1,7 @@
 // SMS Service for Front-end Only - Secure Firebase Functions Integration
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
-import SMSTemplatesService, { TemplateVariables, SMSRequest, TEMPLATE_IDS } from './sms-templates';
+import SMSTemplatesService, { TemplateVariables, SMSRequest, TEMPLATE_IDS, MobileNumberUtils } from './sms-templates';
 
 // Create a single instance of SMSTemplatesService
 const smsTemplatesService = new SMSTemplatesService();
@@ -61,24 +61,52 @@ class SMSService {
 
       console.log('🚀 sendSMSWithRetry called with:', {
         templateKey: request.templateKey,
-        recipient: request.recipient,
+        recipient: MobileNumberUtils.maskForDisplay(request.recipient),
         variables: request.variables,
         variablesKeys: Object.keys(request.variables || {}),
         variablesValues: Object.values(request.variables || {}),
         entryId: request.entryId
       });
 
+      // Validate and clean mobile number
+      let cleanRecipient: string;
+      try {
+        cleanRecipient = MobileNumberUtils.cleanAndValidate(request.recipient);
+        console.log('📱 Mobile number cleaned:', {
+          original: MobileNumberUtils.maskForDisplay(request.recipient),
+          cleaned: MobileNumberUtils.maskForDisplay(cleanRecipient)
+        });
+      } catch (error) {
+        console.error('❌ Mobile number validation failed:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Invalid mobile number format',
+          timestamp: new Date(),
+          attempt: 1,
+          templateUsed: request.templateKey,
+          recipient: request.recipient
+        };
+      }
+
       // Validate request
       const validation = smsTemplatesService.validateTemplateVariables(request.templateKey, request.variables);
       if (!validation.isValid) {
-        throw new Error(`Template validation failed: ${validation.errors.join(', ')}`);
+        console.error('❌ Template validation failed:', validation.errors);
+        return {
+          success: false,
+          error: `Template validation failed: ${validation.errors.join(', ')}`,
+          timestamp: new Date(),
+          attempt: 1,
+          templateUsed: request.templateKey,
+          recipient: cleanRecipient
+        };
       }
 
       console.log('✅ Template validation passed');
 
       console.log('Sending SMS via Firebase Functions:', {
         templateKey: request.templateKey,
-        recipient: request.recipient.substring(0, 4) + '****' + request.recipient.substring(-4), // Partial logging for privacy
+        recipient: MobileNumberUtils.maskForDisplay(cleanRecipient),
         entryId: request.entryId,
         variables: request.variables,
         variablesKeys: Object.keys(request.variables),
@@ -90,7 +118,7 @@ class SMSService {
       
       const payload = {
         templateKey: request.templateKey,
-        recipient: request.recipient, // Changed from customerMobile to recipient to match Firebase Functions
+        recipient: cleanRecipient, // Use cleaned mobile number
         variables: request.variables,
         entryId: request.entryId,
         customerId: request.customerId,
@@ -100,7 +128,7 @@ class SMSService {
       
       console.log('📤 Sending payload to Firebase Functions:', {
         templateKey: payload.templateKey,
-        recipient: payload.recipient ? payload.recipient.substring(0, 4) + '****' + payload.recipient.substring(-4) : 'MISSING',
+        recipient: MobileNumberUtils.maskForDisplay(payload.recipient),
         hasVariables: !!payload.variables && Object.keys(payload.variables).length > 0,
         variablesCount: payload.variables ? Object.keys(payload.variables).length : 0,
         variables: payload.variables,
@@ -118,7 +146,7 @@ class SMSService {
         timestamp: new Date(),
         attempt: 1,
         templateUsed: request.templateKey,
-        recipient: request.recipient
+        recipient: cleanRecipient
       };
 
     } catch (error) {
@@ -135,7 +163,7 @@ class SMSService {
         timestamp: new Date(),
         attempt: 1,
         templateUsed: request.templateKey,
-        recipient: request.recipient
+        recipient: cleanRecipient
       };
     }
   }
@@ -157,13 +185,13 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: expiryDate,
-      var4: customerMobile,
+      var4: customerMobile, // This will be validated and cleaned
       var5: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'threeDayReminder',
-      recipient: customerMobile,
+      recipient: customerMobile, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
@@ -189,13 +217,13 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: expiryDate,
-      var4: customerMobile,
+      var4: customerMobile, // This will be validated and cleaned
       var5: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'lastdayRenewal',
-      recipient: customerMobile,
+      recipient: customerMobile, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
@@ -221,13 +249,13 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: extendedExpiryDate,
-      var4: customerMobile,
+      var4: customerMobile, // This will be validated and cleaned
       var5: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'renewalConfirmCustomer',
-      recipient: customerMobile,
+      recipient: customerMobile, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
@@ -348,7 +376,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'finalDisposalReminder',
-      recipient,
+      recipient, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
@@ -376,7 +404,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'finalDisposalReminderAdmin',
-      recipient,
+      recipient, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
@@ -419,7 +447,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'deliveryConfirmAdmin',
-      recipient: '+919876543210', // Default admin mobile - should be configurable
+      recipient: '9876543210', // Default admin mobile - should be configurable (10 digits only)
       variables,
       entryId,
       customerId,
@@ -448,7 +476,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'finalDisposalReminder',
-      recipient: customerMobile,
+      recipient: customerMobile, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
@@ -476,7 +504,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'renewalConfirmAdmin',
-      recipient: '+919876543210', // Default admin mobile - should be configurable
+      recipient: '9876543210', // Default admin mobile - should be configurable (10 digits only)
       variables,
       entryId,
       customerId,
@@ -504,7 +532,7 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: expiryDate,
-      var4: customerMobile,
+      var4: customerMobile, // This will be validated and cleaned
       var5: locationName // Location name repeated as signature
     };
 
@@ -520,7 +548,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey,
-      recipient: customerMobile,
+      recipient: customerMobile, // This will be cleaned and validated
       variables,
       entryId,
       customerId,
