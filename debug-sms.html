@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .instructions {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .config-info {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SMS Debug Tool</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Make sure you're logged in as an admin user</li>
+                <li>Select a template to test</li>
+                <li>Enter a test mobile number (format: 919876543210)</li>
+                <li>Click "Debug Configuration" first</li>
+                <li>Then click "Test API Call" to test actual SMS sending</li>
+            </ol>
+        </div>
+
+        <div class="config-info">
+            <strong>Current Configuration:</strong><br>
+            Entity ID: 1701175751242640436<br>
+            Sender ID: ROTCMS<br>
+            API Key: QgRMDkEVHPoKaJcl3NbqyB8TW6rv9XudhY0Zj2izn57xF1wfICdGanl0ojySLuKHfrP9UDQYMsk41OC2
+        </div>
+
+        <div class="form-group">
+            <label for="templateKey">Template:</label>
+            <select id="templateKey">
+                <option value="threeDayReminder">3 Day Reminder</option>
+                <option value="lastdayRenewal">Last Day Renewal</option>
+                <option value="renewalConfirmCustomer">Renewal Confirmation (Customer)</option>
+                <option value="renewalConfirmAdmin">Renewal Confirmation (Admin)</option>
+                <option value="dispatchConfirmCustomer">Dispatch Confirmation (Customer)</option>
+                <option value="deliveryConfirmAdmin">Delivery Confirmation (Admin)</option>
+                <option value="finalDisposalReminder" selected>Final Disposal Reminder</option>
+                <option value="finalDisposalReminderAdmin">Final Disposal Reminder (Admin)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="testMobile">Test Mobile Number:</label>
+            <input type="text" id="testMobile" value="919014882779" placeholder="919876543210">
+        </div>
+
+        <div class="form-group">
+            <button onclick="debugConfiguration()">🔍 Debug Configuration</button>
+        </div>
+
+        <div class="form-group">
+            <button onclick="testApiCall()">📞 Test API Call</button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Testing...</p>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-functions-compat.js"></script>
+
+    <script>
+        // Initialize Firebase (you may need to update this config)
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const functions = firebase.functions();
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').innerHTML = '';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showResult(data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result ' + (isError ? 'error' : (data.success ? 'success' : ''));
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function debugConfiguration() {
+            showLoading();
+            try {
+                const templateKey = document.getElementById('templateKey').value;
+                const debugFunction = functions.httpsCallable('debugTemplateConfig');
+                
+                const result = await debugFunction({ 
+                    templateKey: templateKey 
+                });
+                
+                hideLoading();
+                showResult(result.data);
+            } catch (error) {
+                hideLoading();
+                showResult({ 
+                    error: error.message,
+                    stack: error.stack 
+                }, true);
+            }
+        }
+
+        async function testApiCall() {
+            showLoading();
+            try {
+                const templateKey = document.getElementById('templateKey').value;
+                const testMobile = document.getElementById('testMobile').value;
+                
+                if (!testMobile || !testMobile.match(/^91\d{10}$/)) {
+                    hideLoading();
+                    showResult({ 
+                        error: 'Invalid mobile number format. Use: 919876543210' 
+                    }, true);
+                    return;
+                }
+                
+                const debugFunction = functions.httpsCallable('debugTemplateConfig');
+                
+                const result = await debugFunction({ 
+                    templateKey: templateKey,
+                    testMobile: testMobile
+                });
+                
+                hideLoading();
+                showResult(result.data);
+            } catch (error) {
+                hideLoading();
+                showResult({ 
+                    error: error.message,
+                    stack: error.stack 
+                }, true);
+            }
+        }
+
+        // Auto-run debug configuration on page load
+        window.onload = function() {
+            console.log('SMS Debug Tool loaded');
+            console.log('Make sure you are logged in as an admin user');
+        };
+    </script>
+</body>
+</html>

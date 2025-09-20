@@ -69,8 +69,13 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
     console.log(`FastSMS API Call (Attempt ${attempt}):`, {
       recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
       templateId,
+      templateIdLength: templateId.length,
       variablesValues: variablesValues.substring(0, 20) + '...',
+      variablesCount: variablesValues.split('|').length,
       route: 'dlt',
+      hasEntityId: !!FASTSMS_CONFIG.entityId,
+      entityId: FASTSMS_CONFIG.entityId ? FASTSMS_CONFIG.entityId.substring(0, 8) + '****' : 'NOT_SET',
+      senderId: FASTSMS_CONFIG.senderId,
       url: apiUrl.toString().substring(0, 100) + '...'
     });
 
@@ -81,7 +86,14 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
       }
     });
 
-    console.log('FastSMS API Response:', response.data);
+    console.log('FastSMS API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data,
+      return: response.data.return,
+      request_id: response.data.request_id,
+      message: response.data.message
+    });
 
     if (response.data.return === true) {
       return {
@@ -89,13 +101,24 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
         messageId: response.data.request_id
       };
     } else {
-      throw {
+      // Enhanced error details
+      const errorDetails = {
         type: 'API_ERROR',
         message: response.data.message || 'SMS sending failed',
         code: 'API_ERROR',
         details: response.data,
-        timestamp: new Date()
+        timestamp: new Date(),
+        debugInfo: {
+          templateId,
+          templateIdFormat: /^\d+$/.test(templateId) ? 'VALID_NUMERIC' : 'INVALID_FORMAT',
+          recipientFormat: /^[6-9]\d{9}$/.test(recipient) ? 'VALID_MOBILE' : 'INVALID_MOBILE',
+          variablesFormat: variablesValues.split('|').length > 0 ? 'VALID_VARIABLES' : 'INVALID_VARIABLES',
+          apiEndpoint: apiUrl.toString()
+        }
       };
+      
+      console.error('FastSMS API Error Details:', errorDetails);
+      throw errorDetails;
     }
 
   } catch (error) {
@@ -104,6 +127,7 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const message = error.response?.data?.message || error.message;
+      const responseData = error.response?.data;
 
       let errorType = 'API_ERROR';
       if (status === 401) errorType = 'AUTHENTICATION_ERROR';
@@ -112,25 +136,51 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
         errorType = 'NETWORK_ERROR';
       }
 
-      return {
+      const enhancedError = {
         success: false,
         error: {
           type: errorType,
           message: `FastSMS API Error: ${message}`,
           code: status?.toString(),
-          details: error.response?.data,
-          timestamp: new Date()
+          details: responseData,
+          timestamp: new Date(),
+          debugInfo: {
+            templateId,
+            recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
+            axiosError: {
+              status,
+              statusText: error.response?.statusText,
+              config: {
+                url: error.config?.url,
+                method: error.config?.method,
+                timeout: error.config?.timeout
+              }
+            }
+          }
         }
       };
+
+      console.error('Enhanced FastSMS Error:', enhancedError);
+      return enhancedError;
     } else {
-      return {
+      const enhancedError = {
         success: false,
         error: {
           type: 'UNKNOWN',
           message: error instanceof Error ? error.message : 'Unknown error occurred',
-          timestamp: new Date()
+          timestamp: new Date(),
+          debugInfo: {
+            templateId,
+            recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
+            errorType: typeof error,
+            errorMessage: error instanceof Error ? error.message : 'Non-error object',
+            errorStack: error instanceof Error ? error.stack : undefined
+          }
         }
       };
+
+      console.error('Enhanced Unknown Error:', enhancedError);
+      return enhancedError;
     }
   }
 }
@@ -141,6 +191,16 @@ function getTemplateIdByKey(templateKey: string): string {
   if (!template) {
     throw new Error(`Template not found: ${templateKey}`);
   }
+  
+  // Log template details for debugging
+  console.log('Template details:', {
+    key: template.key,
+    id: template.id,
+    name: template.name,
+    variableCount: template.variableCount,
+    isActive: template.isActive
+  });
+  
   return template.id;
 }
 
@@ -345,14 +405,14 @@ export const sendSMSV2 = functions
 
             finalResult = {
               success: true,
-              messageId: apiResult.messageId,
+              messageId: (apiResult as any).messageId,
               timestamp: new Date().toISOString()
             };
 
-            console.log(`SMS sent successfully on attempt ${attempt}. Message ID: ${apiResult.messageId}`);
+            console.log(`SMS sent successfully on attempt ${attempt}. Message ID: ${(apiResult as any).messageId}`);
             break;
           } else {
-            lastError = apiResult.error;
+            lastError = (apiResult as any).error;
             
             // Log failed attempt
             await smsLogsService.logSMS({
@@ -588,7 +648,7 @@ export const dailyExpiryCheckV2 = functions
                 templateId,
                 message: variablesValues,
                 status: 'failed',
-                errorMessage: smsResult.error?.message || 'Unknown error',
+                errorMessage: (smsResult as any).error?.message || 'Unknown error',
                 timestamp: new Date(),
                 retryCount: 0,
                 entryId: doc.id,
@@ -597,8 +657,8 @@ export const dailyExpiryCheckV2 = functions
                 operatorId: 'system'
               });
 
-              console.error(`SMS failed for entry ${doc.id}:`, smsResult.error);
-              results.errors.push(`SMS failed for entry ${doc.id}: ${smsResult.error?.message || 'Unknown error'}`);
+              console.error(`SMS failed for entry ${doc.id}:`, (smsResult as any).error);
+              results.errors.push(`SMS failed for entry ${doc.id}: ${(smsResult as any).error?.message || 'Unknown error'}`);
             }
           }
         } catch (error) {
@@ -693,11 +753,11 @@ export const retryFailedSMSV2 = functions
             // Update the log to increment retry count
             await smsLogsService.updateSMSLog(log.id, {
               retryCount: log.retryCount + 1,
-              errorMessage: smsResult.error?.message || 'Retry failed'
+              errorMessage: (smsResult as any).error?.message || 'Retry failed'
             });
 
-            console.error(`SMS retry failed for log ${log.id}:`, smsResult.error);
-            results.errors.push(`Retry failed for log ${log.id}: ${smsResult.error?.message || 'Unknown error'}`);
+            console.error(`SMS retry failed for log ${log.id}:`, (smsResult as any).error);
+            results.errors.push(`Retry failed for log ${log.id}: ${(smsResult as any).error?.message || 'Unknown error'}`);
           }
         } catch (error) {
           results.failed++;
@@ -841,5 +901,161 @@ export const smsHealthCheckV2 = functions
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       });
+    }
+  });
+
+/**
+ * Debug function to test template configuration
+ * This function helps identify template configuration issues
+ */
+export const debugTemplateConfig = functions
+  .runWith({
+    memory: '256MB',
+    timeoutSeconds: 60,
+  })
+  .https.onCall(async (data, context) => {
+    console.log('debugTemplateConfig called with data:', JSON.stringify(data, null, 2));
+
+    // Check if user is authenticated
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+
+    // Get user details for authorization
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    const user = userDoc.data();
+
+    if (!user || user.role !== 'admin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Only admin users can debug template configuration.'
+      );
+    }
+
+    try {
+      const { templateKey, testMobile } = data || {};
+
+      // Get all templates
+      const allTemplates = SMSTemplatesService.getInstance().getAllTemplates();
+      
+      // Validate FastSMS configuration
+      let configStatus = 'unknown';
+      let configError = null;
+      try {
+        validateFastSMSConfig();
+        configStatus = 'valid';
+      } catch (error) {
+        configStatus = 'invalid';
+        configError = error instanceof Error ? error.message : 'Unknown error';
+      }
+
+      // Template-specific debug info
+      let templateDebug = null;
+      if (templateKey) {
+        const template = SMSTemplatesService.getInstance().getTemplateByKey(templateKey as any);
+        if (template) {
+          templateDebug = {
+            key: template.key,
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            variableCount: template.variableCount,
+            isActive: template.isActive,
+            category: template.category,
+            idFormat: /^\d+$/.test(template.id) ? 'VALID_NUMERIC' : 'INVALID_FORMAT',
+            idLength: template.id.length,
+            variables: template.variables.map(v => ({
+              name: v.name,
+              description: v.description,
+              required: v.required,
+              position: v.position
+            }))
+          };
+        }
+      }
+
+      // Test template ID format validation
+      const templateIdValidation = allTemplates.map(template => ({
+        key: template.key,
+        id: template.id,
+        isValidFormat: /^\d+$/.test(template.id),
+        length: template.id.length,
+        isActive: template.isActive
+      }));
+
+      // Test actual API call if requested
+      let apiTestResult = null;
+      if (templateKey && testMobile) {
+        try {
+          console.log(`Testing API call for template: ${templateKey}, mobile: ${testMobile}`);
+          
+          const template = SMSTemplatesService.getInstance().getTemplateByKey(templateKey as any);
+          if (template) {
+            // Create test variables
+            const testVariables: any = {};
+            template.variables.forEach((variable, index) => {
+              testVariables[variable.name] = `TEST_VAR_${index + 1}`;
+            });
+
+            const variablesValues = formatVariablesForAPI(templateKey, testVariables);
+            const apiResult = await sendSMSAPI(testMobile, template.id, variablesValues, 1);
+            
+            apiTestResult = {
+              success: apiResult.success,
+              error: apiResult.success ? null : (apiResult as any).error,
+              timestamp: new Date().toISOString()
+            };
+          }
+        } catch (error) {
+          apiTestResult = {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
+          };
+        }
+      }
+
+      return {
+        success: true,
+        debug: {
+          config: {
+            status: configStatus,
+            error: configError,
+            hasApiKey: !!FASTSMS_CONFIG.apiKey,
+            hasSenderId: !!FASTSMS_CONFIG.senderId,
+            hasEntityId: !!FASTSMS_CONFIG.entityId,
+            senderId: FASTSMS_CONFIG.senderId,
+            entityId: FASTSMS_CONFIG.entityId ? FASTSMS_CONFIG.entityId.substring(0, 8) + '****' : 'NOT_SET',
+            fullEntityId: FASTSMS_CONFIG.entityId, // Show full entity ID for comparison
+            apiKeyLength: FASTSMS_CONFIG.apiKey ? FASTSMS_CONFIG.apiKey.length : 0
+          },
+          templates: {
+            total: allTemplates.length,
+            active: allTemplates.filter(t => t.isActive).length,
+            validation: templateIdValidation,
+            requestedTemplate: templateDebug
+          },
+          apiTest: apiTestResult,
+          recommendations: [
+            'Ensure all template IDs are numeric (DLT format)',
+            'Verify template IDs are registered with your FastSMS account',
+            `Check that Entity ID (${FASTSMS_CONFIG.entityId}) matches your DLT registration`,
+            'Confirm Sender ID is active and valid',
+            'Test with a simple template first',
+            'Check if mobile number format is correct (919876543210)',
+            'Verify API key has sufficient credits and permissions'
+          ]
+        },
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error in debugTemplateConfig function:', error);
+      throw new functions.https.HttpsError(
+        'internal',
+        'Failed to debug template configuration. Please try again later.'
+      );
     }
   });
