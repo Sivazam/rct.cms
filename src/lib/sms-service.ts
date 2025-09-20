@@ -59,22 +59,36 @@ class SMSService {
         this.initialize();
       }
 
+      console.log('🚀 sendSMSWithRetry called with:', {
+        templateKey: request.templateKey,
+        recipient: request.recipient,
+        variables: request.variables,
+        variablesKeys: Object.keys(request.variables || {}),
+        variablesValues: Object.values(request.variables || {}),
+        entryId: request.entryId
+      });
+
       // Validate request
       const validation = smsTemplatesService.validateTemplateVariables(request.templateKey, request.variables);
       if (!validation.isValid) {
         throw new Error(`Template validation failed: ${validation.errors.join(', ')}`);
       }
 
+      console.log('✅ Template validation passed');
+
       console.log('Sending SMS via Firebase Functions:', {
         templateKey: request.templateKey,
         recipient: request.recipient.substring(0, 4) + '****' + request.recipient.substring(-4), // Partial logging for privacy
-        entryId: request.entryId
+        entryId: request.entryId,
+        variables: request.variables,
+        variablesKeys: Object.keys(request.variables),
+        variablesValues: Object.values(request.variables)
       });
 
       // Call Firebase Functions securely
       const sendSMSFunction = httpsCallable(functions, 'sendSMS');
       
-      const result = await sendSMSFunction({
+      const payload = {
         templateKey: request.templateKey,
         customerMobile: request.recipient, // Changed from recipient to customerMobile
         variables: request.variables,
@@ -82,7 +96,18 @@ class SMSService {
         customerId: request.customerId,
         locationId: request.locationId,
         operatorId: request.operatorId
+      };
+      
+      console.log('📤 Sending payload to Firebase Functions:', {
+        templateKey: payload.templateKey,
+        customerMobile: payload.customerMobile ? payload.customerMobile.substring(0, 4) + '****' + payload.customerMobile.substring(-4) : 'MISSING',
+        hasVariables: !!payload.variables && Object.keys(payload.variables).length > 0,
+        variablesCount: payload.variables ? Object.keys(payload.variables).length : 0,
+        variables: payload.variables,
+        entryId: payload.entryId
       });
+      
+      const result = await sendSMSFunction(payload);
 
       console.log('Firebase Functions result:', result.data);
 
@@ -97,7 +122,12 @@ class SMSService {
       };
 
     } catch (error) {
-      console.error('SMS sending error:', error);
+      console.error('❌ SMS sending error:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        error: error
+      });
 
       return {
         success: false,
@@ -407,7 +437,9 @@ class SMSService {
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
       deceasedPersonName,
-      locationName
+      locationName,
+      // The finalDisposalReminder template requires locationName twice (positions 2 and 3)
+      // This will be handled by the formatVariablesForAPI method
     };
 
     return await this.sendSMSWithRetry({
