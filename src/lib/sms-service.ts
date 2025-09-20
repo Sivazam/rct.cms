@@ -1,7 +1,7 @@
 // SMS Service for Front-end Only - Secure Firebase Functions Integration
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
-import SMSTemplatesService, { TemplateVariables, SMSRequest } from './sms-templates';
+import SMSTemplatesService, { TemplateVariables, SMSRequest, TEMPLATE_IDS } from './sms-templates';
 
 // SMS Service Result interface
 export interface SMSServiceResult {
@@ -360,6 +360,133 @@ class SMSService {
       templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
       functionsAvailable: !!functions
     };
+  }
+
+  /**
+   * Legacy method compatibility - send dispatch notification (maps to dispatch confirmation)
+   */
+  public async sendDispatchNotification(
+    deceasedPersonName: string,
+    locationName: string,
+    operatorName: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'deliveryConfirmAdmin',
+      recipient: '+919876543210', // Default admin mobile - should be configurable
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Legacy method compatibility - send final disposal notice (maps to final disposal reminder)
+   */
+  public async sendFinalDisposalNotice(
+    customerMobile: string,
+    deceasedPersonName: string,
+    locationName: string,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'finalDisposalReminder',
+      recipient: customerMobile,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Legacy method compatibility - send renewal notification (maps to renewal confirmation admin)
+   */
+  public async sendRenewalNotification(
+    deceasedPersonName: string,
+    locationName: string,
+    amount: number,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'renewalConfirmAdmin',
+      recipient: '+919876543210', // Default admin mobile - should be configurable
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Legacy method compatibility - send entry reminder (maps to three day reminder)
+   */
+  public async sendEntryReminder(
+    customerMobile: string,
+    deceasedPersonName: string,
+    locationName: string,
+    expiryDate: string,
+    operatorName: string,
+    daysUntilExpiry: number,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      deceasedPersonName,
+      locationName,
+      date: expiryDate,
+      mobile: customerMobile
+    };
+
+    // Choose template based on days until expiry
+    let templateKey: keyof typeof TEMPLATE_IDS;
+    if (daysUntilExpiry <= 0) {
+      templateKey = 'lastdayRenewal';
+    } else if (daysUntilExpiry <= 3) {
+      templateKey = 'threeDayReminder';
+    } else {
+      templateKey = 'threeDayReminder'; // Default to 3-day reminder
+    }
+
+    return await this.sendSMSWithRetry({
+      templateKey,
+      recipient: customerMobile,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
   }
 }
 

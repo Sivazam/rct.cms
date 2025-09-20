@@ -9,7 +9,7 @@ export async function POST() {
     // Create a test entry
     const entryData = {
       customerName: 'Test Customer',
-      customerMobile: '+919014882779',
+      customerMobile: '+919876543210',
       customerCity: 'Test City',
       numberOfPots: 1,
       locationId: 'test-location',

@@ -12,7 +12,7 @@ import { Calendar, Calculator, DollarSign, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { updateEntry } from '@/lib/firestore';
 import SMSService from '@/lib/sms-service';
-const smsService = SMSService.getInstance();
+const smsService = new SMSService();
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 

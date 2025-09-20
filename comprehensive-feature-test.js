@@ -110,7 +110,7 @@ async function testLocationManagement() {
         // Test location update
         await updateDoc(doc(db, 'locations', locationRef.id), {
             venueName: 'Updated Test Location',
-            contactNumber: '+919014882779'
+            contactNumber: '+919876543210'
         });
         logTest('Location Update', true, 'Location updated successfully');
         

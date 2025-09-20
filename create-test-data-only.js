@@ -65,7 +65,7 @@ async function createTestCustomers(locationIds) {
   const customers = [
     {
       name: 'Suresh Kumar',
-      mobile: '+919014882779',
+      mobile: '+919876543210',
       city: 'Chennai',
       additionalDetails: 'Regular customer',
       locationId: locationIds[0],
@@ -113,7 +113,7 @@ async function createTestEntries(customerIds, locationIds) {
   const entries = [
     {
       customerName: 'Suresh Kumar',
-      customerMobile: '+919014882779',
+      customerMobile: '+919876543210',
       customerCity: 'Chennai',
       numberOfPots: 2,
       locationId: locationIds[0],

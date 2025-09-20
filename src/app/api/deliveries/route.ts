@@ -175,13 +175,13 @@ export async function POST(request: NextRequest) {
 
     // TODO: Replace with actual Fast2SMS integration when credentials are available
     // SMS to admin - currently simulating instead of sending
-    console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919014882779');
+    console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
     console.log('Message:', adminSmsMessage);
     
     // Simulate admin SMS (replace with actual sendSMS call when Fast2SMS is ready)
     /*
     await sendSMS(
-      process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919014882779',
+      process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
       adminSmsMessage,
       entryId
     );

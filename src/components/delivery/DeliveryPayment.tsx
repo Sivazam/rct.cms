@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { Calculator, AlertTriangle, ArrowLeft, IndianRupee, Clock, User } from 'lucide-react';
 import SMSService from '@/lib/sms-service';
-const smsService = SMSService.getInstance();
+const smsService = new SMSService();
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {

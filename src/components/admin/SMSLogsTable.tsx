@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SMSLogsService, { SMSLog, SMSLogFilters } from '@/lib/sms-logs';
-const smsLogsService = SMSLogsService.getInstance();
+const smsLogsService = new SMSLogsService();
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { useAuth } from '@/contexts/AuthContext';
 

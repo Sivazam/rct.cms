@@ -14,7 +14,7 @@ import { TEMPLATE_NAMES } from '@/lib/sms-templates';
 
 // Import the secure SMS service
 import SMSService from '@/lib/sms-service';
-const smsService = SMSService.getInstance();
+const smsService = new SMSService();
 
 interface SendSMSButtonProps {
   entry: {

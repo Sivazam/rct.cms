@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     try {
       // TODO: Replace with actual Fast2SMS integration when credentials are available
       // SMS to Admin - currently simulating instead of sending
-      console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919014882779');
+      console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
       console.log('Message:', SMSTemplates.renewalConfirmation(
         operatorName || 'Operator',
         'Customer Name', // This should come from entry data
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       // Simulate SMS sending (replace with actual sendSMS calls when Fast2SMS is ready)
       /*
       await sendSMS(
-        process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919014882779',
+        process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
         SMSTemplates.renewalConfirmation(
           operatorName || 'Operator',
           'Customer Name', // This should come from entry data
