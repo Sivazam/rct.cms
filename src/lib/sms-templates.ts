@@ -605,4 +605,4 @@ class SMSTemplatesService {
   }
 }
 
-export default SMSTemplatesService.getInstance();
+export default SMSTemplatesService;

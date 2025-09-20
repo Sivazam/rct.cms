@@ -3,6 +3,9 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
 import SMSTemplatesService, { TemplateVariables, SMSRequest, TEMPLATE_IDS } from './sms-templates';
 
+// Create a single instance of SMSTemplatesService
+const smsTemplatesService = new SMSTemplatesService();
+
 // SMS Service Result interface
 export interface SMSServiceResult {
   success: boolean;
@@ -57,7 +60,7 @@ class SMSService {
       }
 
       // Validate request
-      const validation = SMSTemplatesService.getInstance().validateTemplateVariables(request.templateKey, request.variables);
+      const validation = smsTemplatesService.validateTemplateVariables(request.templateKey, request.variables);
       if (!validation.isValid) {
         throw new Error(`Template validation failed: ${validation.errors.join(', ')}`);
       }
@@ -357,7 +360,7 @@ class SMSService {
   } {
     return {
       isInitialized: this.isInitialized,
-      templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
+      templatesCount: smsTemplatesService.getAllTemplates().length,
       functionsAvailable: !!functions
     };
   }
