@@ -1,5 +1,6 @@
 // SMS Template Management System - Updated with Fast2SMS Message IDs
 // This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
+// Last updated: 2025-01-21 - Fixed template IDs for finalDisposalReminder (198613) and finalDisposalReminderAdmin (198614)
 
 /**
  * Fast2SMS Message ID Registry - All approved templates with their correct Message IDs

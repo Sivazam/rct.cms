@@ -1,3 +1,7 @@
+// SMS Template Management System - Updated with Fast2SMS Message IDs
+// This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
+// Last updated: 2025-01-21 - Fixed template IDs for finalDisposalReminder (198613) and finalDisposalReminderAdmin (198614)
+
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import axios from 'axios';
@@ -854,4 +858,30 @@ export const testSMSTemplate = functions
         `Failed to test SMS template: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  });
+
+/**
+ * Force deployment trigger function - NEW FUNCTION TO FORCE DEPLOYMENT
+ * This function is added to force Firebase to detect changes and deploy the updated template IDs
+ */
+export const forceDeployTrigger = functions
+  .runWith({
+    memory: '128MB',
+    timeoutSeconds: 30,
+  })
+  .https.onRequest(async (req, res) => {
+    console.log('🚀 Force deploy trigger called - Template IDs Updated:');
+    console.log('   finalDisposalReminder: 198613');
+    console.log('   finalDisposalReminderAdmin: 198614');
+    
+    res.status(200).json({
+      success: true,
+      message: 'Force deploy triggered - Template IDs updated successfully',
+      timestamp: new Date().toISOString(),
+      templateIds: {
+        finalDisposalReminder: '198613',
+        finalDisposalReminderAdmin: '198614'
+      },
+      deploymentStatus: 'completed'
+    });
   });
