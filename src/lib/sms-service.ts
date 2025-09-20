@@ -154,10 +154,11 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName,
-      date: expiryDate,
-      mobile: customerMobile // Using customer mobile for template
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: expiryDate,
+      var4: customerMobile,
+      var5: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
@@ -185,10 +186,11 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName,
-      date: expiryDate,
-      mobile: customerMobile // Using customer mobile for template
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: expiryDate,
+      var4: customerMobile,
+      var5: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
@@ -216,10 +218,11 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName,
-      date: extendedExpiryDate,
-      mobile: customerMobile // Using customer mobile for template
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: extendedExpiryDate,
+      var4: customerMobile,
+      var5: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
@@ -246,8 +249,8 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName
+      var1: locationName,
+      var2: deceasedPersonName
     };
 
     return await this.sendSMSWithRetry({
@@ -277,12 +280,13 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName,
-      date: deliveryDate,
-      contactPersonName: handoverPersonName,
-      mobile: handoverPersonMobile,
-      adminMobile: customerMobile // Using customer mobile as admin mobile for template
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: deliveryDate,
+      var4: handoverPersonName,
+      var5: handoverPersonMobile,
+      var6: customerMobile, // Admin mobile (customer mobile)
+      var7: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
@@ -309,8 +313,8 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName
+      var1: deceasedPersonName,
+      var2: locationName
     };
 
     return await this.sendSMSWithRetry({
@@ -337,10 +341,9 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName
-      // The finalDisposalReminder template requires locationName twice (positions 2 and 3)
-      // This will be handled by the formatVariablesForAPI method in the template service
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
@@ -367,8 +370,8 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName
+      var1: locationName,
+      var2: deceasedPersonName
     };
 
     return await this.sendSMSWithRetry({
@@ -410,8 +413,8 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName
+      var1: deceasedPersonName,
+      var2: locationName
     };
 
     return await this.sendSMSWithRetry({
@@ -438,10 +441,9 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName,
-      // The finalDisposalReminder template requires locationName twice (positions 2 and 3)
-      // This will be handled by the formatVariablesForAPI method
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: locationName // Location name repeated as signature
     };
 
     return await this.sendSMSWithRetry({
@@ -468,8 +470,8 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName
+      var1: locationName,
+      var2: deceasedPersonName
     };
 
     return await this.sendSMSWithRetry({
@@ -499,10 +501,11 @@ class SMSService {
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      deceasedPersonName,
-      locationName,
-      date: expiryDate,
-      mobile: customerMobile
+      var1: deceasedPersonName,
+      var2: locationName,
+      var3: expiryDate,
+      var4: customerMobile,
+      var5: locationName // Location name repeated as signature
     };
 
     // Choose template based on days until expiry

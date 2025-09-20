@@ -52,17 +52,17 @@ export interface SMSTemplate {
   updatedAt: Date;
 }
 
-// Template variable data interface for sending SMS
+// Template variable data interface for sending SMS - DLT Compliant Format
 export interface TemplateVariables {
-  // Common variables
-  deceasedPersonName: string; // {#pname#} - Name of deceased person
-  locationName: string; // {#pname#} - Name of cremation location
-  date: string; // {#date#} - Date field (expiry/delivery)
-  mobile: string; // {#mobile#} - Mobile number
-  
-  // Additional variables for specific templates
-  contactPersonName?: string; // For dispatch confirmation
-  adminMobile?: string; // Admin mobile number
+  // DLT templates use positional variables {#var#}, not named variables
+  // Variables must be provided in the exact order as per DLT template
+  var1: string; // {#var#} - Position 1
+  var2: string; // {#var#} - Position 2  
+  var3?: string; // {#var#} - Position 3 (optional for some templates)
+  var4?: string; // {#var#} - Position 4 (optional for some templates)
+  var5?: string; // {#var#} - Position 5 (optional for some templates)
+  var6?: string; // {#var#} - Position 6 (optional for some templates)
+  var7?: string; // {#var#} - Position 7 (optional for some templates)
 }
 
 // SMS request interface
@@ -86,44 +86,44 @@ export interface SMSResponse {
   recipient: string;
 }
 
-// DLT Template definitions with exact variable structures as approved
+// DLT Template definitions with exact variable structures as approved in Excel sheet
 export const DLT_TEMPLATES: SMSTemplate[] = [
   {
     key: 'threeDayReminder',
     id: TEMPLATE_IDS.threeDayReminder,
     name: TEMPLATE_NAMES.threeDayReminder,
-    description: 'Send reminder 3 days before expiry',
+    description: 'Send reminder 3 days before expiry - DLT Approved',
     variables: [
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var1',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var2',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
-        name: 'date',
+        name: 'var3',
         description: 'Expiry date',
         example: '24/09/2025',
         required: true,
         position: 3
       },
       {
-        name: 'mobile',
-        description: 'Admin mobile number',
+        name: 'var4',
+        description: 'Mobile number',
         example: '9876543210',
         required: true,
         position: 4
       },
       {
-        name: 'locationName',
+        name: 'var5',
         description: 'Location name (signature)',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
@@ -140,38 +140,38 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'lastdayRenewal',
     id: TEMPLATE_IDS.lastdayRenewal,
     name: TEMPLATE_NAMES.lastdayRenewal,
-    description: 'Send reminder on expiry day',
+    description: 'Send reminder on expiry day - DLT Approved',
     variables: [
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var1',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var2',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
-        name: 'date',
-        description: 'Expiry date',
+        name: 'var3',
+        description: 'Expiry date (today)',
         example: '24/09/2025',
         required: true,
         position: 3
       },
       {
-        name: 'mobile',
-        description: 'Admin mobile number',
+        name: 'var4',
+        description: 'Mobile number',
         example: '9876543210',
         required: true,
         position: 4
       },
       {
-        name: 'locationName',
+        name: 'var5',
         description: 'Location name (signature)',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
@@ -188,38 +188,38 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'renewalConfirmCustomer',
     id: TEMPLATE_IDS.renewalConfirmCustomer,
     name: TEMPLATE_NAMES.renewalConfirmCustomer,
-    description: 'Send renewal confirmation to customer',
+    description: 'Send renewal confirmation to customer - DLT Approved',
     variables: [
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var1',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var2',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
-        name: 'date',
+        name: 'var3',
         description: 'Extended expiry date',
         example: '24/12/2025',
         required: true,
         position: 3
       },
       {
-        name: 'mobile',
-        description: 'Admin mobile number',
+        name: 'var4',
+        description: 'Mobile number',
         example: '9876543210',
         required: true,
         position: 4
       },
       {
-        name: 'locationName',
+        name: 'var5',
         description: 'Location name (signature)',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
@@ -236,19 +236,19 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'renewalConfirmAdmin',
     id: TEMPLATE_IDS.renewalConfirmAdmin,
     name: TEMPLATE_NAMES.renewalConfirmAdmin,
-    description: 'Send renewal confirmation to admin',
+    description: 'Send renewal confirmation to admin - DLT Approved',
     variables: [
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var1',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 1
       },
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var2',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 2
       }
@@ -263,52 +263,52 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'dispatchConfirmCustomer',
     id: TEMPLATE_IDS.dispatchConfirmCustomer,
     name: TEMPLATE_NAMES.dispatchConfirmCustomer,
-    description: 'Send dispatch confirmation to customer',
+    description: 'Send dispatch confirmation to customer - DLT Approved',
     variables: [
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var1',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var2',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
-        name: 'date',
+        name: 'var3',
         description: 'Delivery date',
         example: '27/09/2025',
         required: true,
         position: 3
       },
       {
-        name: 'contactPersonName',
+        name: 'var4',
         description: 'Contact person name',
-        example: 'Suresh Kumar',
+        example: 'సురేష్ కుమార్',
         required: true,
         position: 4
       },
       {
-        name: 'mobile',
+        name: 'var5',
         description: 'Contact mobile number',
         example: '9876543210',
         required: true,
         position: 5
       },
       {
-        name: 'mobile',
+        name: 'var6',
         description: 'Admin mobile number',
         example: '9876543210',
         required: true,
         position: 6
       },
       {
-        name: 'locationName',
+        name: 'var7',
         description: 'Location name (signature)',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
@@ -325,18 +325,18 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'deliveryConfirmAdmin',
     id: TEMPLATE_IDS.deliveryConfirmAdmin,
     name: TEMPLATE_NAMES.deliveryConfirmAdmin,
-    description: 'Send delivery confirmation to admin',
+    description: 'Send delivery confirmation to admin - DLT Approved',
     variables: [
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var1',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var2',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
@@ -352,24 +352,24 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'finalDisposalReminder',
     id: TEMPLATE_IDS.finalDisposalReminder,
     name: TEMPLATE_NAMES.finalDisposalReminder,
-    description: 'Send final disposal reminder',
+    description: 'Send final disposal reminder - DLT Approved',
     variables: [
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var1',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 1
       },
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var2',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 2
       },
       {
-        name: 'locationName',
+        name: 'var3',
         description: 'Location name (signature)',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
@@ -386,19 +386,19 @@ export const DLT_TEMPLATES: SMSTemplate[] = [
     key: 'finalDisposalReminderAdmin',
     id: TEMPLATE_IDS.finalDisposalReminderAdmin,
     name: TEMPLATE_NAMES.finalDisposalReminderAdmin,
-    description: 'Send final disposal reminder to admin',
+    description: 'Send final disposal reminder to admin - DLT Approved',
     variables: [
       {
-        name: 'locationName',
-        description: 'Name of the cremation location',
+        name: 'var1',
+        description: 'Location name',
         example: 'కోటిలింగలు-కైలాసభూమి',
         required: true,
         position: 1
       },
       {
-        name: 'deceasedPersonName',
-        description: 'Name of the deceased person',
-        example: 'Raghav Rao',
+        name: 'var2',
+        description: 'Deceased person name',
+        example: 'రాఘవ రావు',
         required: true,
         position: 2
       }
@@ -481,7 +481,7 @@ class SMSTemplatesService {
   }
 
   /**
-   * Validate template variables
+   * Validate template variables for DLT compliance
    */
   public validateTemplateVariables(templateKey: keyof typeof TEMPLATE_IDS, variables: TemplateVariables): { isValid: boolean; errors: string[] } {
     const template = this.getTemplateByKey(templateKey);
@@ -494,31 +494,41 @@ class SMSTemplatesService {
 
     const errors: string[] = [];
 
-    // Check all required variables are present
-    for (const variable of template.variables) {
-      if (variable.required) {
-        const value = variables[variable.name as keyof TemplateVariables];
-        if (value === undefined || value === null || value === '') {
-          errors.push(`Required variable '${variable.name}' is missing or empty`);
+    // Check all required variables are present and non-empty
+    for (let i = 1; i <= template.variableCount; i++) {
+      const varName = `var${i}` as keyof TemplateVariables;
+      const value = variables[varName];
+      
+      if (value === undefined || value === null || value === '') {
+        errors.push(`Required variable 'var${i}' is missing or empty for template '${templateKey}'`);
+      }
+    }
+
+    // Validate mobile number format for any variable that contains a mobile number
+    // Check var4, var5, var6 as they commonly contain mobile numbers
+    const mobileVarPositions = [4, 5, 6];
+    for (const pos of mobileVarPositions) {
+      const varName = `var${pos}` as keyof TemplateVariables;
+      const value = variables[varName];
+      if (value && typeof value === 'string' && /^[6-9]\d{9}$/.test(value.trim()) === false) {
+        // Only validate if it looks like a mobile number (10 digits starting with 6-9)
+        if (/^\d{10}$/.test(value.trim())) {
+          errors.push(`Invalid mobile number format for '${varName}': ${value}. Must start with 6-9`);
         }
       }
     }
 
-    // Validate mobile number format (basic validation)
-    const mobileFields = ['mobile', 'adminMobile'];
-    for (const field of mobileFields) {
-      const value = variables[field as keyof TemplateVariables];
-      if (value && !/^[6-9]\d{9}$/.test(value.toString())) {
-        errors.push(`Invalid mobile number format for '${field}': ${value}`);
-      }
-    }
-
-    // Validate date format (basic validation)
-    const dateFields = ['date'];
-    for (const field of dateFields) {
-      const value = variables[field as keyof TemplateVariables];
-      if (value && !/^\d{2}\/\d{2}\/\d{4}$/.test(value.toString())) {
-        errors.push(`Invalid date format for '${field}'. Expected DD/MM/YYYY: ${value}`);
+    // Validate date format for variables that likely contain dates
+    // Check var3 as it commonly contains dates
+    const dateVarPositions = [3];
+    for (const pos of dateVarPositions) {
+      const varName = `var${pos}` as keyof TemplateVariables;
+      const value = variables[varName];
+      if (value && typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value.trim()) === false) {
+        // Only validate if it looks like it could be a date
+        if (/\d{1,2}\/\d{1,2}\/\d{4}/.test(value) || /\d{1,2}-\d{1,2}-\d{4}/.test(value)) {
+          errors.push(`Invalid date format for '${varName}'. Expected DD/MM/YYYY: ${value}`);
+        }
       }
     }
 
@@ -562,17 +572,48 @@ class SMSTemplatesService {
       return 'Template not found';
     }
 
-    // Default sample data
-    const defaultSampleData: TemplateVariables = {
-      deceasedPersonName: 'Raghav Rao',
-      locationName: 'కోటిలింగలు-కైలాసభూమి',
-      date: '24/09/2025',
-      mobile: '9876543210',
-      contactPersonName: 'Suresh Kumar',
-      adminMobile: '9876543210'
+    // Default sample data based on template variable count
+    const getDefaultSampleData = (): TemplateVariables => {
+      switch (template.variableCount) {
+        case 2:
+          return {
+            var1: 'రాఘవ రావు',
+            var2: 'కోటిలింగలు-కైలాసభూమి'
+          };
+        case 3:
+          return {
+            var1: 'రాఘవ రావు',
+            var2: 'కోటిలింగలు-కైలాసభూమి',
+            var3: 'కోటిలింగలు-కైలాసభూమి'
+          };
+        case 5:
+          return {
+            var1: 'రాఘవ రావు',
+            var2: 'కోటిలింగలు-కైలాసభూమి',
+            var3: '24/09/2025',
+            var4: '9876543210',
+            var5: 'కోటిలింగలు-కైలాసభూమి'
+          };
+        case 7:
+          return {
+            var1: 'రాఘవ రావు',
+            var2: 'కోటిలింగలు-కైలాసభూమి',
+            var3: '27/09/2025',
+            var4: 'సురేష్ కుమార్',
+            var5: '9876543210',
+            var6: '9876543210',
+            var7: 'కోటిలింగలు-కైలాసభూమి'
+          };
+        default:
+          return {
+            var1: 'రాఘవ రావు',
+            var2: 'కోటిలింగలు-కైలాసభూమి'
+          };
+      }
     };
 
-    const data = { ...defaultSampleData, ...sampleData };
+    const defaultData = getDefaultSampleData();
+    const data = { ...defaultData, ...sampleData };
     
     try {
       const formattedVariables = this.formatVariablesForAPI(templateKey, data);
