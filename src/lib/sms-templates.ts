@@ -575,8 +575,47 @@ class SMSTemplatesService {
       }
     }
 
-    // Enhanced mobile number validation for variables that contain mobile numbers
-    const mobileVarPositions = [4, 5, 6]; // Common positions for mobile numbers
+    // Enhanced mobile number validation - only validate variables that should contain mobile numbers
+    // Different templates have different variable structures, so we check based on template type
+    const template = this.getTemplateByKey(templateKey);
+    if (!template) {
+      return {
+        isValid: false,
+        errors: [`Template not found: ${templateKey}`]
+      };
+    }
+
+    // Determine which variables should contain mobile numbers based on template structure
+    const mobileVarPositions: number[] = [];
+    
+    switch (templateKey) {
+      case 'threeDayReminder':
+      case 'lastdayRenewal':
+      case 'renewalConfirmCustomer':
+        // For these templates, only var4 should be a mobile number (admin contact)
+        mobileVarPositions.push(4);
+        break;
+        
+      case 'dispatchConfirmCustomer':
+        // For dispatch confirmation, var5 (handover person mobile) and var6 (admin mobile) should be mobile numbers
+        mobileVarPositions.push(5, 6);
+        break;
+        
+      case 'renewalConfirmAdmin':
+      case 'deliveryConfirmAdmin':
+      case 'finalDisposalReminder':
+      case 'finalDisposalReminderAdmin':
+        // These templates don't have mobile numbers in variable positions 4, 5, or 6
+        // They either have no mobile numbers or mobile numbers are passed as the main recipient
+        break;
+        
+      default:
+        // For unknown templates, use conservative validation
+        // Only validate if it looks like a mobile number (10 digits starting with 6-9)
+        break;
+    }
+
+    // Validate mobile number format for identified mobile number variables
     for (const pos of mobileVarPositions) {
       const varName = `var${pos}` as keyof TemplateVariables;
       const value = variables[varName];
