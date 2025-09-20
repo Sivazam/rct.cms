@@ -90,7 +90,7 @@ class SMSService {
       
       const payload = {
         templateKey: request.templateKey,
-        customerMobile: request.recipient, // Changed from recipient to customerMobile
+        recipient: request.recipient, // Changed from customerMobile to recipient to match Firebase Functions
         variables: request.variables,
         entryId: request.entryId,
         customerId: request.customerId,
@@ -100,7 +100,7 @@ class SMSService {
       
       console.log('📤 Sending payload to Firebase Functions:', {
         templateKey: payload.templateKey,
-        customerMobile: payload.customerMobile ? payload.customerMobile.substring(0, 4) + '****' + payload.customerMobile.substring(-4) : 'MISSING',
+        recipient: payload.recipient ? payload.recipient.substring(0, 4) + '****' + payload.recipient.substring(-4) : 'MISSING',
         hasVariables: !!payload.variables && Object.keys(payload.variables).length > 0,
         variablesCount: payload.variables ? Object.keys(payload.variables).length : 0,
         variables: payload.variables,
@@ -339,6 +339,8 @@ class SMSService {
     const variables: TemplateVariables = {
       deceasedPersonName,
       locationName
+      // The finalDisposalReminder template requires locationName twice (positions 2 and 3)
+      // This will be handled by the formatVariablesForAPI method in the template service
     };
 
     return await this.sendSMSWithRetry({
