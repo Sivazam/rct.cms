@@ -39,6 +39,8 @@ interface DeliveryConfirmationProps {
     amountPaid: number;
     dueAmount: number;
     reason?: string;
+    handoverPersonName?: string;
+    handoverPersonMobile?: string;
   };
   onNewDelivery: () => void;
   onViewHistory: () => void;
@@ -178,6 +180,23 @@ export default function DeliveryConfirmation({
                 </div>
               </div>
             </div>
+
+            {/* Handover Person Information */}
+            {deliveryData.handoverPersonName && deliveryData.handoverPersonMobile && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-800 border-b pb-2">Handover Person Information</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">{deliveryData.handoverPersonName}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">{deliveryData.handoverPersonMobile}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Payment Information */}
             <div className="space-y-3">

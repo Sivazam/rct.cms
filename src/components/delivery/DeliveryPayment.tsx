@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
-import { Calculator, AlertTriangle, ArrowLeft, IndianRupee, Clock } from 'lucide-react';
+import { Calculator, AlertTriangle, ArrowLeft, IndianRupee, Clock, User } from 'lucide-react';
 import SMSService from '@/lib/sms-service';
 const smsService = SMSService.getInstance();
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +56,8 @@ export default function DeliveryPayment({
   const [dueAmount, setDueAmount] = useState(0);
   const [amountPaid, setAmountPaid] = useState(0);
   const [reason, setReason] = useState('');
+  const [handoverPersonName, setHandoverPersonName] = useState('');
+  const [handoverPersonMobile, setHandoverPersonMobile] = useState('');
   const [overdueMonths, setOverdueMonths] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -101,6 +103,23 @@ export default function DeliveryPayment({
   };
 
   const handlePaymentSubmit = async () => {
+    // Validate handover person information
+    if (!handoverPersonName.trim()) {
+      setError('Handover person name is required');
+      return;
+    }
+
+    if (!handoverPersonMobile.trim()) {
+      setError('Handover person mobile number is required');
+      return;
+    }
+
+    // Validate mobile number format
+    if (!/^[6-9]\d{9}$/.test(handoverPersonMobile)) {
+      setError('Please enter a valid 10-digit mobile number starting with 6-9');
+      return;
+    }
+
     // Validate amount
     if (amountPaid < 0) {
       setError('Amount cannot be negative');
@@ -123,7 +142,9 @@ export default function DeliveryPayment({
       const paymentData = {
         amountPaid,
         dueAmount,
-        reason: amountPaid < dueAmount ? reason.trim() : undefined
+        reason: amountPaid < dueAmount ? reason.trim() : undefined,
+        handoverPersonName: handoverPersonName.trim(),
+        handoverPersonMobile: handoverPersonMobile.trim()
       };
 
       // Send SMS notification to admin
@@ -238,6 +259,50 @@ export default function DeliveryPayment({
                   ).toLocaleDateString()}. Overdue by {overdueMonths} month(s) at ₹300/month.
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Handover Person Information */}
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2 text-blue-800">
+                <User className="h-5 w-5" />
+                <span>Handover Person Information</span>
+              </CardTitle>
+              <CardDescription className="text-blue-600">
+                Details of the person who is handing over the ashes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="handoverPersonName">Handover Person Name *</Label>
+                  <Input
+                    id="handoverPersonName"
+                    placeholder="Enter full name"
+                    value={handoverPersonName}
+                    onChange={(e) => setHandoverPersonName(e.target.value)}
+                    disabled={isProcessing || loading}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="handoverPersonMobile">Handover Person Mobile *</Label>
+                  <Input
+                    id="handoverPersonMobile"
+                    type="tel"
+                    placeholder="Enter 10-digit mobile number"
+                    value={handoverPersonMobile}
+                    onChange={(e) => setHandoverPersonMobile(e.target.value)}
+                    disabled={isProcessing || loading}
+                    maxLength={10}
+                    required
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    Format: 10-digit mobile number without country code
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

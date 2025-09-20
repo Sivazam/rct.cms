@@ -11,7 +11,7 @@ async function createTestLocation() {
     const locationData = {
       venueName: 'Test Location',
       address: '123 Test Street',
-      contactNumber: '+919876543210',
+      contactNumber: '+919014882779',
       createdBy: 'test_admin',
       isActive: true,
       createdAt: serverTimestamp()
@@ -41,7 +41,7 @@ async function createTestOperator() {
     const userData = {
       email: 'testoperator@example.com',
       name: 'Test Operator',
-      mobile: '+919876543210',
+      mobile: '+919014882779',
       role: 'operator',
       isActive: false, // Should be false for operators
       locationIds: [],

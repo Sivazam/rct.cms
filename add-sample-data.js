@@ -69,7 +69,7 @@ async function createTestUsers(locationIds) {
       email: 'admin@test.com',
       password: 'admin123',
       name: 'Admin User',
-      mobile: '+919876543210',
+      mobile: '+919014882779',
       role: 'admin',
       isActive: true,
       locationIds: []
@@ -140,7 +140,7 @@ async function createTestCustomers(locationIds) {
   const customers = [
     {
       name: 'Suresh Kumar',
-      mobile: '+919876543210',
+      mobile: '+919014882779',
       city: 'Chennai',
       additionalDetails: 'Regular customer',
       locationId: locationIds[0],
@@ -188,7 +188,7 @@ async function createTestEntries(customerIds, locationIds) {
   const entries = [
     {
       customerName: 'Suresh Kumar',
-      customerMobile: '+919876543210',
+      customerMobile: '+919014882779',
       customerCity: 'Chennai',
       numberOfPots: 2,
       locationId: locationIds[0],

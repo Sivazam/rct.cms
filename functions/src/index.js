@@ -1,17 +1,12 @@
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import axios from 'axios';
-import SMSTemplatesService from './lib/sms-templates';
-import SMSLogsService from './lib/sms-logs';
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const axios = require('axios');
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
 // Firestore instance
 const db = admin.firestore();
-
-// Initialize SMS Logs Service with Firestore instance
-const smsLogsService = SMSLogsService.getInstance(db);
 
 // Configuration constants
 const DAILY_CHECK_HOUR = 10; // 10 AM as requested
@@ -31,6 +26,18 @@ const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 5000; // 5 seconds
 const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
 
+// Template IDs - DLT Approved
+const TEMPLATE_IDS = {
+  threeDayReminder: '1707175786299400837',
+  lastdayRenewal: '1707175786326312933',
+  renewalConfirmCustomer: '1707175786362862204',
+  renewalConfirmAdmin: '1707175786389503209',
+  dispatchConfirmCustomer: '1707175786420863806',
+  deliveryConfirmAdmin: '1707175786441865610',
+  finalDisposalReminder: '1707175786481546224',
+  finalDisposalReminderAdmin: '1707175786495860514',
+};
+
 // Validate FastSMS configuration
 function validateFastSMSConfig() {
   if (!FASTSMS_CONFIG.apiKey) {
@@ -44,8 +51,49 @@ function validateFastSMSConfig() {
   }
 }
 
+// Helper function to get template ID by key
+function getTemplateIdByKey(templateKey) {
+  const templateId = TEMPLATE_IDS[templateKey];
+  if (!templateId) {
+    throw new Error(`Template not found: ${templateKey}`);
+  }
+  return templateId;
+}
+
+// Helper function to format variables for API
+function formatVariablesForAPI(templateKey, variables) {
+  const template = getTemplateIdByKey(templateKey);
+  
+  // Define variable structures for each template
+  const variableStructures = {
+    threeDayReminder: ['deceasedPersonName', 'locationName', 'date', 'mobile', 'locationName'],
+    lastdayRenewal: ['deceasedPersonName', 'locationName', 'date', 'mobile', 'locationName'],
+    renewalConfirmCustomer: ['deceasedPersonName', 'locationName', 'date', 'mobile', 'locationName'],
+    renewalConfirmAdmin: ['locationName', 'deceasedPersonName'],
+    dispatchConfirmCustomer: ['deceasedPersonName', 'locationName', 'date', 'contactPersonName', 'mobile', 'mobile', 'locationName'],
+    deliveryConfirmAdmin: ['deceasedPersonName', 'locationName'],
+    finalDisposalReminder: ['deceasedPersonName', 'locationName', 'locationName'],
+    finalDisposalReminderAdmin: ['locationName', 'deceasedPersonName'],
+  };
+
+  const structure = variableStructures[templateKey];
+  if (!structure) {
+    throw new Error(`Variable structure not found for template: ${templateKey}`);
+  }
+
+  const variableValues = structure.map(varName => {
+    const value = variables[varName];
+    if (value === undefined || value === null || value === '') {
+      return '';
+    }
+    return value.toString();
+  });
+
+  return variableValues.join('|');
+}
+
 // Secure SMS sending function (server-side only)
-async function sendSMSAPI(recipient: string, templateId: string, variablesValues: string, attempt: number = 1) {
+async function sendSMSAPI(recipient, templateId, variablesValues, attempt = 1) {
   try {
     validateFastSMSConfig();
     
@@ -91,7 +139,7 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
   } catch (error) {
     console.error('FastSMS API Error:', error);
 
-    if (axios.isAxiosError(error)) {
+    if (error.response) {
       const status = error.response?.status;
       const message = error.response?.data?.message || error.message;
 
@@ -117,7 +165,7 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
         success: false,
         error: {
           type: 'UNKNOWN',
-          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          message: error.message || 'Unknown error occurred',
           timestamp: new Date()
         }
       };
@@ -125,25 +173,31 @@ async function sendSMSAPI(recipient: string, templateId: string, variablesValues
   }
 }
 
-// Helper function to get template ID by key
-function getTemplateIdByKey(templateKey: string): string {
-  const template = SMSTemplatesService.getInstance().getTemplateByKey(templateKey as any);
-  if (!template) {
-    throw new Error(`Template not found: ${templateKey}`);
+// Helper function to log SMS to Firestore
+async function logSMS(logData) {
+  try {
+    const docRef = await db.collection('smsLogs').add({
+      ...logData,
+      timestamp: admin.firestore.Timestamp.fromDate(logData.timestamp instanceof Date ? logData.timestamp : new Date(logData.timestamp))
+    });
+    
+    console.log('SMS logged successfully with ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error logging SMS to Firestore:', error);
+    throw error;
   }
-  return template.id;
 }
 
-// Helper function to format variables for API
-function formatVariablesForAPI(templateKey: string, variables: any): string {
-  return SMSTemplatesService.getInstance().formatVariablesForAPI(templateKey as any, variables);
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
  * Callable function to send SMS securely from front-end
  * This function validates authentication and authorization before sending SMS
  */
-export const sendSMS = functions
+exports.sendSMS = functions
   .runWith({
     memory: '256MB',
     timeoutSeconds: 60,
@@ -241,7 +295,7 @@ export const sendSMS = functions
     try {
       console.log('Authorization passed, attempting to send SMS', {
         templateKey,
-        recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4), // Partial logging for privacy
+        recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
         userId: context.auth.uid,
         role: user.role
       });
@@ -250,8 +304,8 @@ export const sendSMS = functions
       const templateId = getTemplateIdByKey(templateKey);
       const variablesValues = formatVariablesForAPI(templateKey, variables);
 
-      let lastError: any = undefined;
-      let finalResult: any = undefined;
+      let lastError = undefined;
+      let finalResult = undefined;
 
       // Retry mechanism
       for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
@@ -262,7 +316,7 @@ export const sendSMS = functions
 
           if (apiResult.success) {
             // Log successful SMS
-            await smsLogsService.logSMS({
+            await logSMS({
               type: templateKey,
               recipient,
               templateId,
@@ -288,7 +342,7 @@ export const sendSMS = functions
             lastError = apiResult.error;
             
             // Log failed attempt
-            await smsLogsService.logSMS({
+            await logSMS({
               type: templateKey,
               recipient,
               templateId,
@@ -313,7 +367,7 @@ export const sendSMS = functions
           lastError = error;
           
           // Log exception
-          await smsLogsService.logSMS({
+          await logSMS({
             type: templateKey,
             recipient,
             templateId,
@@ -373,7 +427,7 @@ export const sendSMS = functions
         customerId,
         locationId,
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.message || 'Unknown error',
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
@@ -388,7 +442,7 @@ export const sendSMS = functions
  * Scheduled function to check for expiring entries and send SMS reminders
  * Runs daily at 10 AM IST to check for entries expiring in 3 days and today
  */
-export const dailyExpiryCheck = functions
+exports.dailyExpiryCheck = functions
   .runWith({
     memory: '512MB',
     timeoutSeconds: 540, // 9 minutes
@@ -405,9 +459,9 @@ export const dailyExpiryCheck = functions
         totalSMS: 0,
         successfulSMS: 0,
         failedSMS: 0,
-        errors: [] as string[],
+        errors: [],
         startTime: admin.firestore.FieldValue.serverTimestamp(),
-        endTime: null as any
+        endTime: null
       };
 
       // Get all active entries
@@ -460,7 +514,7 @@ export const dailyExpiryCheck = functions
           const isExpiringIn3Days = expiryDate.toDateString() === threeDaysFromNow.toDateString();
           const isExpiringToday = expiryDate.toDateString() === today.toDateString();
 
-          let smsResult: any = null;
+          let smsResult = null;
 
           if (isExpiringIn3Days) {
             console.log(`Sending 3-day reminder for entry ${doc.id}`);
@@ -497,245 +551,237 @@ export const dailyExpiryCheck = functions
             results.totalSMS++;
           }
 
-          // Track results
           if (smsResult) {
             if (smsResult.success) {
               results.successfulSMS++;
-              console.log(`SMS sent successfully for entry ${doc.id}. Message ID: ${smsResult.messageId}`);
             } else {
               results.failedSMS++;
-              const errorMsg = smsResult.error?.message || 'Unknown error';
-              results.errors.push(`SMS failed for entry ${doc.id}: ${errorMsg}`);
-              console.error(`SMS failed for entry ${doc.id}:`, errorMsg);
             }
+
+            // Log the SMS
+            await logSMS({
+              type: isExpiringIn3Days ? 'threeDayReminder' : 'lastdayRenewal',
+              recipient: customer.mobile,
+              templateId: isExpiringIn3Days ? TEMPLATE_IDS.threeDayReminder : TEMPLATE_IDS.lastdayRenewal,
+              message: formatVariablesForAPI(isExpiringIn3Days ? 'threeDayReminder' : 'lastdayRenewal', {
+                deceasedPersonName: customer.name,
+                locationName: location.venueName,
+                date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                mobile: location.contactNumber || '9876543210'
+              }),
+              status: smsResult.success ? 'sent' : 'failed',
+              timestamp: new Date(),
+              retryCount: 0,
+              entryId: doc.id,
+              customerId: entry.customerId,
+              locationId: entry.locationId,
+              operatorId: 'system'
+            });
           }
 
         } catch (error) {
           console.error(`Error processing entry ${doc.id}:`, error);
-          results.errors.push(`Error processing entry ${doc.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          results.errors.push(`Error processing entry ${doc.id}: ${error.message}`);
         }
       }
 
-      // Set end time and save execution log
       results.endTime = admin.firestore.FieldValue.serverTimestamp();
-      
-      await db.collection('smsExecutionLogs').add({
+
+      // Log the daily check results
+      await db.collection('dailyExpiryChecks').add({
         ...results,
-        totalEntries: entriesSnapshot.size,
-        functionType: 'dailyExpiryCheck',
-        timezone: TIME_ZONE
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      console.log('Daily expiry check completed:', {
-        totalEntries: entriesSnapshot.size,
-        entries3Days: results.entries3Days,
-        entriesToday: results.entriesToday,
-        totalSMS: results.totalSMS,
-        successfulSMS: results.successfulSMS,
-        failedSMS: results.failedSMS,
-        errorsCount: results.errors.length
-      });
+      console.log('Daily expiry check completed:', results);
 
       return {
         success: true,
-        message: 'Daily expiry check completed successfully',
-        results: {
-          totalEntries: entriesSnapshot.size,
-          entriesProcessed: results.entries3Days + results.entriesToday,
-          smsSent: results.successfulSMS,
-          smsFailed: results.failedSMS,
-          errors: results.errors
-        }
+        results,
+        message: `Processed ${entriesSnapshot.size} entries, sent ${results.totalSMS} SMS reminders`
       };
 
     } catch (error) {
       console.error('Error in daily expiry check:', error);
-      
-      // Log error
-      await db.collection('smsExecutionLogs').add({
+
+      // Log the error
+      await db.collection('dailyExpiryChecks').add({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        functionType: 'dailyExpiryCheck',
-        timezone: TIME_ZONE
+        error: error.message,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      throw new functions.https.HttpsError(
-        'internal',
-        'Daily expiry check failed. Please check the logs.'
-      );
+      throw new Error(`Daily expiry check failed: ${error.message}`);
     }
   });
 
 /**
  * Function to retry failed SMS messages
- * Admin-only function for manual retry of failed SMS
+ * Can be called manually or scheduled
  */
-export const retryFailedSMS = functions
+exports.retryFailedSMS = functions
   .runWith({
     memory: '256MB',
-    timeoutSeconds: 300,
+    timeoutSeconds: 300, // 5 minutes
   })
-  .https.onCall(async (data, context) => {
-    // Check if user is authenticated
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        'The function must be called while authenticated.'
-      );
-    }
-
-    // Check if user is admin
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    const user = userDoc.data();
-    
-    if (!user || user.role !== 'admin') {
-      throw new functions.https.HttpsError(
-        'permission-denied',
-        'Only admin users can retry failed SMS.'
-      );
-    }
+  .https.onRequest(async (request, response) => {
+    response.setHeader('Content-Type', 'application/json');
 
     try {
-      const { maxRetryCount = 2, limit = 50 } = data || {};
-      
-      // Get failed SMS logs with retry count less than max
-      const failedLogs = await SMSLogsService.getInstance().getFailedSMSLogs(maxRetryCount);
-      const limitedLogs = failedLogs.slice(0, limit);
-      
-      console.log(`Retrying ${limitedLogs.length} failed SMS messages`);
+      console.log('Starting SMS retry process');
 
-      let retryCount = 0;
-      let successCount = 0;
-      const errors: string[] = [];
+      // Get failed SMS logs that haven't exceeded max retry count
+      const failedSMSsnapshot = await db.collection('smsLogs')
+        .where('status', '==', 'failed')
+        .where('retryCount', '<', MAX_RETRY_ATTEMPTS)
+        .orderBy('timestamp', 'asc')
+        .limit(50) // Process in batches
+        .get();
 
-      for (const log of limitedLogs) {
+      console.log(`Found ${failedSMSsnapshot.size} failed SMS to retry`);
+
+      const results = {
+        total: failedSMSsnapshot.size,
+        successful: 0,
+        failed: 0,
+        errors: []
+      };
+
+      for (const doc of failedSMSsnapshot.docs) {
+        const smsLog = doc.data();
+        
         try {
-          retryCount++;
-          
-          // Note: This is a simplified retry implementation
-          // In production, you would need to reconstruct the original SMS request
-          // from the log data and template information
-          
-          console.log(`Retrying SMS for log ${log.id}`);
-          
-          // For now, we'll just mark them as retried
-          // In a complete implementation, you would reconstruct and resend the SMS
-          await SMSLogsService.getInstance().updateSMSLog(log.id!, { 
-            retryCount: log.retryCount + 1,
-            status: 'pending'
-          });
-          
-          successCount++;
-          
+          console.log(`Retrying SMS for ${smsLog.recipient} with template ${smsLog.type}`);
+
+          const apiResult = await sendSMSAPI(
+            smsLog.recipient,
+            smsLog.templateId,
+            smsLog.message,
+            smsLog.retryCount + 1
+          );
+
+          if (apiResult.success) {
+            // Update SMS log to sent
+            await db.collection('smsLogs').doc(doc.id).update({
+              status: 'sent',
+              messageId: apiResult.messageId,
+              retryCount: smsLog.retryCount + 1,
+              lastRetryAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            results.successful++;
+          } else {
+            // Update SMS log with error
+            await db.collection('smsLogs').doc(doc.id).update({
+              status: 'failed',
+              errorMessage: apiResult.error.message,
+              retryCount: smsLog.retryCount + 1,
+              lastRetryAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            results.failed++;
+          }
+
         } catch (error) {
-          console.error(`Error retrying SMS for log ${log.id}:`, error);
-          errors.push(`Failed to retry SMS ${log.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.error(`Error retrying SMS ${doc.id}:`, error);
+          results.errors.push(`Error retrying SMS ${doc.id}: ${error.message}`);
+          results.failed++;
         }
       }
 
-      return {
+      response.status(200).json({
         success: true,
-        message: `Retried ${retryCount} SMS, ${successCount} successful`,
-        retryCount,
-        successCount,
-        errors: errors.length > 0 ? errors : undefined
-      };
+        results,
+        message: `Retried ${results.total} SMS: ${results.successful} successful, ${results.failed} failed`
+      });
 
     } catch (error) {
-      console.error('Error in retryFailedSMS:', error);
-      throw new functions.https.HttpsError(
-        'internal',
-        'Failed to retry SMS messages.'
-      );
+      console.error('Error in retryFailedSMS function:', error);
+      
+      response.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   });
 
 /**
- * Function to get SMS statistics and logs
- * Admin-only function for monitoring SMS activity
+ * Get SMS statistics
  */
-export const getSMSStatistics = functions
+exports.getSMSStatistics = functions
   .runWith({
-    memory: '256MB',
+    memory: '128MB',
     timeoutSeconds: 60,
   })
-  .https.onCall(async (data, context) => {
-    // Check if user is authenticated
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        'The function must be called while authenticated.'
-      );
-    }
-
-    // Check if user is admin
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    const user = userDoc.data();
-    
-    if (!user || user.role !== 'admin') {
-      throw new functions.https.HttpsError(
-        'permission-denied',
-        'Only admin users can access SMS statistics.'
-      );
-    }
+  .https.onRequest(async (request, response) => {
+    response.setHeader('Content-Type', 'application/json');
 
     try {
-      const { dateRange, filters } = data || {};
-      
-      const stats = await SMSLogsService.getInstance().getSMSStatistics({
-        dateRange,
-        ...filters
-      });
-      
-      // Get recent execution logs
-      const recentExecutions = await db.collection('smsExecutionLogs')
-        .orderBy('timestamp', 'desc')
-        .limit(10)
+      console.log('Getting SMS statistics');
+
+      // Get SMS logs from the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const smsSnapshot = await db.collection('smsLogs')
+        .where('timestamp', '>=', admin.firestore.Timestamp.fromDate(thirtyDaysAgo))
         .get();
 
-      const executionLogs = recentExecutions.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate?.() || new Date()
-      }));
-
-      return {
-        success: true,
-        statistics: stats,
-        recentExecutions,
-        serviceStatus: {
-          isInitialized: true,
-          templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
-          functionsAvailable: true,
-          configValid: !!FASTSMS_CONFIG.apiKey && !!FASTSMS_CONFIG.senderId && !!FASTSMS_CONFIG.entityId
-        }
+      const stats = {
+        total: smsSnapshot.size,
+        sent: 0,
+        failed: 0,
+        pending: 0,
+        byType: {},
+        byDate: {}
       };
 
+      smsSnapshot.forEach(doc => {
+        const sms = doc.data();
+        
+        // Count by status
+        if (sms.status === 'sent') stats.sent++;
+        else if (sms.status === 'failed') stats.failed++;
+        else if (sms.status === 'pending') stats.pending++;
+
+        // Count by type
+        stats.byType[sms.type] = (stats.byType[sms.type] || 0) + 1;
+
+        // Count by date
+        const date = sms.timestamp.toDate();
+        const dateKey = date.toISOString().split('T')[0];
+        stats.byDate[dateKey] = (stats.byDate[dateKey] || 0) + 1;
+      });
+
+      response.status(200).json({
+        success: true,
+        stats,
+        message: 'Statistics retrieved successfully'
+      });
+
     } catch (error) {
-      console.error('Error in getSMSStatistics:', error);
-      throw new functions.https.HttpsError(
-        'internal',
-        'Failed to get SMS statistics.'
-      );
+      console.error('Error getting SMS statistics:', error);
+      
+      response.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   });
 
 /**
  * Health check function for SMS service
  */
-export const smsHealthCheck = functions
+exports.smsHealthCheck = functions
   .runWith({
     memory: '128MB',
     timeoutSeconds: 30,
   })
   .https.onRequest(async (request, response) => {
+    response.setHeader('Content-Type', 'application/json');
+
     try {
-      // Check if we can access Firestore
-      await db.collection('smsHealthChecks').add({
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        status: 'healthy'
-      });
+      console.log('SMS health check requested');
 
       // Validate FastSMS configuration
       let configValid = false;
@@ -745,7 +791,7 @@ export const smsHealthCheck = functions
         validateFastSMSConfig();
         configValid = true;
       } catch (error) {
-        configError = error instanceof Error ? error.message : 'Configuration error';
+        configError = error.message;
       }
 
       response.status(200).json({
@@ -754,7 +800,7 @@ export const smsHealthCheck = functions
         timestamp: new Date().toISOString(),
         details: {
           isInitialized: true,
-          templatesCount: SMSTemplatesService.getInstance().getAllTemplates().length,
+          templatesCount: Object.keys(TEMPLATE_IDS).length,
           functionsAvailable: true,
           configValid,
           configError,
@@ -769,14 +815,7 @@ export const smsHealthCheck = functions
         status: 'unhealthy',
         service: 'SMS Service',
         timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error.message
       });
     }
   });
-
-// Helper functions
-
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}

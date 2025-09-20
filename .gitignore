@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/functions/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -19,6 +20,13 @@
 
 # production
 /build
+
+# Firebase specific
+/.firebase
+/firebase-debug.log
+/firebase-debug.*.log
+*.debug
+functions-debug.log
 
 # misc
 .DS_Store
@@ -47,3 +55,14 @@ test
 prompt
 
 server.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+Desktop.ini

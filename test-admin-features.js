@@ -72,7 +72,7 @@ async function testCustomerEntry() {
     console.log('📍 Using location:', locations[0].venueName);
     
     // Test customer search (should return null for new customer)
-    const testMobile = '+919876543210';
+    const testMobile = '+919014882779';
     const existingCustomer = await getCustomerByMobile(testMobile);
     console.log('🔍 Customer search result:', existingCustomer || 'No existing customer found');
     

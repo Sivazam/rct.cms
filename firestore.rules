@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isActive() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+    
+    function isAdmin() {
+      return isActive() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOperator() {
+      return isActive() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'operator';
+    }
+    
+    function hasLocationAccess(locationId) {
+      return isAdmin() || 
+             (isOperator() && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.locationIds.hasAny([locationId]));
+    }
+
+    // Users collection - Admin only for writes, authenticated for reads
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // Customers collection - Authenticated users with location access
+    match /customers/{customerId} {
+      allow read: if isActive();
+      allow create: if isActive();
+      allow update: if isActive();
+      allow delete: if isAdmin();
+    }
+
+    // Locations collection - Admin full access, Operators read access
+    match /locations/{locationId} {
+      allow read: if isActive();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Entries collection - Location-based access control
+    match /entries/{entryId} {
+      allow read: if isActive() && hasLocationAccess(resource.data.locationId);
+      allow create: if isActive();
+      allow update: if isActive() && hasLocationAccess(resource.data.locationId);
+      allow delete: if isAdmin() || hasLocationAccess(resource.data.locationId);
+    }
+
+    // SMS Logs collection - Admin only for sensitive operations
+    match /smsLogs/{smsId} {
+      allow read: if isAdmin();
+      allow create: if isActive(); // Created by functions
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // SMS Function Calls collection - Admin only
+    match /smsFunctionCalls/{callId} {
+      allow read: if isAdmin();
+      allow create: if isActive(); // Created by functions
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Daily Expiry Checks collection - Admin only
+    match /dailyExpiryChecks/{checkId} {
+      allow read: if isAdmin();
+      allow create: if isActive(); // Created by functions
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Deliveries collection - Location-based access
+    match /deliveries/{deliveryId} {
+      allow read: if isActive() && hasLocationAccess(resource.data.locationId);
+      allow create: if isActive();
+      allow update: if isActive() && hasLocationAccess(resource.data.locationId);
+      allow delete: if isAdmin() || hasLocationAccess(resource.data.locationId);
+    }
+
+    // Payments collection - Admin and finance access
+    match /payments/{paymentId} {
+      allow read: if isAdmin();
+      allow create: if isActive();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

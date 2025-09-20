@@ -170,7 +170,7 @@ export default function CustomerEntrySystem() {
       // TODO: Replace with actual Fast2SMS integration when credentials are available
       // SMS to admin - currently showing dialog instead of sending
       showSMSDialog(
-        '+919876543210', // Admin mobile - should be configurable
+        '+919014882779', // Admin mobile - should be configurable
         SMSTemplates.entryConfirmation(
           user.name || 'Operator',
           selectedLocationData?.venueName || 'Unknown Location',

@@ -57,6 +57,8 @@ export default function DeliverySystem() {
     amountPaid: number;
     dueAmount: number;
     reason?: string;
+    handoverPersonName?: string;
+    handoverPersonMobile?: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -128,7 +130,9 @@ export default function DeliverySystem() {
             operatorName: operatorName,
             amountPaid: payment.amountPaid,
             dueAmount: payment.dueAmount,
-            reason: payment.reason
+            reason: payment.reason,
+            handoverPersonName: payment.handoverPersonName,
+            handoverPersonMobile: payment.handoverPersonMobile
           }),
         });
 
@@ -192,7 +196,9 @@ export default function DeliverySystem() {
               ...dispatchData,
               amountPaid: paymentData.amountPaid,
               dueAmount: paymentData.dueAmount,
-              reason: paymentData.reason
+              reason: paymentData.reason,
+              handoverPersonName: paymentData.handoverPersonName,
+              handoverPersonMobile: paymentData.handoverPersonMobile
             }}
             onNewDelivery={handleNewDispatch}
             onViewHistory={handleViewHistory}

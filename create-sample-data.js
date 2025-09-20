@@ -70,7 +70,7 @@ async function createTestOperators() {
         email: 'operator1@example.com',
         password: 'operator123',
         name: 'Raj Kumar',
-        mobile: '+919876543210',
+        mobile: '+919014882779',
         isActive: false // Pending approval
       },
       {
@@ -130,7 +130,7 @@ async function createTestCustomers() {
     const customers = [
       {
         name: 'Suresh Kumar',
-        mobile: '+919876543210',
+        mobile: '+919014882779',
         city: 'Chennai',
         additionalDetails: 'Regular customer'
       },
@@ -186,7 +186,7 @@ async function createTestEntries() {
     const entries = [
       {
         customerName: 'Suresh Kumar',
-        customerMobile: '+919876543210',
+        customerMobile: '+919014882779',
         customerCity: 'Chennai',
         numberOfPots: 2,
         locationId: 'location1',

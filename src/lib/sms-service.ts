@@ -237,8 +237,8 @@ class SMSService {
     deceasedPersonName: string,
     locationName: string,
     deliveryDate: string,
-    contactPersonName: string,
-    contactMobile: string,
+    handoverPersonName: string,
+    handoverPersonMobile: string,
     adminMobile: string,
     entryId?: string,
     customerId?: string,
@@ -249,8 +249,8 @@ class SMSService {
       deceasedPersonName,
       locationName,
       date: deliveryDate,
-      contactPersonName,
-      mobile: contactMobile,
+      contactPersonName: handoverPersonName,
+      mobile: handoverPersonMobile,
       adminMobile
     };
 

@@ -6,14 +6,37 @@ import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
   try {
-    const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason } = await request.json();
+    const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason, handoverPersonName, handoverPersonMobile } = await request.json();
 
-    console.log('Dispatch request received:', { entryId, operatorId, operatorName, amountPaid, dueAmount, reason });
+    console.log('Dispatch request received:', { entryId, operatorId, operatorName, amountPaid, dueAmount, reason, handoverPersonName, handoverPersonMobile });
 
     if (!entryId || !operatorId || !operatorName) {
       console.log('Missing required fields:', { entryId, operatorId, operatorName });
       return NextResponse.json(
         { error: 'Entry ID, Operator ID, and Operator Name are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate handover person information
+    if (!handoverPersonName || !handoverPersonName.trim()) {
+      return NextResponse.json(
+        { error: 'Handover person name is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!handoverPersonMobile || !handoverPersonMobile.trim()) {
+      return NextResponse.json(
+        { error: 'Handover person mobile number is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate mobile number format
+    if (!/^[6-9]\d{9}$/.test(handoverPersonMobile)) {
+      return NextResponse.json(
+        { error: 'Please enter a valid 10-digit mobile number starting with 6-9' },
         { status: 400 }
       );
     }
@@ -73,6 +96,9 @@ export async function POST(request: NextRequest) {
       amountPaid: amountPaid || 0,
       reason: reason || null,
       paymentType: amountPaid > 0 ? (amountPaid < dueAmount ? 'partial' : 'full') : 'free',
+      // Handover person information
+      handoverPersonName: handoverPersonName.trim(),
+      handoverPersonMobile: handoverPersonMobile.trim(),
       createdAt: serverTimestamp()
     };
 
@@ -98,18 +124,28 @@ export async function POST(request: NextRequest) {
       deliveredBy: operatorId,
       deliveredAt: serverTimestamp(),
       dispatchReason: reason || null, // Store the reason in the entry
+      // Add handover person information to entry
+      handoverPersonName: handoverPersonName.trim(),
+      handoverPersonMobile: handoverPersonMobile.trim(),
       payments: [...existingPayments, newPayment],
       lastModifiedAt: serverTimestamp()
     });
 
-    // Send confirmation SMS to customer
+    // Send confirmation SMS to customer using the new template
     const customerMobile = entryData.customerMobile;
     const customerName = entryData.customerName;
+    const locationName = entryData.locationName;
     const formattedDate = formatDate(deliveryDate);
 
-    const smsMessage = SMSTemplates.customerDeliveryConfirmation(
-      entryId, 
-      formattedDate
+    // Use the dispatch confirmation template with handover person information
+    const smsMessage = SMSTemplates.dispatchConfirmation(
+      customerName,
+      locationName,
+      formattedDate,
+      handoverPersonName,
+      handoverPersonMobile,
+      operatorName,
+      entryId
     );
 
     // TODO: Replace with actual Fast2SMS integration when credentials are available
@@ -139,13 +175,13 @@ export async function POST(request: NextRequest) {
 
     // TODO: Replace with actual Fast2SMS integration when credentials are available
     // SMS to admin - currently simulating instead of sending
-    console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
+    console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919014882779');
     console.log('Message:', adminSmsMessage);
     
     // Simulate admin SMS (replace with actual sendSMS call when Fast2SMS is ready)
     /*
     await sendSMS(
-      process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
+      process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919014882779',
       adminSmsMessage,
       entryId
     );
