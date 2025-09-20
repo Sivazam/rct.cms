@@ -1,8 +1,8 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import axios from 'axios';
-import SMSTemplatesService from './lib/sms-templates';
-import SMSLogsService from './lib/sms-logs';
+import SMSTemplatesService from '../lib/sms-templates';
+import SMSLogsService from '../lib/sms-logs';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -23,7 +23,7 @@ const FASTSMS_CONFIG = {
   apiKey: functions.config().fastsms?.api_key,
   senderId: functions.config().fastsms?.sender_id,
   entityId: functions.config().fastsms?.entity_id,
-  baseUrl: 'https://www.fastsms.com/dev/bulkV2'
+  baseUrl: 'https://www.fast2sms.com/dev/bulkV2'  // Fixed: fast2sms.com instead of fastsms.com
 };
 
 // Retry configuration
@@ -44,23 +44,38 @@ function validateFastSMSConfig() {
   }
 }
 
-// Secure SMS sending function (server-side only)
+// Secure SMS sending function (server-side only) - Using DLT Manual Route
 async function sendSMSAPI(recipient: string, templateId: string, variablesValues: string, attempt: number = 1) {
   try {
     validateFastSMSConfig();
     
     const apiUrl = new URL(FASTSMS_CONFIG.baseUrl);
-    apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
-    apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
-    apiUrl.searchParams.append('message', templateId);
-    apiUrl.searchParams.append('variables_values', variablesValues);
-    apiUrl.searchParams.append('route', 'dlt');
-    apiUrl.searchParams.append('numbers', recipient);
+    
+    // For DLT Manual Route, we need to use different parameters
+    if (FASTSMS_CONFIG.entityId && FASTSMS_CONFIG.senderId) {
+      // DLT Manual Route - uses DLT-approved templates directly
+      apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
+      apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
+      apiUrl.searchParams.append('message', variablesValues); // Full message with variables replaced
+      apiUrl.searchParams.append('template_id', templateId); // DLT Content Template ID
+      apiUrl.searchParams.append('entity_id', FASTSMS_CONFIG.entityId); // DLT Principal Entity ID
+      apiUrl.searchParams.append('route', 'dlt_manual');
+      apiUrl.searchParams.append('numbers', recipient);
+    } else {
+      // Fallback to original DLT route (if manual route not configured)
+      apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
+      apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
+      apiUrl.searchParams.append('message', templateId);
+      apiUrl.searchParams.append('variables_values', variablesValues);
+      apiUrl.searchParams.append('route', 'dlt');
+      apiUrl.searchParams.append('numbers', recipient);
+    }
 
     console.log(`FastSMS API Call (Attempt ${attempt}):`, {
       recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
       templateId,
       variablesValues: variablesValues.substring(0, 20) + '...',
+      route: FASTSMS_CONFIG.entityId ? 'dlt_manual' : 'dlt',
       url: apiUrl.toString().substring(0, 100) + '...'
     });
 
@@ -143,7 +158,7 @@ function formatVariablesForAPI(templateKey: string, variables: any): string {
  * Callable function to send SMS securely from front-end
  * This function validates authentication and authorization before sending SMS
  */
-export const sendSMS = functions
+export const sendSMSV2 = functions
   .runWith({
     memory: '256MB',
     timeoutSeconds: 60,
@@ -353,7 +368,7 @@ export const sendSMS = functions
         customerId,
         locationId,
         success: finalResult.success,
-        messageId: finalResult.messageId,
+        messageId: finalResult.messageId || null, // Handle undefined messageId
         error: finalResult.error,
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
@@ -373,6 +388,7 @@ export const sendSMS = functions
         customerId,
         locationId,
         success: false,
+        messageId: null, // No messageId for errors
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
@@ -388,13 +404,13 @@ export const sendSMS = functions
  * Scheduled function to check for expiring entries and send SMS reminders
  * Runs daily at 10 AM IST to check for entries expiring in 3 days and today
  */
-export const dailyExpiryCheck = functions
+export const dailyExpiryCheckV2 = functions
   .runWith({
     memory: '512MB',
     timeoutSeconds: 540, // 9 minutes
   })
-  .pubsub.schedule(`0 ${DAILY_CHECK_HOUR} * * *`)
-  .timeZone(TIME_ZONE)
+  .pubsub.schedule('0 10 * * *')
+  .timeZone('Asia/Kolkata')
   .onRun(async (context) => {
     console.log('Starting daily expiry check at:', new Date().toISOString());
 
@@ -571,7 +587,7 @@ export const dailyExpiryCheck = functions
  * Function to retry failed SMS messages
  * Admin-only function for manual retry of failed SMS
  */
-export const retryFailedSMS = functions
+export const retryFailedSMSV2 = functions
   .runWith({
     memory: '256MB',
     timeoutSeconds: 300,
@@ -655,7 +671,7 @@ export const retryFailedSMS = functions
  * Function to get SMS statistics and logs
  * Admin-only function for monitoring SMS activity
  */
-export const getSMSStatistics = functions
+export const getSMSStatisticsV2 = functions
   .runWith({
     memory: '256MB',
     timeoutSeconds: 60,
@@ -724,7 +740,7 @@ export const getSMSStatistics = functions
 /**
  * Health check function for SMS service
  */
-export const smsHealthCheck = functions
+export const smsHealthCheckV2 = functions
   .runWith({
     memory: '128MB',
     timeoutSeconds: 30,

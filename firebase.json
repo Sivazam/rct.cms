@@ -1,11 +1,7 @@
 {
   "functions": {
     "source": "functions",
-    "runtime": "nodejs20",
-    "spec": "v2",
-    "env": {
-      "NODE_ENV": "production"
-    }
+    "runtime": "nodejs20"
   },
   "firestore": {
     "rules": "firestore.rules",

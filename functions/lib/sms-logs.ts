@@ -96,38 +96,40 @@ class SMSLogsService {
    */
   public async getSMSLogs(filters?: SMSLogFilters): Promise<SMSLog[]> {
     try {
-      let query = this.db.collection(this.collectionName);
+      let query: admin.firestore.Query = this.db.collection(this.collectionName);
 
       // Apply filters
+      let filteredQuery: admin.firestore.Query = query;
+      
       if (filters?.type) {
-        query = query.where('type', '==', filters.type);
+        filteredQuery = filteredQuery.where('type', '==', filters.type);
       }
       
       if (filters?.status) {
-        query = query.where('status', '==', filters.status);
+        filteredQuery = filteredQuery.where('status', '==', filters.status);
       }
       
       if (filters?.recipient) {
-        query = query.where('recipient', '==', filters.recipient);
+        filteredQuery = filteredQuery.where('recipient', '==', filters.recipient);
       }
       
       if (filters?.locationId) {
-        query = query.where('locationId', '==', filters.locationId);
+        filteredQuery = filteredQuery.where('locationId', '==', filters.locationId);
       }
       
       if (filters?.operatorId) {
-        query = query.where('operatorId', '==', filters.operatorId);
+        filteredQuery = filteredQuery.where('operatorId', '==', filters.operatorId);
       }
       
       if (filters?.dateRange) {
-        query = query.where('timestamp', '>=', admin.firestore.Timestamp.fromDate(filters.dateRange.start));
-        query = query.where('timestamp', '<=', admin.firestore.Timestamp.fromDate(filters.dateRange.end));
+        filteredQuery = filteredQuery.where('timestamp', '>=', admin.firestore.Timestamp.fromDate(filters.dateRange.start));
+        filteredQuery = filteredQuery.where('timestamp', '<=', admin.firestore.Timestamp.fromDate(filters.dateRange.end));
       }
 
       // Always order by timestamp (newest first)
-      query = query.orderBy('timestamp', 'desc');
+      filteredQuery = filteredQuery.orderBy('timestamp', 'desc');
 
-      const querySnapshot = await query.get();
+      const querySnapshot = await filteredQuery.get();
       
       return querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -226,7 +228,8 @@ class SMSLogsService {
         stats.byType[log.type] = (stats.byType[log.type] || 0) + 1;
 
         // Count by date
-        const timestamp = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp);
+        const timestamp = log.timestamp instanceof Date ? log.timestamp : 
+                         (log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp.seconds * 1000));
         const dateKey = timestamp.toISOString().split('T')[0];
         stats.byDate[dateKey] = (stats.byDate[dateKey] || 0) + 1;
       });

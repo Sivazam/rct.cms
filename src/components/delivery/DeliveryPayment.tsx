@@ -148,18 +148,21 @@ export default function DeliveryPayment({
       };
 
       // Send SMS notification to admin
-      await smsService.sendDispatchNotification(
+      await smsService.sendDeliveryConfirmationAdmin(
         entry.customer.name,
         entry.locationName,
         user?.name || 'Operator',
         entry.id
       );
 
-      // Send SMS notification to customer
-      await smsService.sendFinalDisposalNotice(
+      // Send SMS notification to customer with dispatch confirmation
+      await smsService.sendDispatchConfirmationCustomer(
         entry.customer.mobile,
         entry.customer.name,
-        'River Godavari',
+        entry.locationName,
+        new Date().toLocaleDateString('en-IN'),
+        handoverPersonName.trim(),
+        handoverPersonMobile.trim(),
         entry.id
       );
 

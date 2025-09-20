@@ -86,7 +86,7 @@ class SMSService {
       });
 
       // Call Firebase Functions securely
-      const sendSMSFunction = httpsCallable(functions, 'sendSMS');
+      const sendSMSFunction = httpsCallable(functions, 'sendSMSV2');
       
       const payload = {
         templateKey: request.templateKey,
