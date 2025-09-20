@@ -58,7 +58,7 @@ const FASTSMS_CONFIG = {
     apiKey: (_a = functions.config().fastsms) === null || _a === void 0 ? void 0 : _a.api_key,
     senderId: (_b = functions.config().fastsms) === null || _b === void 0 ? void 0 : _b.sender_id,
     entityId: (_c = functions.config().fastsms) === null || _c === void 0 ? void 0 : _c.entity_id,
-    baseUrl: 'https://www.fast2sms.com/dev/bulkV2' // Fixed: fast2sms.com instead of fastsms.com
+    baseUrl: 'https://www.fast2sms.com/dev/bulkV2' // Updated DLT-compliant endpoint
 };
 // Retry configuration
 const MAX_RETRY_ATTEMPTS = 3;
@@ -72,41 +72,35 @@ function validateFastSMSConfig() {
     if (!FASTSMS_CONFIG.senderId) {
         throw new Error('FastSMS sender ID not configured. Please run: firebase functions:config:set fastsms.sender_id="YOUR_SENDER_ID"');
     }
+    // Entity ID is optional for DLT route but recommended for enhanced compliance
     if (!FASTSMS_CONFIG.entityId) {
-        throw new Error('FastSMS entity ID not configured. Please run: firebase functions:config:set fastsms.entity_id="YOUR_ENTITY_ID"');
+        console.warn('FastSMS entity ID not configured. DLT compliance may be limited. Run: firebase functions:config:set fastsms.entity_id="YOUR_ENTITY_ID"');
     }
 }
-// Secure SMS sending function (server-side only) - Using DLT Manual Route
+// Secure SMS sending function (server-side only) - Using DLT Route as per Fast2SMS recommendation
 async function sendSMSAPI(recipient, templateId, variablesValues, attempt = 1) {
     var _a, _b, _c, _d;
     try {
         validateFastSMSConfig();
         const apiUrl = new URL(FASTSMS_CONFIG.baseUrl);
-        // For DLT Manual Route, we need to use different parameters
-        if (FASTSMS_CONFIG.entityId && FASTSMS_CONFIG.senderId) {
-            // DLT Manual Route - uses DLT-approved templates directly
-            apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
-            apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
-            apiUrl.searchParams.append('message', variablesValues); // Full message with variables replaced
-            apiUrl.searchParams.append('template_id', templateId); // DLT Content Template ID
-            apiUrl.searchParams.append('entity_id', FASTSMS_CONFIG.entityId); // DLT Principal Entity ID
-            apiUrl.searchParams.append('route', 'dlt_manual');
-            apiUrl.searchParams.append('numbers', recipient);
-        }
-        else {
-            // Fallback to original DLT route (if manual route not configured)
-            apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
-            apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
-            apiUrl.searchParams.append('message', templateId);
-            apiUrl.searchParams.append('variables_values', variablesValues);
-            apiUrl.searchParams.append('route', 'dlt');
-            apiUrl.searchParams.append('numbers', recipient);
+        // Using DLT Route as recommended by Fast2SMS team
+        // Format: https://www.fast2sms.com/dev/bulkV2?authorization=(Your API Key)&route=dlt&sender_id=ROTCMS&message=198233&variables_values=1111%7C2222%7C3333%7C4444%7C&flash=0&numbers=9014882779&schedule_time=
+        apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
+        apiUrl.searchParams.append('route', 'dlt');
+        apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
+        apiUrl.searchParams.append('message', templateId); // DLT template ID
+        apiUrl.searchParams.append('variables_values', variablesValues); // Pipe-separated variables
+        apiUrl.searchParams.append('flash', '0');
+        apiUrl.searchParams.append('numbers', recipient);
+        // Add entity_id if available (for enhanced DLT compliance)
+        if (FASTSMS_CONFIG.entityId) {
+            apiUrl.searchParams.append('entity_id', FASTSMS_CONFIG.entityId);
         }
         console.log(`FastSMS API Call (Attempt ${attempt}):`, {
             recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
             templateId,
             variablesValues: variablesValues.substring(0, 20) + '...',
-            route: FASTSMS_CONFIG.entityId ? 'dlt_manual' : 'dlt',
+            route: 'dlt',
             url: apiUrl.toString().substring(0, 100) + '...'
         });
         const response = await axios_1.default.get(apiUrl.toString(), {
