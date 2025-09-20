@@ -38,9 +38,11 @@ class SMSService {
 
     // Validate Firebase Functions are available
     if (!functions) {
-      throw new Error('Firebase Functions not initialized');
+      console.error('Firebase Functions not available. Current functions value:', functions);
+      throw new Error('Firebase Functions not initialized. Please check your Firebase configuration.');
     }
 
+    console.log('Firebase Functions initialized successfully:', !!functions);
     this.isInitialized = true;
     console.log('SMS Service initialized securely with Firebase Functions');
   }
@@ -71,7 +73,7 @@ class SMSService {
       
       const result = await sendSMSFunction({
         templateKey: request.templateKey,
-        recipient: request.recipient,
+        customerMobile: request.recipient, // Changed from recipient to customerMobile
         variables: request.variables,
         entryId: request.entryId,
         customerId: request.customerId,
@@ -109,11 +111,10 @@ class SMSService {
    * Send 3-day expiry reminder
    */
   public async sendThreeDayReminder(
-    recipient: string,
+    customerMobile: string,
     deceasedPersonName: string,
     locationName: string,
     expiryDate: string,
-    adminMobile: string,
     entryId?: string,
     customerId?: string,
     locationId?: string,
@@ -123,12 +124,12 @@ class SMSService {
       deceasedPersonName,
       locationName,
       date: expiryDate,
-      mobile: adminMobile
+      mobile: customerMobile // Using customer mobile for template
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'threeDayReminder',
-      recipient,
+      recipient: customerMobile,
       variables,
       entryId,
       customerId,
@@ -141,11 +142,10 @@ class SMSService {
    * Send last day renewal reminder
    */
   public async sendLastDayRenewalReminder(
-    recipient: string,
+    customerMobile: string,
     deceasedPersonName: string,
     locationName: string,
     expiryDate: string,
-    adminMobile: string,
     entryId?: string,
     customerId?: string,
     locationId?: string,
@@ -155,12 +155,12 @@ class SMSService {
       deceasedPersonName,
       locationName,
       date: expiryDate,
-      mobile: adminMobile
+      mobile: customerMobile // Using customer mobile for template
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'lastdayRenewal',
-      recipient,
+      recipient: customerMobile,
       variables,
       entryId,
       customerId,
@@ -173,11 +173,10 @@ class SMSService {
    * Send renewal confirmation to customer
    */
   public async sendRenewalConfirmationCustomer(
-    recipient: string,
+    customerMobile: string,
     deceasedPersonName: string,
     locationName: string,
     extendedExpiryDate: string,
-    adminMobile: string,
     entryId?: string,
     customerId?: string,
     locationId?: string,
@@ -187,12 +186,12 @@ class SMSService {
       deceasedPersonName,
       locationName,
       date: extendedExpiryDate,
-      mobile: adminMobile
+      mobile: customerMobile // Using customer mobile for template
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'renewalConfirmCustomer',
-      recipient,
+      recipient: customerMobile,
       variables,
       entryId,
       customerId,
@@ -233,13 +232,12 @@ class SMSService {
    * Send dispatch confirmation to customer
    */
   public async sendDispatchConfirmationCustomer(
-    recipient: string,
+    customerMobile: string,
     deceasedPersonName: string,
     locationName: string,
     deliveryDate: string,
     handoverPersonName: string,
     handoverPersonMobile: string,
-    adminMobile: string,
     entryId?: string,
     customerId?: string,
     locationId?: string,
@@ -251,12 +249,12 @@ class SMSService {
       date: deliveryDate,
       contactPersonName: handoverPersonName,
       mobile: handoverPersonMobile,
-      adminMobile
+      adminMobile: customerMobile // Using customer mobile as admin mobile for template
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'dispatchConfirmCustomer',
-      recipient,
+      recipient: customerMobile,
       variables,
       entryId,
       customerId,

@@ -1,4 +1,7 @@
-const functions = require('firebase-functions');
+const { onCall } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onRequest } = require("firebase-functions/v2/https");
+const { logger } = require("firebase-functions");
 const admin = require('firebase-admin');
 const axios = require('axios');
 
@@ -19,6 +22,12 @@ const FASTSMS_CONFIG = {
   senderId: functions.config().fastsms?.sender_id,
   entityId: functions.config().fastsms?.entity_id,
   baseUrl: 'https://www.fastsms.com/dev/bulkV2'
+};
+
+// Admin Configuration - Single admin for all locations
+const ADMIN_CONFIG = {
+  mobile: functions.config().admin?.mobile || '9876543210', // Default fallback
+  name: functions.config().admin?.name || 'System Administrator'
 };
 
 // Retry configuration
@@ -58,6 +67,23 @@ function getTemplateIdByKey(templateKey) {
     throw new Error(`Template not found: ${templateKey}`);
   }
   return templateId;
+}
+
+// Helper function to get recipient based on template type
+function getRecipientForTemplate(templateKey, customerMobile, variables) {
+  const adminOnlyTemplates = [
+    'renewalConfirmAdmin',
+    'deliveryConfirmAdmin', 
+    'finalDisposalReminderAdmin'
+  ];
+  
+  if (adminOnlyTemplates.includes(templateKey)) {
+    // For admin templates, send to admin mobile
+    return ADMIN_CONFIG.mobile;
+  } else {
+    // For customer templates, send to customer mobile
+    return customerMobile;
+  }
 }
 
 // Helper function to format variables for API
@@ -197,13 +223,12 @@ function delay(ms) {
  * Callable function to send SMS securely from front-end
  * This function validates authentication and authorization before sending SMS
  */
-exports.sendSMS = functions
-  .runWith({
-    memory: '256MB',
-    timeoutSeconds: 60,
-  })
-  .https.onCall(async (data, context) => {
-    console.log('sendSMS called with data:', JSON.stringify(data, null, 2));
+exports.sendSMS = onCall({
+  memory: "256MiB",
+  timeoutSeconds: 60,
+}, async (request) => {
+  const { data, context } = request;
+  console.log('sendSMS called with data:', JSON.stringify(data, null, 2));
 
     // Check if user is authenticated
     if (!context.auth) {
@@ -215,19 +240,22 @@ exports.sendSMS = functions
     }
 
     // Validate required parameters
-    const { templateKey, recipient, variables, entryId, customerId, locationId } = data;
+    const { templateKey, customerMobile, variables, entryId, customerId, locationId } = data;
 
-    if (!templateKey || !recipient || !variables) {
+    if (!templateKey || !customerMobile || !variables) {
       console.error('Validation failed: Missing required parameters', {
         templateKey: !!templateKey,
-        recipient: !!recipient,
+        customerMobile: !!customerMobile,
         variables: !!variables
       });
       throw new functions.https.HttpsError(
         'invalid-argument',
-        'Template key, recipient, and variables are required.'
+        'Template key, customer mobile, and variables are required.'
       );
     }
+
+    // Determine recipient based on template type
+    const recipient = getRecipientForTemplate(templateKey, customerMobile, variables);
 
     // Get user details for authorization
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
@@ -442,15 +470,13 @@ exports.sendSMS = functions
  * Scheduled function to check for expiring entries and send SMS reminders
  * Runs daily at 10 AM IST to check for entries expiring in 3 days and today
  */
-exports.dailyExpiryCheck = functions
-  .runWith({
-    memory: '512MB',
-    timeoutSeconds: 540, // 9 minutes
-  })
-  .pubsub.schedule(`0 ${DAILY_CHECK_HOUR} * * *`)
-  .timeZone(TIME_ZONE)
-  .onRun(async (context) => {
-    console.log('Starting daily expiry check at:', new Date().toISOString());
+exports.dailyExpiryCheck = onSchedule({
+  schedule: `0 ${DAILY_CHECK_HOUR} * * *`,
+  timeZone: TIME_ZONE,
+  memory: "512MiB",
+  timeoutSeconds: 540, // 9 minutes
+}, async (event) => {
+  console.log('Starting daily expiry check at:', new Date().toISOString());
 
     try {
       const results = {
@@ -619,13 +645,11 @@ exports.dailyExpiryCheck = functions
  * Function to retry failed SMS messages
  * Can be called manually or scheduled
  */
-exports.retryFailedSMS = functions
-  .runWith({
-    memory: '256MB',
-    timeoutSeconds: 300, // 5 minutes
-  })
-  .https.onRequest(async (request, response) => {
-    response.setHeader('Content-Type', 'application/json');
+exports.retryFailedSMS = onRequest({
+  memory: "256MiB",
+  timeoutSeconds: 300, // 5 minutes
+}, async (request, response) => {
+  response.setHeader('Content-Type', 'application/json');
 
     try {
       console.log('Starting SMS retry process');
@@ -708,13 +732,11 @@ exports.retryFailedSMS = functions
 /**
  * Get SMS statistics
  */
-exports.getSMSStatistics = functions
-  .runWith({
-    memory: '128MB',
-    timeoutSeconds: 60,
-  })
-  .https.onRequest(async (request, response) => {
-    response.setHeader('Content-Type', 'application/json');
+exports.getSMSStatistics = onRequest({
+  memory: "128MiB",
+  timeoutSeconds: 60,
+}, async (request, response) => {
+  response.setHeader('Content-Type', 'application/json');
 
     try {
       console.log('Getting SMS statistics');
@@ -772,13 +794,11 @@ exports.getSMSStatistics = functions
 /**
  * Health check function for SMS service
  */
-exports.smsHealthCheck = functions
-  .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-  })
-  .https.onRequest(async (request, response) => {
-    response.setHeader('Content-Type', 'application/json');
+exports.smsHealthCheck = onRequest({
+  memory: "128MiB",
+  timeoutSeconds: 30,
+}, async (request, response) => {
+  response.setHeader('Content-Type', 'application/json');
 
     try {
       console.log('SMS health check requested');

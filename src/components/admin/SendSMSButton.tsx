@@ -78,13 +78,16 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
     setResult(null);
 
     try {
+      console.log('Initializing SMS service...');
       // Initialize the secure SMS service
       smsService.initialize();
 
+      console.log('SMS service initialized, preparing variables...');
       // Prepare variables based on template type
       const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
       const formattedExpiryDate = formatDate(expiryDate);
       
+      console.log('Sending SMS with template:', selectedType);
       let smsResult;
 
       switch (selectedType) {
@@ -94,7 +97,6 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
             entry.customerName,
             entry.locationName,
             formattedExpiryDate,
-            '9876543210', // Admin mobile - should be configurable from location
             entry.id,
             entry.customerId,
             entry.locationId,
@@ -108,7 +110,6 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
             entry.customerName,
             entry.locationName,
             formattedExpiryDate,
-            '9876543210', // Admin mobile - should be configurable from location
             entry.id,
             entry.customerId,
             entry.locationId,
@@ -122,7 +123,6 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
             entry.customerName,
             entry.locationName,
             formattedExpiryDate, // This would be the extended expiry date
-            '9876543210', // Admin mobile - should be configurable from location
             entry.id,
             entry.customerId,
             entry.locationId,
@@ -140,7 +140,6 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
             formatDate(deliveryDate),
             entry.customerName, // Using customer name as contact person
             entry.customerMobile,
-            '9876543210', // Admin mobile - should be configurable from location
             entry.id,
             entry.customerId,
             entry.locationId,
@@ -178,6 +177,12 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
 
     } catch (error) {
       console.error('Error sending SMS:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        error: error
+      });
+      
       setResult({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'

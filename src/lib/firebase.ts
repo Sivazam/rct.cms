@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -16,8 +17,11 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app;
+let functions;
 try {
   app = initializeApp(firebaseConfig);
+  // Initialize Firebase Functions
+  functions = getFunctions(app, 'us-central1'); // Specify your region
 } catch (error) {
   console.error('Error initializing Firebase:', error);
   // Fallback for build time - create a mock app
@@ -27,11 +31,14 @@ try {
     automaticDataCollectionEnabled: false,
     delete: () => Promise.resolve()
   };
+  // Mock functions for build time
+  functions = null;
 }
 
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export { functions, httpsCallable };
 
 export default app;

@@ -2,6 +2,7 @@
   "functions": {
     "source": "functions",
     "runtime": "nodejs20",
+    "spec": "v2",
     "env": {
       "NODE_ENV": "production"
     }
