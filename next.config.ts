@@ -5,13 +5,14 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // 禁用 Next.js 热重载，由 nodemon 处理重编译
-  reactStrictMode: false,
+  // Enable React Strict Mode for better development experience
+  reactStrictMode: true,
   webpack: (config, { dev }) => {
     if (dev) {
-      // 禁用 webpack 的热模块替换
+      // Enable proper hot reloading in development
       config.watchOptions = {
-        ignored: ['**/*'], // 忽略所有文件变化
+        aggregateTimeout: 300,
+        poll: 1000,
       };
     }
     return config;

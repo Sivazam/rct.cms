@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import axios from 'axios';
-import SMSTemplatesService from '../lib/sms-templates';
-import SMSLogsService from '../lib/sms-logs';
+import SMSTemplatesService from './lib/sms-templates';
+import SMSLogsService from './lib/sms-logs';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -486,10 +486,11 @@ export const dailyExpiryCheckV2 = functions
               customer.mobile,
               getTemplateIdByKey('threeDayReminder'),
               formatVariablesForAPI('threeDayReminder', {
-                deceasedPersonName: customer.name,
-                locationName: location.venueName,
-                date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                mobile: location.contactNumber || '9876543210'
+                var1: customer.name,
+                var2: location.venueName,
+                var3: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                var4: location.contactNumber || '9876543210',
+                var5: location.venueName
               })
             );
             
@@ -503,10 +504,11 @@ export const dailyExpiryCheckV2 = functions
               customer.mobile,
               getTemplateIdByKey('lastdayRenewal'),
               formatVariablesForAPI('lastdayRenewal', {
-                deceasedPersonName: customer.name,
-                locationName: location.venueName,
-                date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                mobile: location.contactNumber || '9876543210'
+                var1: customer.name,
+                var2: location.venueName,
+                var3: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                var4: location.contactNumber || '9876543210',
+                var5: location.venueName
               })
             );
             
@@ -791,9 +793,3 @@ export const smsHealthCheckV2 = functions
     }
   });
 
-// Helper functions
-
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}

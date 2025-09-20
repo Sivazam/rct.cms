@@ -41,8 +41,8 @@ exports.smsHealthCheckV2 = exports.getSMSStatisticsV2 = exports.retryFailedSMSV2
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const axios_1 = __importDefault(require("axios"));
-const sms_templates_1 = __importDefault(require("../lib/sms-templates"));
-const sms_logs_1 = __importDefault(require("../lib/sms-logs"));
+const sms_templates_1 = __importDefault(require("./lib/sms-templates"));
+const sms_logs_1 = __importDefault(require("./lib/sms-logs"));
 // Initialize Firebase Admin
 admin.initializeApp();
 // Firestore instance
@@ -173,6 +173,10 @@ function getTemplateIdByKey(templateKey) {
 // Helper function to format variables for API
 function formatVariablesForAPI(templateKey, variables) {
     return sms_templates_1.default.getInstance().formatVariablesForAPI(templateKey, variables);
+}
+// Helper function for delay/sleep
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 /**
  * Callable function to send SMS securely from front-end
@@ -439,10 +443,11 @@ exports.dailyExpiryCheckV2 = functions
                 if (isExpiringIn3Days) {
                     console.log(`Sending 3-day reminder for entry ${doc.id}`);
                     smsResult = await sendSMSAPI(customer.mobile, getTemplateIdByKey('threeDayReminder'), formatVariablesForAPI('threeDayReminder', {
-                        deceasedPersonName: customer.name,
-                        locationName: location.venueName,
-                        date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                        mobile: location.contactNumber || '9876543210'
+                        var1: customer.name,
+                        var2: location.venueName,
+                        var3: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                        var4: location.contactNumber || '9876543210',
+                        var5: location.venueName
                     }));
                     results.entries3Days++;
                     results.totalSMS++;
@@ -450,10 +455,11 @@ exports.dailyExpiryCheckV2 = functions
                 else if (isExpiringToday) {
                     console.log(`Sending same-day reminder for entry ${doc.id}`);
                     smsResult = await sendSMSAPI(customer.mobile, getTemplateIdByKey('lastdayRenewal'), formatVariablesForAPI('lastdayRenewal', {
-                        deceasedPersonName: customer.name,
-                        locationName: location.venueName,
-                        date: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-                        mobile: location.contactNumber || '9876543210'
+                        var1: customer.name,
+                        var2: location.venueName,
+                        var3: expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                        var4: location.contactNumber || '9876543210',
+                        var5: location.venueName
                     }));
                     results.entriesToday++;
                     results.totalSMS++;
@@ -674,7 +680,3 @@ exports.smsHealthCheckV2 = functions
         });
     }
 });
-// Helper functions
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}

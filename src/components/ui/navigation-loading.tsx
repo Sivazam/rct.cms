@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 interface NavigationLoadingProps {
@@ -10,14 +9,7 @@ interface NavigationLoadingProps {
 export default function NavigationLoading({ message = "Loading..." }: NavigationLoadingProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-orange-500">
-      {/* Logo centered with bounding */}
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.8, opacity: 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="flex flex-col items-center space-y-4"
-      >
+      <div className="flex flex-col items-center space-y-4">
         {/* Logo Container */}
         <div className="relative">
           {/* Optional: Add a subtle border/bounding effect */}
@@ -35,7 +27,7 @@ export default function NavigationLoading({ message = "Loading..." }: Navigation
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const fallback = document.createElement('div');
-              fallback.className = 'relative z-10 w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center text-orange-500 text-2xl font-bold drop-shadow-lg';
+              fallback.className = 'relative z-10 w-20 h-20 md:w-24 md-h-24 bg-white rounded-full flex items-center justify-center text-orange-500 text-2xl font-bold drop-shadow-lg';
               fallback.textContent = 'CMS';
               target.parentNode?.appendChild(fallback);
             }}
@@ -43,36 +35,19 @@ export default function NavigationLoading({ message = "Loading..." }: Navigation
         </div>
 
         {/* Loading Message */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="text-center"
-        >
+        <div className="text-center">
           <p className="text-white/90 text-sm font-medium">
             {message}
           </p>
           
           {/* Simple loading dots */}
           <div className="flex justify-center space-x-1 mt-2">
-            <motion.div
-              className="w-2 h-2 bg-white rounded-full"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-              className="w-2 h-2 bg-white rounded-full"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-            />
-            <motion.div
-              className="w-2 h-2 bg-white rounded-full"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-            />
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }
