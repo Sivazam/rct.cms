@@ -58,13 +58,13 @@ export function ResponsiveDateRangePicker({
     }
     setDateRange(newRange)
     
-    // Auto-apply when both dates are selected
+    // Don't auto-close - let user continue selecting or click Done manually
+    // Only apply the range change, don't close the popover
     if (newRange.from && newRange.to) {
       safeOnDateRangeChange({
         from: new Date(newRange.from),
         to: new Date(newRange.to)
       })
-      setIsOpen(false)
     }
   }
 
@@ -95,12 +95,12 @@ export function ResponsiveDateRangePicker({
           <Button
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal h-10",
+              "w-full justify-start text-left font-normal h-10 sm:h-10",
               !dateRange.from && !dateRange.to && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            <span className="truncate flex-1">
+            <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate flex-1 min-w-0">
               {formatDateDisplay()}
             </span>
             {(dateRange.from || dateRange.to) && (
@@ -128,18 +128,20 @@ export function ResponsiveDateRangePicker({
               </Button>
             </div>
           </div>
-          <Calendar
-            mode="range"
-            selected={{
-              from: dateRange.from,
-              to: dateRange.to
-            }}
-            onSelect={handleDateSelect}
-            numberOfMonths={window.innerWidth < 640 ? 1 : 2}
-            className="rounded-md border"
-          />
+          <div className="p-1">
+            <Calendar
+              mode="range"
+              selected={{
+                from: dateRange.from,
+                to: dateRange.to
+              }}
+              onSelect={handleDateSelect}
+              numberOfMonths={1} // Always show 1 month for better mobile compatibility
+              className="rounded-md border w-full max-w-[280px] sm:max-w-none"
+            />
+          </div>
           <div className="p-3 border-t bg-gray-50">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div className="text-sm text-muted-foreground">
                 {dateRange.from && dateRange.to ? (
                   `${format(dateRange.from, "MMM dd")} - ${format(dateRange.to, "MMM dd, yyyy")}`
@@ -149,11 +151,12 @@ export function ResponsiveDateRangePicker({
                   "Select start date"
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handleClear}
+                  className="flex-1 sm:flex-none"
                 >
                   Clear
                 </Button>
@@ -161,6 +164,7 @@ export function ResponsiveDateRangePicker({
                   size="sm" 
                   onClick={() => setIsOpen(false)}
                   disabled={!dateRange.from || !dateRange.to}
+                  className="flex-1 sm:flex-none"
                 >
                   Done
                 </Button>
