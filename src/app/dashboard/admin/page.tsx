@@ -21,7 +21,7 @@ import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { EnhancedDateRangePicker } from '@/components/ui/enhanced-date-range-picker';
+import { MUIDateRangePicker } from '@/components/ui/mui-date-range-picker';
 import { Switch } from '@/components/ui/switch';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
@@ -440,7 +440,7 @@ export default function AdminDashboard() {
                       }
                     </p>
                   </div>
-                  <EnhancedDateRangePicker 
+                  <MUIDateRangePicker 
                     onDateRangeChange={safeSetDateRange}
                     placeholder="Select date range (optional)"
                     initialDateRange={dateRange}

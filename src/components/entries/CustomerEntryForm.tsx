@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, MapPin, Package, DollarSign } from 'lucide-react';
+import { User, Phone, MapPin, Package, DollarSign, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { addCustomer, addEntry, getLocations } from '@/lib/firestore';
 import SMSService from '@/lib/sms-service';
@@ -17,9 +17,10 @@ import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 interface Customer {
   id?: string;
@@ -254,32 +255,26 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
 
               <div className="space-y-2">
                 <Label htmlFor="entryDate">Entry Date *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                      disabled={submitting}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.entryDate ? formatDate(formData.entryDate) : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={formData.entryDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          handleChange('entryDate', date);
-                        }
-                      }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <p className="text-xs text-gray-500">Entry date cannot be in the future</p>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    value={formData.entryDate}
+                    onChange={(date) => {
+                      if (date) {
+                        handleChange('entryDate', date);
+                      }
+                    }}
+                    maxDate={new Date()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: 'outlined',
+                        size: 'small',
+                        disabled: submitting,
+                        helperText: 'Entry date cannot be in the future'
+                      }
+                    }}
+                  />
+                </LocalizationProvider>
               </div>
             </div>
 
