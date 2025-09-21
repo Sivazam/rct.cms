@@ -112,13 +112,17 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         status: 'active' // Reactivate if expired
       });
 
-      // Send SMS notification to both admin and customer using the new SMS service
+        // Send SMS notification to both admin and customer using the new SMS service
       try {
+        // TODO: Fetch actual location name from locations collection using entry.locationId
+        // For now, using placeholder - you should implement proper location name fetching
+        const locationName = 'Unknown Location'; // Replace with actual location name fetching
+        
         // Send renewal confirmation to customer
         await smsService.sendRenewalConfirmationCustomer(
           entry.customerMobile,
           entry.customerName,
-          entry.locationId, // This should be location name, we'll need to fetch it
+          locationName, // Use actual location name (currently placeholder)
           formatDate(renewalSummary.newExpiryDate),
           entry.id
         );
@@ -126,7 +130,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         // Send renewal confirmation to admin
         await smsService.sendRenewalConfirmationAdmin(
           '+919014882779', // Admin mobile - this should be configurable
-          entry.locationId, // This should be location name
+          locationName, // Use actual location name (currently placeholder)
           entry.customerName,
           entry.id
         );
