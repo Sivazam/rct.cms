@@ -135,16 +135,40 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         
         console.log('🔍 [DEBUG] Customer SMS Result:', customerResult);
 
-        // Send renewal confirmation to admin
-        console.log('🔍 [DEBUG] Sending admin SMS...');
-        const adminResult = await smsService.sendRenewalConfirmationAdmin(
-          adminMobile, // Admin mobile from global config
-          locationName, // Use actual location name (currently placeholder)
-          entry.customerName,
-          entry.id
-        );
-        
-        console.log('🔍 [DEBUG] Admin SMS Result:', adminResult);
+        // Debug: Log the admin mobile value
+        console.log('🔍 [DEBUG] Admin mobile from global state:', adminMobile);
+        console.log('🔍 [DEBUG] Admin mobile type:', typeof adminMobile);
+        console.log('🔍 [DEBUG] Admin mobile length:', adminMobile?.length);
+
+        // Ensure adminMobile is valid before sending SMS
+        if (!adminMobile || typeof adminMobile !== 'string') {
+          console.error('❌ [DEBUG] Admin mobile is invalid:', adminMobile);
+          // Use a fallback admin mobile number
+          const fallbackAdminMobile = '+919014882779';
+          console.log('🔧 [DEBUG] Using fallback admin mobile:', fallbackAdminMobile);
+          
+          // Send renewal confirmation to admin
+          console.log('🔍 [DEBUG] Sending admin SMS with fallback...');
+          const adminResult = await smsService.sendRenewalConfirmationAdmin(
+            fallbackAdminMobile, // Use fallback admin mobile
+            locationName, // Use actual location name (currently placeholder)
+            entry.customerName,
+            entry.id
+          );
+          
+          console.log('🔍 [DEBUG] Admin SMS Result (with fallback):', adminResult);
+        } else {
+          // Send renewal confirmation to admin
+          console.log('🔍 [DEBUG] Sending admin SMS...');
+          const adminResult = await smsService.sendRenewalConfirmationAdmin(
+            adminMobile, // Admin mobile from global config
+            locationName, // Use actual location name (currently placeholder)
+            entry.customerName,
+            entry.id
+          );
+          
+          console.log('🔍 [DEBUG] Admin SMS Result:', adminResult);
+        }
 
         if (customerResult.success && adminResult.success) {
           console.log('✅ SMS notifications sent successfully for renewal');

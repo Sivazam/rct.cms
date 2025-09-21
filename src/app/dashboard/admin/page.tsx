@@ -14,6 +14,7 @@ import OperatorManagement from '@/components/admin/OperatorManagement';
 import OperatorPerformance from '@/components/admin/OperatorPerformance';
 import SMSLogsTable from '@/components/admin/SMSLogsTable';
 import AdminSettings from '@/components/admin/AdminSettings';
+import AdminMobileTest from '@/components/admin/AdminMobileTest';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
@@ -981,6 +982,22 @@ export default function AdminDashboard() {
               {/* Settings Tab - Location management, SMS logs, and admin settings */}
               {activeTab === 'settings' && (
                 <div className="space-y-6">
+                  {/* Admin Mobile Test Component (Temporary) */}
+                  <Card className="border-blue-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Phone className="h-5 w-5" />
+                        <span>Admin Mobile Test</span>
+                      </CardTitle>
+                      <CardDescription>
+                        Test the global admin mobile state (Temporary for debugging)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminMobileTest />
+                    </CardContent>
+                  </Card>
+
                   {/* Admin Settings */}
                   <Card className="border-orange-200">
                     <CardHeader>

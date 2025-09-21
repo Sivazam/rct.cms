@@ -541,19 +541,46 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('📱 Customer SMS Result:', customerSMSResult);
         
-        // Send SMS to admin using the correct admin mobile from global config
-        // The backend sendSMSV2 function will handle getting the correct admin mobile
-        const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
-          adminMobile, // Use admin mobile from global config
-          selectedEntryForDispatch.customerName,
-          selectedEntryForDispatch.locationName || 'Unknown Location',
-          selectedEntryForDispatch.id,
-          selectedEntryForDispatch.customerId,
-          selectedEntryForDispatch.locationId,
-          selectedEntryForDispatch.operatorId
-        );
+        // Debug: Log the admin mobile value
+        console.log('🔍 [DEBUG] Admin mobile from global state:', adminMobile);
+        console.log('🔍 [DEBUG] Admin mobile type:', typeof adminMobile);
+        console.log('🔍 [DEBUG] Admin mobile length:', adminMobile?.length);
         
-        console.log('📞 Admin SMS Result:', adminSMSResult);
+        // Ensure adminMobile is valid before sending SMS
+        if (!adminMobile || typeof adminMobile !== 'string') {
+          console.error('❌ [DEBUG] Admin mobile is invalid:', adminMobile);
+          // Use a fallback admin mobile number
+          const fallbackAdminMobile = '+919014882779';
+          console.log('🔧 [DEBUG] Using fallback admin mobile:', fallbackAdminMobile);
+          
+          // Send SMS to admin using the correct admin mobile from global config
+          // The backend sendSMSV2 function will handle getting the correct admin mobile
+          const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+            fallbackAdminMobile, // Use fallback admin mobile
+            selectedEntryForDispatch.customerName,
+            selectedEntryForDispatch.locationName || 'Unknown Location',
+            selectedEntryForDispatch.id,
+            selectedEntryForDispatch.customerId,
+            selectedEntryForDispatch.locationId,
+            selectedEntryForDispatch.operatorId
+          );
+          
+          console.log('📞 Admin SMS Result (with fallback):', adminSMSResult);
+        } else {
+          // Send SMS to admin using the correct admin mobile from global config
+          // The backend sendSMSV2 function will handle getting the correct admin mobile
+          const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+            adminMobile, // Use admin mobile from global config
+            selectedEntryForDispatch.customerName,
+            selectedEntryForDispatch.locationName || 'Unknown Location',
+            selectedEntryForDispatch.id,
+            selectedEntryForDispatch.customerId,
+            selectedEntryForDispatch.locationId,
+            selectedEntryForDispatch.operatorId
+          );
+          
+          console.log('📞 Admin SMS Result:', adminSMSResult);
+        }
         
         // Log SMS service status for debugging
         const serviceStatus = smsService.getServiceStatus();

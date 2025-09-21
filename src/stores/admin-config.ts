@@ -44,6 +44,8 @@ export const useAdminConfigStore = create<AdminConfigState>((set) => ({
 // Export a hook for easy access to the admin mobile number
 export const useAdminMobile = () => {
   const adminMobile = useAdminConfigStore((state) => state.adminMobile);
+  console.log('🔍 [STORE DEBUG] useAdminMobile called, returning:', adminMobile);
+  console.log('🔍 [STORE DEBUG] useAdminMobile type:', typeof adminMobile);
   return adminMobile;
 };
 
