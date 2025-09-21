@@ -61,6 +61,15 @@ class SMSService {
         this.initialize();
       }
 
+      // Defensive validation: Check if recipient is valid
+      if (!request.recipient || typeof request.recipient !== 'string') {
+        console.error('❌ [DEFENSIVE] Invalid recipient:', request.recipient);
+        console.error('❌ [DEFENSIVE] Recipient type:', typeof request.recipient);
+        // Use fallback admin mobile number
+        request.recipient = '+919014882779';
+        console.log('🔧 [DEFENSIVE] Using fallback admin mobile:', request.recipient);
+      }
+
       console.log('🚀 sendSMSWithRetry called with:', {
         templateKey: request.templateKey,
         recipient: MobileNumberUtils.maskForDisplay(request.recipient),
@@ -277,6 +286,15 @@ class SMSService {
     locationId?: string,
     operatorId?: string
   ): Promise<SMSServiceResult> {
+    // Defensive validation for admin mobile
+    if (!recipient || typeof recipient !== 'string') {
+      console.error('❌ [sendRenewalConfirmationAdmin] Invalid admin mobile:', recipient);
+      console.error('❌ [sendRenewalConfirmationAdmin] Admin mobile type:', typeof recipient);
+      // Use fallback admin mobile number
+      recipient = '+919014882779';
+      console.log('🔧 [sendRenewalConfirmationAdmin] Using fallback admin mobile:', recipient);
+    }
+
     const variables: TemplateVariables = {
       var1: locationName,
       var2: deceasedPersonName
@@ -341,6 +359,15 @@ class SMSService {
     locationId?: string,
     operatorId?: string
   ): Promise<SMSServiceResult> {
+    // Defensive validation for admin mobile
+    if (!recipient || typeof recipient !== 'string') {
+      console.error('❌ [sendDeliveryConfirmationAdmin] Invalid admin mobile:', recipient);
+      console.error('❌ [sendDeliveryConfirmationAdmin] Admin mobile type:', typeof recipient);
+      // Use fallback admin mobile number
+      recipient = '+919014882779';
+      console.log('🔧 [sendDeliveryConfirmationAdmin] Using fallback admin mobile:', recipient);
+    }
+
     const variables: TemplateVariables = {
       var1: deceasedPersonName,
       var2: locationName
