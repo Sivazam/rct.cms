@@ -18,9 +18,7 @@ import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ResponsiveDatePicker } from '@/components/ui/responsive-date-picker';
 
 interface Customer {
   id?: string;
@@ -255,26 +253,14 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
 
               <div className="space-y-2">
                 <Label htmlFor="entryDate">Entry Date *</Label>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DatePicker
-                    value={formData.entryDate}
-                    onChange={(date) => {
-                      if (date) {
-                        handleChange('entryDate', date);
-                      }
-                    }}
-                    maxDate={new Date()}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        variant: 'outlined',
-                        size: 'small',
-                        disabled: submitting,
-                        helperText: 'Entry date cannot be in the future'
-                      }
-                    }}
-                  />
-                </LocalizationProvider>
+                <ResponsiveDatePicker
+                  onDateChange={(date) => handleChange('entryDate', date)}
+                  placeholder="Select entry date"
+                  initialDate={formData.entryDate}
+                  maxDate={new Date()}
+                  disabled={submitting}
+                />
+                <p className="text-xs text-gray-500">Entry date cannot be in the future</p>
               </div>
             </div>
 

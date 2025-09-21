@@ -15,7 +15,7 @@ import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
-import { MUIDateRangePicker } from '@/components/ui/mui-date-range-picker';
+import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
 import { 
   MapPin,
   Package,
@@ -415,7 +415,7 @@ export default function OperatorDashboard() {
                           }
                         </p>
                       </div>
-                      <MUIDateRangePicker 
+                      <ResponsiveDateRangePicker 
                         onDateRangeChange={setDateRange}
                         placeholder="Select date range (optional)"
                         initialDateRange={dateRange}
