@@ -577,13 +577,7 @@ class SMSTemplatesService {
 
     // Enhanced mobile number validation - only validate variables that should contain mobile numbers
     // Different templates have different variable structures, so we check based on template type
-    const template = this.getTemplateByKey(templateKey);
-    if (!template) {
-      return {
-        isValid: false,
-        errors: [`Template not found: ${templateKey}`]
-      };
-    }
+    // Note: template variable is already declared above, no need to redeclare
 
     // Determine which variables should contain mobile numbers based on template structure
     const mobileVarPositions: number[] = [];
