@@ -54,6 +54,8 @@ class SMSService {
    * Send SMS via Firebase Functions (Secure)
    */
   public async sendSMSWithRetry(request: SMSRequest): Promise<SMSServiceResult> {
+    let cleanRecipient: string;
+    
     try {
       if (!this.isInitialized) {
         this.initialize();
@@ -69,7 +71,6 @@ class SMSService {
       });
 
       // Validate and clean mobile number
-      let cleanRecipient: string;
       try {
         cleanRecipient = MobileNumberUtils.cleanAndValidate(request.recipient);
         console.log('📱 Mobile number cleaned:', {
@@ -163,7 +164,7 @@ class SMSService {
         timestamp: new Date(),
         attempt: 1,
         templateUsed: request.templateKey,
-        recipient: cleanRecipient
+        recipient: cleanRecipient || request.recipient // Fallback to original recipient if cleanRecipient not available
       };
     }
   }
