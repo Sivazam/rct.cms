@@ -395,6 +395,39 @@ export const updateEntry = async (entryId: string, updateData: any) => {
   }
 };
 
+export const getEntryById = async (entryId: string) => {
+  try {
+    const entryDoc = await getDoc(doc(db, 'entries', entryId));
+    
+    if (!entryDoc.exists()) {
+      return null;
+    }
+    
+    const entryData = entryDoc.data();
+    return {
+      id: entryDoc.id,
+      ...entryData,
+      // Convert Timestamps to Dates for consistency
+      entryDate: entryData.entryDate?.toDate(),
+      expiryDate: entryData.expiryDate?.toDate(),
+      createdAt: entryData.createdAt?.toDate(),
+      // Convert arrays of Timestamps if they exist
+      payments: entryData.payments?.map((payment: any) => ({
+        ...payment,
+        date: payment.date?.toDate()
+      })) || [],
+      renewals: entryData.renewals?.map((renewal: any) => ({
+        ...renewal,
+        date: renewal.date?.toDate(),
+        newExpiryDate: renewal.newExpiryDate?.toDate()
+      })) || []
+    };
+  } catch (error) {
+    console.error('Error getting entry by ID:', error);
+    throw error;
+  }
+};
+
 // OTP Management
 export const generateOTP = async (mobile: string, type: 'renewal' | 'delivery', entryId: string) => {
   try {

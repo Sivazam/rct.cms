@@ -1,7 +1,6 @@
 "use strict";
 // SMS Template Management System - Updated with Fast2SMS Message IDs
 // This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
-// Last updated: 2025-01-21 - Fixed template IDs for finalDisposalReminder (198613) and finalDisposalReminderAdmin (198614)
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FASTSMS_TEMPLATES = exports.TEMPLATE_NAMES = exports.TEMPLATE_IDS = void 0;
 /**
@@ -16,8 +15,7 @@ exports.TEMPLATE_IDS = {
     renewalConfirmAdmin: '198610', // Fast2SMS Message ID
     dispatchConfirmCustomer: '198611', // Fast2SMS Message ID
     deliveryConfirmAdmin: '198612', // Fast2SMS Message ID
-    finalDisposalReminder: '198613', // Fast2SMS Message ID (Customer)
-    finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
+    finalDisposalReminderAdmin: '198613', // Fast2SMS Message ID
 };
 // Template key to template name mapping for display purposes
 exports.TEMPLATE_NAMES = {
@@ -27,7 +25,6 @@ exports.TEMPLATE_NAMES = {
     renewalConfirmAdmin: 'Renewal Confirmation (Admin)',
     dispatchConfirmCustomer: 'Dispatch Confirmation (Customer)',
     deliveryConfirmAdmin: 'Delivery Confirmation (Admin)',
-    finalDisposalReminder: 'Final Disposal Reminder (Customer)',
     finalDisposalReminderAdmin: 'Final Disposal Reminder (Admin)',
 };
 // Fast2SMS Template definitions with exact variable structures as per user requirements
@@ -281,10 +278,10 @@ exports.FASTSMS_TEMPLATES = [
         category: 'confirmation'
     },
     {
-        key: 'finalDisposalReminder',
-        id: exports.TEMPLATE_IDS.finalDisposalReminder,
-        name: exports.TEMPLATE_NAMES.finalDisposalReminder,
-        description: 'Send final disposal reminder to customer',
+        key: 'finalDisposalReminderAdmin',
+        id: exports.TEMPLATE_IDS.finalDisposalReminderAdmin,
+        name: exports.TEMPLATE_NAMES.finalDisposalReminderAdmin,
+        description: 'Send final disposal reminder to admin',
         variables: [
             {
                 name: 'var1',
@@ -309,31 +306,6 @@ exports.FASTSMS_TEMPLATES = [
             }
         ],
         variableCount: 3,
-        isActive: true,
-        category: 'disposal'
-    },
-    {
-        key: 'finalDisposalReminderAdmin',
-        id: exports.TEMPLATE_IDS.finalDisposalReminderAdmin,
-        name: exports.TEMPLATE_NAMES.finalDisposalReminderAdmin,
-        description: 'Send final disposal reminder to admin',
-        variables: [
-            {
-                name: 'var1',
-                description: 'Location name, at which that Deceased person storage renewals hasnt happened for last 2months',
-                example: 'లాకర్-A',
-                required: true,
-                position: 1
-            },
-            {
-                name: 'var2',
-                description: 'That Deceased person name',
-                example: 'రాముడు',
-                required: true,
-                position: 2
-            }
-        ],
-        variableCount: 2,
         isActive: true,
         category: 'disposal'
     }

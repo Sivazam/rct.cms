@@ -463,31 +463,32 @@ export const sendSMSV2 = functions
         try {
           const result = await sendSMSAPI(recipient, templateId, formattedVariables, attempt);
           
-          if (result.success) {
+          if (result.success && 'messageId' in result) {
             console.log('✅ [SUCCESS] SMS sent successfully:', {
               templateKey,
               recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-              messageId: result.messageId,
+              messageId: (result as any).messageId,
               attempt
             });
 
             // Log successful SMS to Firestore
             await smsLogsService.logSMS({
-              templateKey,
+              type: templateKey,
+              templateId,
+              message: formattedVariables,
               recipient,
-              variables: formattedVariables,
-              messageId: result.messageId,
               status: 'sent',
               entryId,
               customerId,
               locationId,
-              userId: context.auth.uid,
-              timestamp: new Date()
+              operatorId: context.auth.uid,
+              timestamp: new Date(),
+              retryCount: 0
             });
 
             return {
               success: true,
-              messageId: result.messageId,
+              messageId: (result as any).messageId,
               templateKey,
               recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
               timestamp: new Date().toISOString()
@@ -509,17 +510,18 @@ export const sendSMSV2 = functions
 
       // Log failed SMS to Firestore
       await smsLogsService.logSMS({
-        templateKey,
+        type: templateKey,
+        templateId,
+        message: formattedVariables,
         recipient,
-        variables: formattedVariables,
-        messageId: null,
         status: 'failed',
         entryId,
         customerId,
         locationId,
-        userId: context.auth.uid,
+        operatorId: context.auth.uid,
         timestamp: new Date(),
-        error: lastError?.message || 'Unknown error'
+        errorMessage: lastError?.message || 'Unknown error',
+        retryCount: MAX_RETRY_ATTEMPTS
       });
 
       throw new functions.https.HttpsError(
@@ -634,21 +636,21 @@ export const sendExpiryReminders = functions
 
             // Log SMS
             await smsLogsService.logSMS({
-              templateKey: 'threeDayReminder',
+              type: 'threeDayReminder',
               recipient: entry.contactNumber,
-              variables: formattedVariables,
-              messageId: result.messageId,
+              templateId: templateId,
+              message: SMSTemplatesService.getInstance().getTemplateByKey('threeDayReminder')?.name || 'Three Day Reminder',
               status: 'sent',
               entryId: entry.id,
               customerId: entry.customerId,
               locationId: entry.locationId,
-              userId: 'system',
-              timestamp: new Date()
+              timestamp: new Date(),
+              retryCount: 0
             });
 
           } else {
             failureCount++;
-            console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, result.error);
+            console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, result);
           }
 
         } catch (error) {
@@ -737,16 +739,17 @@ export const getSMSLogs = functions
       const { limit = 50, offset = 0, templateKey, status } = data;
 
       const logs = await smsLogsService.getSMSLogs({
-        limit,
-        offset,
-        templateKey,
+        type: templateKey,
         status
       });
 
+      // Apply pagination manually since the service doesn't support it directly
+      const paginatedLogs = logs.slice(offset, offset + limit);
+
       return {
         success: true,
-        logs: logs.logs,
-        total: logs.total,
+        logs: paginatedLogs,
+        total: logs.length,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
@@ -787,10 +790,10 @@ export const testSMSTemplate = functions
       );
     }
 
+    // Get template ID (moved outside try block for catch block access)
+    const templateId = getTemplateIdByKey(templateKey);
+
     try {
-      // Get template ID
-      const templateId = getTemplateIdByKey(templateKey);
-      
       // Format variables
       const formattedVariables = formatVariablesForAPI(templateKey, variables);
 
@@ -804,7 +807,7 @@ export const testSMSTemplate = functions
       // Send test SMS
       const result = await sendSMSAPI(recipient, templateId, formattedVariables);
 
-      if (result.success) {
+      if (result.success && 'messageId' in result) {
         console.log('✅ [SUCCESS] Test SMS sent successfully:', {
           templateKey,
           recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
@@ -813,14 +816,13 @@ export const testSMSTemplate = functions
 
         // Log test SMS
         await smsLogsService.logSMS({
-          templateKey,
+          type: templateKey,
           recipient,
-          variables: formattedVariables,
-          messageId: result.messageId,
+          templateId: templateId,
+          message: SMSTemplatesService.getInstance().getTemplateByKey(templateKey)?.name || 'Test SMS',
           status: 'sent',
-          userId: context.auth.uid,
           timestamp: new Date(),
-          isTest: true
+          retryCount: 0
         });
 
         return {
@@ -833,7 +835,7 @@ export const testSMSTemplate = functions
       } else {
         throw new functions.https.HttpsError(
           'internal',
-          `Failed to send test SMS: ${result.error?.message || 'Unknown error'}`
+          `Failed to send test SMS: ${'error' in result ? result.error.message : 'Unknown error'}`
         );
       }
 
@@ -842,15 +844,14 @@ export const testSMSTemplate = functions
 
       // Log failed test SMS
       await smsLogsService.logSMS({
-        templateKey,
+        type: templateKey,
         recipient,
-        variables: formatVariablesForAPI(templateKey, variables),
-        messageId: null,
+        templateId: templateId,
+        message: SMSTemplatesService.getInstance().getTemplateByKey(templateKey)?.name || 'Test SMS',
         status: 'failed',
-        userId: context.auth.uid,
         timestamp: new Date(),
-        error: error instanceof Error ? error.message : 'Unknown error',
-        isTest: true
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        retryCount: 0
       });
 
       throw new functions.https.HttpsError(
@@ -884,4 +885,169 @@ export const forceDeployTrigger = functions
       },
       deploymentStatus: 'completed'
     });
+  });
+
+/**
+ * Debug function to check recent SMS logs
+ * This function helps verify SMS sending attempts and results
+ */
+export const debugSMSLogs = functions
+  .runWith({
+    memory: '128MB',
+    timeoutSeconds: 30,
+  })
+  .https.onRequest(async (req, res) => {
+    // Set CORS headers for public access
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Handle OPTIONS requests (CORS preflight)
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    
+    try {
+      console.log('🔍 Debug SMS logs function called');
+      
+      // Get recent SMS logs (last 24 hours)
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      
+      const logs = await smsLogsService.getSMSLogs({
+        dateRange: {
+          start: oneDayAgo,
+          end: new Date()
+        }
+      });
+      
+      // Get failed SMS logs specifically
+      const failedLogs = await smsLogsService.getSMSLogs({
+        status: 'failed',
+        dateRange: {
+          start: oneDayAgo,
+          end: new Date()
+        }
+      });
+      
+      // Get successful SMS logs
+      const successLogs = await smsLogsService.getSMSLogs({
+        status: 'sent',
+        dateRange: {
+          start: oneDayAgo,
+          end: new Date()
+        }
+      });
+      
+      const response = {
+        success: true,
+        summary: {
+          total: logs.length,
+          sent: successLogs.length,
+          failed: failedLogs.length,
+          pending: logs.length - successLogs.length - failedLogs.length
+        },
+        recentLogs: logs.slice(0, 10).map(log => ({
+          id: log.id,
+          type: log.type,
+          recipient: log.recipient,
+          status: log.status,
+          timestamp: log.timestamp,
+          errorMessage: log.errorMessage,
+          templateId: log.templateId
+        })),
+        failedLogs: failedLogs.slice(0, 5).map(log => ({
+          id: log.id,
+          type: log.type,
+          recipient: log.recipient,
+          status: log.status,
+          timestamp: log.timestamp,
+          errorMessage: log.errorMessage,
+          templateId: log.templateId
+        })),
+        timestamp: new Date().toISOString(),
+        deployment: {
+          nodeVersion: process.version,
+          environment: process.env.NODE_ENV
+        }
+      };
+      
+      console.log('🔍 Debug SMS logs response:', JSON.stringify(response, null, 2));
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('🔍 Error in debug SMS logs function:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+/**
+ * Debug function to check template IDs in deployed functions
+ * This function helps verify that the correct template IDs are being used
+ */
+export const debugTemplateIds = functions
+  .runWith({
+    memory: '128MB',
+    timeoutSeconds: 30,
+  })
+  .https.onRequest(async (req, res) => {
+    // Set CORS headers for public access
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Handle OPTIONS requests (CORS preflight)
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    
+    try {
+      console.log('🔍 Debug template IDs function called');
+      
+      // Get the templates that were causing issues
+      const finalDisposalTemplate = SMSTemplatesService.getInstance().getTemplateByKey('finalDisposalReminder');
+      const adminTemplate = SMSTemplatesService.getInstance().getTemplateByKey('finalDisposalReminderAdmin');
+      
+      const response = {
+        success: true,
+        templates: {
+          finalDisposalReminder: {
+            key: finalDisposalTemplate.key,
+            id: finalDisposalTemplate.id,
+            name: finalDisposalTemplate.name,
+            variableCount: finalDisposalTemplate.variableCount
+          },
+          finalDisposalReminderAdmin: {
+            key: adminTemplate.key,
+            id: adminTemplate.id,
+            name: adminTemplate.name,
+            variableCount: adminTemplate.variableCount
+          }
+        },
+        expected: {
+          finalDisposalReminder: '198613',
+          finalDisposalReminderAdmin: '198614'
+        },
+        timestamp: new Date().toISOString(),
+        deployment: {
+          nodeVersion: process.version,
+          environment: process.env.NODE_ENV
+        }
+      };
+      
+      console.log('🔍 Debug template IDs response:', JSON.stringify(response, null, 2));
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('🔍 Error in debug template IDs function:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
   });

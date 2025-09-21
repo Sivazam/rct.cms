@@ -1,7 +1,4 @@
 "use strict";
-// SMS Template Management System - Updated with Fast2SMS Message IDs
-// This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
-// Last updated: 2025-01-21 - Fixed template IDs for finalDisposalReminder (198613) and finalDisposalReminderAdmin (198614)
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -40,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.debugTemplateIds = exports.debugSMSLogs = exports.forceDeployTrigger = exports.testSMSTemplate = exports.getSMSLogs = exports.getSMSTemplates = exports.sendExpiryReminders = exports.sendSMSV2 = exports.healthCheck = exports.testFunction = void 0;
+exports.testSMSTemplate = exports.getSMSLogs = exports.getSMSTemplates = exports.sendExpiryReminders = exports.sendSMSV2 = exports.healthCheck = exports.testFunction = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const axios_1 = __importDefault(require("axios"));
@@ -543,7 +540,6 @@ exports.sendExpiryReminders = functions
     .pubsub.schedule('0 10 * * *')
     .timeZone(TIME_ZONE)
     .onRun(async (context) => {
-    var _a;
     console.log('🔔 [SCHEDULED] Starting expiry reminders check...');
     try {
         const now = new Date();
@@ -591,21 +587,21 @@ exports.sendExpiryReminders = functions
                     });
                     // Log SMS
                     await smsLogsService.logSMS({
-                        type: 'threeDayReminder',
+                        templateKey: 'threeDayReminder',
                         recipient: entry.contactNumber,
-                        templateId: templateId,
-                        message: ((_a = sms_templates_1.default.getInstance().getTemplateByKey('threeDayReminder')) === null || _a === void 0 ? void 0 : _a.name) || 'Three Day Reminder',
+                        variables: formattedVariables,
+                        messageId: result.messageId,
                         status: 'sent',
                         entryId: entry.id,
                         customerId: entry.customerId,
                         locationId: entry.locationId,
-                        timestamp: new Date(),
-                        retryCount: 0
+                        userId: 'system',
+                        timestamp: new Date()
                     });
                 }
                 else {
                     failureCount++;
-                    console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, result);
+                    console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, result.error);
                 }
             }
             catch (error) {
@@ -673,15 +669,15 @@ exports.getSMSLogs = functions
     try {
         const { limit = 50, offset = 0, templateKey, status } = data;
         const logs = await smsLogsService.getSMSLogs({
-            type: templateKey,
+            limit,
+            offset,
+            templateKey,
             status
         });
-        // Apply pagination manually since the service doesn't support it directly
-        const paginatedLogs = logs.slice(offset, offset + limit);
         return {
             success: true,
-            logs: paginatedLogs,
-            total: logs.length,
+            logs: logs.logs,
+            total: logs.total,
             timestamp: new Date().toISOString()
         };
     }
@@ -699,7 +695,7 @@ exports.testSMSTemplate = functions
     timeoutSeconds: 60,
 })
     .https.onCall(async (data, context) => {
-    var _a, _b;
+    var _a;
     console.log('testSMSTemplate called with data:', JSON.stringify(data, null, 2));
     // Check if user is authenticated
     if (!context.auth) {
@@ -710,9 +706,9 @@ exports.testSMSTemplate = functions
     if (!templateKey || !recipient || !variables) {
         throw new functions.https.HttpsError('invalid-argument', 'Template key, recipient, and variables are required.');
     }
-    // Get template ID (moved outside try block for catch block access)
-    const templateId = getTemplateIdByKey(templateKey);
     try {
+        // Get template ID
+        const templateId = getTemplateIdByKey(templateKey);
         // Format variables
         const formattedVariables = formatVariablesForAPI(templateKey, variables);
         console.log('🔍 [DEBUG] Testing SMS template:', {
@@ -723,7 +719,7 @@ exports.testSMSTemplate = functions
         });
         // Send test SMS
         const result = await sendSMSAPI(recipient, templateId, formattedVariables);
-        if (result.success && 'messageId' in result) {
+        if (result.success) {
             console.log('✅ [SUCCESS] Test SMS sent successfully:', {
                 templateKey,
                 recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
@@ -731,13 +727,14 @@ exports.testSMSTemplate = functions
             });
             // Log test SMS
             await smsLogsService.logSMS({
-                type: templateKey,
+                templateKey,
                 recipient,
-                templateId: templateId,
-                message: ((_a = sms_templates_1.default.getInstance().getTemplateByKey(templateKey)) === null || _a === void 0 ? void 0 : _a.name) || 'Test SMS',
+                variables: formattedVariables,
+                messageId: result.messageId,
                 status: 'sent',
+                userId: context.auth.uid,
                 timestamp: new Date(),
-                retryCount: 0
+                isTest: true
             });
             return {
                 success: true,
@@ -748,198 +745,23 @@ exports.testSMSTemplate = functions
             };
         }
         else {
-            throw new functions.https.HttpsError('internal', `Failed to send test SMS: ${'error' in result ? result.error.message : 'Unknown error'}`);
+            throw new functions.https.HttpsError('internal', `Failed to send test SMS: ${((_a = result.error) === null || _a === void 0 ? void 0 : _a.message) || 'Unknown error'}`);
         }
     }
     catch (error) {
         console.error('Error testing SMS template:', error);
         // Log failed test SMS
         await smsLogsService.logSMS({
-            type: templateKey,
+            templateKey,
             recipient,
-            templateId: templateId,
-            message: ((_b = sms_templates_1.default.getInstance().getTemplateByKey(templateKey)) === null || _b === void 0 ? void 0 : _b.name) || 'Test SMS',
+            variables: formatVariablesForAPI(templateKey, variables),
+            messageId: null,
             status: 'failed',
+            userId: context.auth.uid,
             timestamp: new Date(),
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            retryCount: 0
+            error: error instanceof Error ? error.message : 'Unknown error',
+            isTest: true
         });
         throw new functions.https.HttpsError('internal', `Failed to test SMS template: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-});
-/**
- * Force deployment trigger function - NEW FUNCTION TO FORCE DEPLOYMENT
- * This function is added to force Firebase to detect changes and deploy the updated template IDs
- */
-exports.forceDeployTrigger = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
-    console.log('🚀 Force deploy trigger called - Template IDs Updated:');
-    console.log('   finalDisposalReminder: 198613');
-    console.log('   finalDisposalReminderAdmin: 198614');
-    res.status(200).json({
-        success: true,
-        message: 'Force deploy triggered - Template IDs updated successfully',
-        timestamp: new Date().toISOString(),
-        templateIds: {
-            finalDisposalReminder: '198613',
-            finalDisposalReminderAdmin: '198614'
-        },
-        deploymentStatus: 'completed'
-    });
-});
-/**
- * Debug function to check recent SMS logs
- * This function helps verify SMS sending attempts and results
- */
-exports.debugSMSLogs = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
-    // Set CORS headers for public access
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    // Handle OPTIONS requests (CORS preflight)
-    if (req.method === 'OPTIONS') {
-        res.status(204).send('');
-        return;
-    }
-    try {
-        console.log('🔍 Debug SMS logs function called');
-        // Get recent SMS logs (last 24 hours)
-        const oneDayAgo = new Date();
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        const logs = await smsLogsService.getSMSLogs({
-            dateRange: {
-                start: oneDayAgo,
-                end: new Date()
-            }
-        });
-        // Get failed SMS logs specifically
-        const failedLogs = await smsLogsService.getSMSLogs({
-            status: 'failed',
-            dateRange: {
-                start: oneDayAgo,
-                end: new Date()
-            }
-        });
-        // Get successful SMS logs
-        const successLogs = await smsLogsService.getSMSLogs({
-            status: 'sent',
-            dateRange: {
-                start: oneDayAgo,
-                end: new Date()
-            }
-        });
-        const response = {
-            success: true,
-            summary: {
-                total: logs.length,
-                sent: successLogs.length,
-                failed: failedLogs.length,
-                pending: logs.length - successLogs.length - failedLogs.length
-            },
-            recentLogs: logs.slice(0, 10).map(log => ({
-                id: log.id,
-                type: log.type,
-                recipient: log.recipient,
-                status: log.status,
-                timestamp: log.timestamp,
-                errorMessage: log.errorMessage,
-                templateId: log.templateId
-            })),
-            failedLogs: failedLogs.slice(0, 5).map(log => ({
-                id: log.id,
-                type: log.type,
-                recipient: log.recipient,
-                status: log.status,
-                timestamp: log.timestamp,
-                errorMessage: log.errorMessage,
-                templateId: log.templateId
-            })),
-            timestamp: new Date().toISOString(),
-            deployment: {
-                nodeVersion: process.version,
-                environment: process.env.NODE_ENV
-            }
-        };
-        console.log('🔍 Debug SMS logs response:', JSON.stringify(response, null, 2));
-        res.status(200).json(response);
-    }
-    catch (error) {
-        console.error('🔍 Error in debug SMS logs function:', error);
-        res.status(500).json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-/**
- * Debug function to check template IDs in deployed functions
- * This function helps verify that the correct template IDs are being used
- */
-exports.debugTemplateIds = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
-    // Set CORS headers for public access
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    // Handle OPTIONS requests (CORS preflight)
-    if (req.method === 'OPTIONS') {
-        res.status(204).send('');
-        return;
-    }
-    try {
-        console.log('🔍 Debug template IDs function called');
-        // Get the templates that were causing issues
-        const finalDisposalTemplate = sms_templates_1.default.getInstance().getTemplateByKey('finalDisposalReminder');
-        const adminTemplate = sms_templates_1.default.getInstance().getTemplateByKey('finalDisposalReminderAdmin');
-        const response = {
-            success: true,
-            templates: {
-                finalDisposalReminder: {
-                    key: finalDisposalTemplate.key,
-                    id: finalDisposalTemplate.id,
-                    name: finalDisposalTemplate.name,
-                    variableCount: finalDisposalTemplate.variableCount
-                },
-                finalDisposalReminderAdmin: {
-                    key: adminTemplate.key,
-                    id: adminTemplate.id,
-                    name: adminTemplate.name,
-                    variableCount: adminTemplate.variableCount
-                }
-            },
-            expected: {
-                finalDisposalReminder: '198613',
-                finalDisposalReminderAdmin: '198614'
-            },
-            timestamp: new Date().toISOString(),
-            deployment: {
-                nodeVersion: process.version,
-                environment: process.env.NODE_ENV
-            }
-        };
-        console.log('🔍 Debug template IDs response:', JSON.stringify(response, null, 2));
-        res.status(200).json(response);
-    }
-    catch (error) {
-        console.error('🔍 Error in debug template IDs function:', error);
-        res.status(500).json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-        });
     }
 });

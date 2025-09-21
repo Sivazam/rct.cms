@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateEntry } from '@/lib/firestore';
+import { updateEntry, getEntryById } from '@/lib/firestore';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { formatDate } from '@/lib/date-utils';
 
@@ -39,6 +39,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get entry details for SMS and customer information
+    const entry = await getEntryById(entryId);
+    if (!entry) {
+      return NextResponse.json(
+        { error: 'Entry not found' },
+        { status: 404 }
+      );
+    }
+
     // Calculate amount and new expiry date
     const renewalAmount = amount || (300 * months);
     const newExpiryDate = new Date(Date.now() + (months * 30 * 24 * 60 * 60 * 1000));
@@ -69,55 +78,41 @@ export async function POST(request: NextRequest) {
 
     await updateEntry(entryId, updateData);
 
-    // Send SMS notifications (mock implementation - in real app, get entry details first)
+    // Send SMS notifications
     try {
-      // TODO: Replace with actual Fast2SMS integration when credentials are available
-      // SMS to Admin - currently simulating instead of sending
-      console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
-      console.log('Message:', SMSTemplates.renewalConfirmation(
-        operatorName || 'Operator',
-        'Customer Name', // This should come from entry data
-        months,
-        amount,
-        entryId
-      ));
-
-      // TODO: Replace with actual Fast2SMS integration when credentials are available
-      // SMS to Customer - currently simulating instead of sending
-      console.log('SMS would be sent to customer:', '+91XXXXXXXXXX'); // This should come from entry data
-      console.log('Message:', SMSTemplates.customerRenewalConfirmation(
-        entryId,
-        formatDate(newExpiryDate),
-        amount
-      ));
-
-      // Simulate SMS sending (replace with actual sendSMS calls when Fast2SMS is ready)
-      /*
-      await sendSMS(
-        process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
-        SMSTemplates.renewalConfirmation(
-          operatorName || 'Operator',
-          'Customer Name', // This should come from entry data
-          months,
-          amount,
+      // SMS to Admin
+      if (process.env.NEXT_PUBLIC_ADMIN_MOBILE) {
+        await sendSMS(
+          process.env.NEXT_PUBLIC_ADMIN_MOBILE,
+          SMSTemplates.renewalConfirmation(
+            operatorName || 'Operator',
+            entry.customerName || 'Customer',
+            months,
+            amount,
+            entryId
+          ),
           entryId
-        ),
-        entryId
-      );
+        );
+        console.log('✅ SMS sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE);
+      }
 
-      await sendSMS(
-        '+91XXXXXXXXXX', // This should come from entry data
-        SMSTemplates.customerRenewalConfirmation(
-          entryId,
-          formatDate(newExpiryDate),
-          amount
-        ),
-        entryId
-      );
-      */
+      // SMS to Customer
+      if (entry.contactNumber) {
+        await sendSMS(
+          entry.contactNumber,
+          SMSTemplates.customerRenewalConfirmation(
+            entryId,
+            formatDate(newExpiryDate),
+            amount
+          ),
+          entryId
+        );
+        console.log('✅ SMS sent to customer:', entry.contactNumber);
+      }
     } catch (smsError) {
       console.error('Error sending SMS:', smsError);
-      // Don't fail the renewal if SMS fails
+      // Don't fail the renewal if SMS fails, but log the error
+      // You might want to add this error to the response for debugging
     }
 
     return NextResponse.json({ 
