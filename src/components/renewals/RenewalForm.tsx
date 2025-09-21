@@ -118,24 +118,40 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         // For now, using placeholder - you should implement proper location name fetching
         const locationName = 'Unknown Location'; // Replace with actual location name fetching
         
+        console.log('🔍 [DEBUG] Starting SMS send process...');
+        console.log('🔍 [DEBUG] SMS Service Status:', smsService.getServiceStatus());
+        
         // Send renewal confirmation to customer
-        await smsService.sendRenewalConfirmationCustomer(
+        console.log('🔍 [DEBUG] Sending customer SMS...');
+        const customerResult = await smsService.sendRenewalConfirmationCustomer(
           entry.customerMobile,
           entry.customerName,
           locationName, // Use actual location name (currently placeholder)
           formatDate(renewalSummary.newExpiryDate),
           entry.id
         );
+        
+        console.log('🔍 [DEBUG] Customer SMS Result:', customerResult);
 
         // Send renewal confirmation to admin
-        await smsService.sendRenewalConfirmationAdmin(
+        console.log('🔍 [DEBUG] Sending admin SMS...');
+        const adminResult = await smsService.sendRenewalConfirmationAdmin(
           '+919014882779', // Admin mobile - this should be configurable
           locationName, // Use actual location name (currently placeholder)
           entry.customerName,
           entry.id
         );
+        
+        console.log('🔍 [DEBUG] Admin SMS Result:', adminResult);
 
-        console.log('✅ SMS notifications sent successfully for renewal');
+        if (customerResult.success && adminResult.success) {
+          console.log('✅ SMS notifications sent successfully for renewal');
+        } else {
+          console.error('❌ SMS notifications failed:', {
+            customerError: customerResult.error,
+            adminError: adminResult.error
+          });
+        }
       } catch (smsError) {
         console.error('❌ Failed to send SMS notifications:', smsError);
         // Don't fail the renewal process if SMS fails, just log the error

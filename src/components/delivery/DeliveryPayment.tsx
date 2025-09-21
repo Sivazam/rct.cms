@@ -148,15 +148,22 @@ export default function DeliveryPayment({
       };
 
       // Send SMS notification to admin
-      await smsService.sendDeliveryConfirmationAdmin(
+      console.log('🔍 [DEBUG] Starting SMS send process...');
+      console.log('🔍 [DEBUG] SMS Service Status:', smsService.getServiceStatus());
+      
+      console.log('🔍 [DEBUG] Sending admin SMS...');
+      const adminResult = await smsService.sendDeliveryConfirmationAdmin(
         entry.customer.name,
         entry.locationName,
         user?.name || 'Operator',
         entry.id
       );
+      
+      console.log('🔍 [DEBUG] Admin SMS Result:', adminResult);
 
       // Send SMS notification to customer with dispatch confirmation
-      await smsService.sendDispatchConfirmationCustomer(
+      console.log('🔍 [DEBUG] Sending customer SMS...');
+      const customerResult = await smsService.sendDispatchConfirmationCustomer(
         entry.customer.mobile,
         entry.customer.name,
         entry.locationName,
@@ -165,6 +172,17 @@ export default function DeliveryPayment({
         handoverPersonMobile.trim(),
         entry.id
       );
+      
+      console.log('🔍 [DEBUG] Customer SMS Result:', customerResult);
+
+      if (customerResult.success && adminResult.success) {
+        console.log('✅ SMS notifications sent successfully for dispatch');
+      } else {
+        console.error('❌ SMS notifications failed:', {
+          customerError: customerResult.error,
+          adminError: adminResult.error
+        });
+      }
 
       onPaymentComplete(paymentData);
     } catch (error) {
