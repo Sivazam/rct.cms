@@ -22,6 +22,7 @@ import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
 import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
 import SendSMSButton from '@/components/admin/SendSMSButton';
 import SMSService from '@/lib/sms-service';
+import { useAdminMobile } from '@/stores/adminConfigStore';
 
 interface Entry {
   id: string;
@@ -135,6 +136,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
 
 export default function InteractiveEntriesList({ type, locationId, dateRange, onDataChanged }: InteractiveEntriesListProps) {
   const { user } = useAuth();
+  const adminMobile = useAdminMobile();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
@@ -380,7 +382,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('🚀 Sending renewal SMS notifications...');
         
-        // Send SMS to customer - the backend will automatically send to admin as well
+        // Send SMS to customer
         const customerSMSResult = await smsService.sendRenewalConfirmationCustomer(
           selectedEntryForRenewal.customerMobile,
           selectedEntryForRenewal.customerName,
@@ -394,20 +396,28 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('📱 Customer SMS Result:', customerSMSResult);
         
+        // Send SMS to admin using the correct admin mobile from global config
+        const adminSMSResult = await smsService.sendRenewalConfirmationAdmin(
+          adminMobile, // Use admin mobile from global config
+          selectedEntryForRenewal.locationName || 'Unknown Location',
+          selectedEntryForRenewal.customerName,
+          selectedEntryForRenewal.id,
+          selectedEntryForRenewal.customerId,
+          selectedEntryForRenewal.locationId,
+          selectedEntryForRenewal.operatorId
+        );
+        
+        console.log('📞 Admin SMS Result:', adminSMSResult);
+        
         // Log SMS service status for debugging
         const serviceStatus = smsService.getServiceStatus();
         console.log('🔧 SMS Service Status:', serviceStatus);
         
-        // The backend sendSMSV2 function automatically sends to both customer and admin
-        // when templateKey is 'renewalConfirmCustomer' or 'renewalConfirmAdmin'
-        // So we only need to call one function
-        
         // Show success message with SMS status
-        const smsStatus = customerSMSResult.success ? 
-          '✅ SMS sent to customer and admin (via backend)' : 
-          '❌ Failed to send SMS notifications';
+        const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
+        const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
         
-        alert(`Renewal processed successfully!\n${smsStatus}`);
+        alert(`Renewal processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
         
       } catch (smsError) {
         console.error('❌ Error sending SMS notifications:', smsError);
@@ -515,7 +525,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('🚀 Sending dispatch SMS notifications...');
         
-        // Send SMS to customer - the backend will automatically send to admin as well
+        // Send SMS to customer
         const customerSMSResult = await smsService.sendDispatchConfirmationCustomer(
           selectedEntryForDispatch.customerMobile,
           selectedEntryForDispatch.customerName,
@@ -531,20 +541,29 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('📱 Customer SMS Result:', customerSMSResult);
         
+        // Send SMS to admin using the correct admin mobile from global config
+        // The backend sendSMSV2 function will handle getting the correct admin mobile
+        const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+          adminMobile, // Use admin mobile from global config
+          selectedEntryForDispatch.customerName,
+          selectedEntryForDispatch.locationName || 'Unknown Location',
+          selectedEntryForDispatch.id,
+          selectedEntryForDispatch.customerId,
+          selectedEntryForDispatch.locationId,
+          selectedEntryForDispatch.operatorId
+        );
+        
+        console.log('📞 Admin SMS Result:', adminSMSResult);
+        
         // Log SMS service status for debugging
         const serviceStatus = smsService.getServiceStatus();
         console.log('🔧 SMS Service Status:', serviceStatus);
         
-        // The backend sendSMSV2 function automatically sends to both customer and admin
-        // when templateKey is 'dispatchConfirmCustomer' or 'deliveryConfirmAdmin'
-        // So we only need to call one function
-        
         // Show success message with SMS status
-        const smsStatus = customerSMSResult.success ? 
-          '✅ SMS sent to customer and admin (via backend)' : 
-          '❌ Failed to send SMS notifications';
+        const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
+        const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
         
-        alert(`Dispatch processed successfully!\n${smsStatus}`);
+        alert(`Dispatch processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
         
       } catch (smsError) {
         console.error('❌ Error sending SMS notifications:', smsError);

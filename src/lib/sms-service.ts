@@ -436,6 +436,7 @@ class SMSService {
     deceasedPersonName: string,
     locationName: string,
     operatorName: string,
+    adminMobile: string, // Added admin mobile parameter
     entryId?: string,
     customerId?: string,
     locationId?: string,
@@ -448,7 +449,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'deliveryConfirmAdmin',
-      recipient: '9876543210', // Default admin mobile - should be configurable (10 digits only)
+      recipient: adminMobile, // Use provided admin mobile
       variables,
       entryId,
       customerId,
@@ -493,6 +494,7 @@ class SMSService {
     deceasedPersonName: string,
     locationName: string,
     amount: number,
+    adminMobile: string, // Added admin mobile parameter
     entryId?: string,
     customerId?: string,
     locationId?: string,
@@ -505,7 +507,7 @@ class SMSService {
 
     return await this.sendSMSWithRetry({
       templateKey: 'renewalConfirmAdmin',
-      recipient: '9876543210', // Default admin mobile - should be configurable (10 digits only)
+      recipient: adminMobile, // Use provided admin mobile
       variables,
       entryId,
       customerId,

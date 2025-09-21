@@ -13,6 +13,7 @@ import LocationManagement from '@/components/admin/LocationManagement';
 import OperatorManagement from '@/components/admin/OperatorManagement';
 import OperatorPerformance from '@/components/admin/OperatorPerformance';
 import SMSLogsTable from '@/components/admin/SMSLogsTable';
+import AdminSettings from '@/components/admin/AdminSettings';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
@@ -977,9 +978,25 @@ export default function AdminDashboard() {
               {/* Analytics Tab */}
               {activeTab === 'analytics' && <OperatorPerformance />}
 
-              {/* Settings Tab - Location management and SMS logs */}
+              {/* Settings Tab - Location management, SMS logs, and admin settings */}
               {activeTab === 'settings' && (
                 <div className="space-y-6">
+                  {/* Admin Settings */}
+                  <Card className="border-orange-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Phone className="h-5 w-5" />
+                        <span>Admin Settings</span>
+                      </CardTitle>
+                      <CardDescription>
+                        Configure admin mobile number for SMS notifications
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminSettings />
+                    </CardContent>
+                  </Card>
+
                   {/* Locations Management */}
                   <Card className="border-orange-200">
                     <CardHeader>

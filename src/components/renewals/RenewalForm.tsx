@@ -15,6 +15,7 @@ import SMSService from '@/lib/sms-service';
 const smsService = new SMSService();
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
+import { useAdminMobile } from '@/stores/adminConfigStore';
 
 interface Entry {
   id: string;
@@ -49,6 +50,7 @@ interface RenewalFormProps {
 
 export default function RenewalForm({ entry, onSuccess, onCancel, loading = false }: RenewalFormProps) {
   const { user } = useAuth();
+  const adminMobile = useAdminMobile();
   const [formData, setFormData] = useState({
     renewalMonths: 1,
     paymentMethod: 'cash' as 'cash' | 'upi'
@@ -136,7 +138,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         // Send renewal confirmation to admin
         console.log('🔍 [DEBUG] Sending admin SMS...');
         const adminResult = await smsService.sendRenewalConfirmationAdmin(
-          '+919014882779', // Admin mobile - this should be configurable
+          adminMobile, // Admin mobile from global config
           locationName, // Use actual location name (currently placeholder)
           entry.customerName,
           entry.id
