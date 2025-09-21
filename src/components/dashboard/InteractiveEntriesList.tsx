@@ -158,6 +158,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
   const [dispatchAmount, setDispatchAmount] = useState('');
   const [dispatchReason, setDispatchReason] = useState('');
   const [dispatchPaymentMethod, setDispatchPaymentMethod] = useState<'cash' | 'upi'>('cash');
+  const [handoverPersonName, setHandoverPersonName] = useState('');
+  const [handoverPersonMobile, setHandoverPersonMobile] = useState('');
   const RENEWAL_RATE_PER_MONTH = 300;
 
   // Determine if location filter should be shown
@@ -374,6 +376,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
     setDispatchAmount('');
     setDispatchReason('');
     setDispatchPaymentMethod('cash');
+    setHandoverPersonName('');
+    setHandoverPersonMobile('');
     setShowDispatchDialog(true);
   };
 
@@ -383,13 +387,32 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
       return;
     }
 
+    // Validate handover person information
+    if (!handoverPersonName.trim()) {
+      alert('Handover person name is required');
+      return;
+    }
+
+    if (!handoverPersonMobile.trim()) {
+      alert('Handover person mobile number is required');
+      return;
+    }
+
+    // Validate mobile number format
+    if (!/^[6-9]\d{9}$/.test(handoverPersonMobile)) {
+      alert('Please enter a valid 10-digit mobile number starting with 6-9');
+      return;
+    }
+
     try {
       console.log('Processing dispatch directly:', {
         entryId: selectedEntryForDispatch.id,
         customerName: selectedEntryForDispatch.customerName,
         amount: dispatchAmount,
         reason: dispatchReason,
-        paymentMethod: dispatchPaymentMethod
+        paymentMethod: dispatchPaymentMethod,
+        handoverPersonName: handoverPersonName.trim(),
+        handoverPersonMobile: handoverPersonMobile.trim()
       });
 
       // Calculate final amount (0 for active entries, specified amount for pending)
@@ -408,7 +431,9 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
           otp: 'no_otp_required', // Pass dummy OTP since we're removing verification
           amountPaid: finalAmount,
           dueAmount: calculateDueAmount(selectedEntryForDispatch),
-          reason: type === 'active' ? 'Free dispatch - active entry' : dispatchReason
+          reason: type === 'active' ? 'Free dispatch - active entry' : dispatchReason,
+          handoverPersonName: handoverPersonName.trim(),
+          handoverPersonMobile: handoverPersonMobile.trim()
         }),
       });
 
@@ -1529,6 +1554,46 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                   </div>
                 )}
 
+                {/* Handover Person Information */}
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  <h4 className="font-medium mb-3 text-blue-800 flex items-center text-sm sm:text-base">
+                    <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Handover Person Information
+                  </h4>
+                  <p className="text-sm text-blue-600 mb-3">
+                    Details of the person who is handing over the ashes
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="handoverPersonName" className="text-sm font-medium">Handover Person Name *</Label>
+                      <Input
+                        id="handoverPersonName"
+                        placeholder="Enter full name"
+                        value={handoverPersonName}
+                        onChange={(e) => setHandoverPersonName(e.target.value)}
+                        className="h-9 sm:h-10 text-sm sm:text-base"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="handoverPersonMobile" className="text-sm font-medium">Handover Person Mobile *</Label>
+                      <Input
+                        id="handoverPersonMobile"
+                        type="tel"
+                        placeholder="Enter 10-digit mobile number"
+                        value={handoverPersonMobile}
+                        onChange={(e) => setHandoverPersonMobile(e.target.value)}
+                        maxLength={10}
+                        className="h-9 sm:h-10 text-sm sm:text-base"
+                        required
+                      />
+                      <p className="text-xs text-gray-600">
+                        Format: 10-digit mobile number without country code
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Reason for Collection */}
                 <div className="space-y-2">
                   <Label htmlFor="dispatchReason">Remarks (Optional)</Label>
@@ -1623,10 +1688,11 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                   onClick={handleSendOTPForDispatch}
                   disabled={
                     type === 'active' 
-                      ? false // Always enable for active entries
+                      ? !handoverPersonName.trim() || !handoverPersonMobile.trim() // Require handover person for active entries
                       : !dispatchAmount || 
                         parseFloat(dispatchAmount) > 300 ||
-                        (parseFloat(dispatchAmount) < 300 && !dispatchReason.trim())
+                        (parseFloat(dispatchAmount) < 300 && !dispatchReason.trim()) ||
+                        !handoverPersonName.trim() || !handoverPersonMobile.trim() // Require handover person for all entries
                   }
                   className="flex-1 order-1 sm:order-2"
                 >
