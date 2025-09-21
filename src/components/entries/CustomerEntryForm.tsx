@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, MapPin, Package, DollarSign, Calendar } from 'lucide-react';
+import { User, Phone, MapPin, Package, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { addCustomer, addEntry, getLocations } from '@/lib/firestore';
 import SMSService from '@/lib/sms-service';
