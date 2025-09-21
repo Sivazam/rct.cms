@@ -21,6 +21,7 @@ import RenewalForm from '@/components/renewals/RenewalForm';
 import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
 import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
 import SendSMSButton from '@/components/admin/SendSMSButton';
+import SMSService from '@/lib/sms-service';
 
 interface Entry {
   id: string;
@@ -361,8 +362,67 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
 
       console.log('Renewal processed successfully:', data);
       
-      // Show success message and refresh data
-      alert('Renewal processed successfully!');
+      // Send SMS notifications after successful renewal
+      try {
+        const smsService = SMSService.getInstance();
+        smsService.initialize();
+        
+        // Calculate new expiry date (current expiry + renewal months)
+        const currentExpiry = new Date(selectedEntryForRenewal.expiryDate?.toDate ? selectedEntryForRenewal.expiryDate.toDate() : selectedEntryForRenewal.expiryDate);
+        const newExpiry = new Date(currentExpiry);
+        newExpiry.setMonth(newExpiry.getMonth() + renewalMonths);
+        
+        const formattedNewExpiry = newExpiry.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        
+        console.log('🚀 Sending renewal SMS notifications...');
+        
+        // Send SMS to customer
+        const customerSMSResult = await smsService.sendRenewalConfirmationCustomer(
+          selectedEntryForRenewal.customerMobile,
+          selectedEntryForRenewal.customerName,
+          selectedEntryForRenewal.locationName || 'Unknown Location',
+          formattedNewExpiry,
+          selectedEntryForRenewal.id,
+          selectedEntryForRenewal.customerId,
+          selectedEntryForRenewal.locationId,
+          selectedEntryForRenewal.operatorId
+        );
+        
+        console.log('📱 Customer SMS Result:', customerSMSResult);
+        
+        // Send SMS to admin
+        const adminSMSResult = await smsService.sendRenewalConfirmationAdmin(
+          '9876543210', // Default admin mobile - should be configurable
+          selectedEntryForRenewal.locationName || 'Unknown Location',
+          selectedEntryForRenewal.customerName,
+          selectedEntryForRenewal.id,
+          selectedEntryForRenewal.customerId,
+          selectedEntryForRenewal.locationId,
+          selectedEntryForRenewal.operatorId
+        );
+        
+        console.log('📞 Admin SMS Result:', adminSMSResult);
+        
+        // Log SMS service status for debugging
+        const serviceStatus = smsService.getServiceStatus();
+        console.log('🔧 SMS Service Status:', serviceStatus);
+        
+        // Show success message with SMS status
+        const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
+        const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
+        
+        alert(`Renewal processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
+        
+      } catch (smsError) {
+        console.error('❌ Error sending SMS notifications:', smsError);
+        // Still show success for renewal, but note SMS failure
+        alert('Renewal processed successfully, but SMS notifications failed. Please check the logs.');
+      }
+      
       handleBackToList();
       
     } catch (error: any) {
@@ -448,8 +508,66 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
 
       console.log('Dispatch processed successfully:', data);
       
-      // Show success message and refresh data
-      alert('Dispatch processed successfully!');
+      // Send SMS notifications after successful dispatch
+      try {
+        const smsService = SMSService.getInstance();
+        smsService.initialize();
+        
+        // Get current date for SMS
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        
+        console.log('🚀 Sending dispatch SMS notifications...');
+        
+        // Send SMS to customer
+        const customerSMSResult = await smsService.sendDispatchConfirmationCustomer(
+          selectedEntryForDispatch.customerMobile,
+          selectedEntryForDispatch.customerName,
+          selectedEntryForDispatch.locationName || 'Unknown Location',
+          formattedDate,
+          handoverPersonName.trim(),
+          handoverPersonMobile.trim(),
+          selectedEntryForDispatch.id,
+          selectedEntryForDispatch.customerId,
+          selectedEntryForDispatch.locationId,
+          selectedEntryForDispatch.operatorId
+        );
+        
+        console.log('📱 Customer SMS Result:', customerSMSResult);
+        
+        // Send SMS to admin
+        const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+          '9876543210', // Default admin mobile - should be configurable
+          selectedEntryForDispatch.customerName,
+          selectedEntryForDispatch.locationName || 'Unknown Location',
+          selectedEntryForDispatch.id,
+          selectedEntryForDispatch.customerId,
+          selectedEntryForDispatch.locationId,
+          selectedEntryForDispatch.operatorId
+        );
+        
+        console.log('📞 Admin SMS Result:', adminSMSResult);
+        
+        // Log SMS service status for debugging
+        const serviceStatus = smsService.getServiceStatus();
+        console.log('🔧 SMS Service Status:', serviceStatus);
+        
+        // Show success message with SMS status
+        const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
+        const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
+        
+        alert(`Dispatch processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
+        
+      } catch (smsError) {
+        console.error('❌ Error sending SMS notifications:', smsError);
+        // Still show success for dispatch, but note SMS failure
+        alert('Dispatch processed successfully, but SMS notifications failed. Please check the logs.');
+      }
+      
       handleBackToList();
       
     } catch (error: any) {
