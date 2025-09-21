@@ -17,6 +17,9 @@ import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/date-utils';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
 
 interface Customer {
   id?: string;
@@ -44,7 +47,8 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
     additionalDetails: customer?.additionalDetails || '',
     numberOfPots: 1,
     paymentMethod: 'cash' as 'cash' | 'upi',
-    locationId: ''
+    locationId: '',
+    entryDate: new Date() // Default to today's date
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -102,7 +106,8 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         numberOfPots: formData.numberOfPots,
         locationId: formData.locationId,
         operatorId: user.uid,
-        paymentMethod: formData.paymentMethod
+        paymentMethod: formData.paymentMethod,
+        entryDate: formData.entryDate
       });
 
       // Entry created successfully - no SMS sent for entry creation as per requirements
@@ -126,7 +131,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
     }
   };
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: string | number | Date) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -245,6 +250,36 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                     <SelectItem value="upi">UPI</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="entryDate">Entry Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                      disabled={submitting}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.entryDate ? formatDate(formData.entryDate) : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.entryDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          handleChange('entryDate', date);
+                        }
+                      }}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-gray-500">Entry date cannot be in the future</p>
               </div>
             </div>
 

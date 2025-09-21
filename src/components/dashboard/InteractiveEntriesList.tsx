@@ -23,6 +23,7 @@ import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
 import SendSMSButton from '@/components/admin/SendSMSButton';
 import SMSService from '@/lib/sms-service';
 import { useAdminMobile } from '@/stores/adminConfigStore';
+import { useToast } from '@/hooks/use-toast';
 
 interface Entry {
   id: string;
@@ -137,6 +138,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
 export default function InteractiveEntriesList({ type, locationId, dateRange, onDataChanged }: InteractiveEntriesListProps) {
   const { user } = useAuth();
   const adminMobile = useAdminMobile();
+  const { toast } = useToast();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,6 +165,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
   const [dispatchPaymentMethod, setDispatchPaymentMethod] = useState<'cash' | 'upi'>('cash');
   const [handoverPersonName, setHandoverPersonName] = useState('');
   const [handoverPersonMobile, setHandoverPersonMobile] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false); // New loading state for dispatch/renewal
   const RENEWAL_RATE_PER_MONTH = 300;
 
   // Determine if location filter should be shown
@@ -326,6 +329,9 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
       return;
     }
 
+    // Set loading state
+    setIsProcessing(true);
+
     try {
       console.log('Processing renewal directly:', {
         entryId: selectedEntryForRenewal.id,
@@ -417,19 +423,33 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
         const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
         
-        alert(`Renewal processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
+        toast({
+          title: "Renewal Processed Successfully",
+          description: `${customerSMSSuccess}\n${adminSMSSuccess}`,
+        });
         
       } catch (smsError) {
         console.error('❌ Error sending SMS notifications:', smsError);
         // Still show success for renewal, but note SMS failure
-        alert('Renewal processed successfully, but SMS notifications failed. Please check the logs.');
+        toast({
+          title: "Renewal Processed",
+          description: "Renewal was successful but SMS notifications failed. Please check the logs.",
+          variant: "warning",
+        });
       }
       
       handleBackToList();
       
     } catch (error: any) {
       console.error('Error processing renewal:', error);
-      alert('Failed to process renewal: ' + error.message);
+      toast({
+        title: "Renewal Failed",
+        description: error.message || "Failed to process renewal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Reset loading state
+      setIsProcessing(false);
     }
   };
 
@@ -465,6 +485,9 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
       alert('Please enter a valid 10-digit mobile number starting with 6-9');
       return;
     }
+
+    // Set loading state
+    setIsProcessing(true);
 
     try {
       console.log('Processing dispatch directly:', {
@@ -547,6 +570,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         console.log('🔍 [DEBUG] Admin mobile length:', adminMobile?.length);
         
         // Ensure adminMobile is valid before sending SMS
+        let adminSMSResult: any;
         if (!adminMobile || typeof adminMobile !== 'string') {
           console.error('❌ [DEBUG] Admin mobile is invalid:', adminMobile);
           // Use a fallback admin mobile number
@@ -555,7 +579,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
           
           // Send SMS to admin using the correct admin mobile from global config
           // The backend sendSMSV2 function will handle getting the correct admin mobile
-          const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+          adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
             fallbackAdminMobile, // Use fallback admin mobile
             selectedEntryForDispatch.customerName,
             selectedEntryForDispatch.locationName || 'Unknown Location',
@@ -569,7 +593,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         } else {
           // Send SMS to admin using the correct admin mobile from global config
           // The backend sendSMSV2 function will handle getting the correct admin mobile
-          const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+          adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
             adminMobile, // Use admin mobile from global config
             selectedEntryForDispatch.customerName,
             selectedEntryForDispatch.locationName || 'Unknown Location',
@@ -590,19 +614,33 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
         const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
         
-        alert(`Dispatch processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
+        toast({
+          title: "Dispatch Processed Successfully",
+          description: `${customerSMSSuccess}\n${adminSMSSuccess}`,
+        });
         
       } catch (smsError) {
         console.error('❌ Error sending SMS notifications:', smsError);
         // Still show success for dispatch, but note SMS failure
-        alert('Dispatch processed successfully, but SMS notifications failed. Please check the logs.');
+        toast({
+          title: "Dispatch Processed",
+          description: "Dispatch was successful but SMS notifications failed. Please check the logs.",
+          variant: "warning",
+        });
       }
       
       handleBackToList();
       
     } catch (error: any) {
       console.error('Error processing dispatch:', error);
-      alert('Failed to process dispatch: ' + error.message);
+      toast({
+        title: "Dispatch Failed",
+        description: error.message || "Failed to process dispatch. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Reset loading state
+      setIsProcessing(false);
     }
   };
 

@@ -282,9 +282,10 @@ export const addEntry = async (entryData: {
   locationId: string;
   operatorId: string;
   paymentMethod: 'cash' | 'upi';
+  entryDate?: Date; // Optional entry date - defaults to now
 }) => {
   try {
-    const entryDate = new Date();
+    const entryDate = entryData.entryDate || new Date();
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     
     const docRef = await addDoc(collection(db, 'entries'), {
