@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateEntry, getEntryById } from '@/lib/firestore';
-import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
@@ -78,42 +77,9 @@ export async function POST(request: NextRequest) {
 
     await updateEntry(entryId, updateData);
 
-    // Send SMS notifications
-    try {
-      // SMS to Admin
-      if (process.env.NEXT_PUBLIC_ADMIN_MOBILE) {
-        await sendSMS(
-          process.env.NEXT_PUBLIC_ADMIN_MOBILE,
-          SMSTemplates.renewalConfirmation(
-            operatorName || 'Operator',
-            entry.customerName || 'Customer',
-            months,
-            amount,
-            entryId
-          ),
-          entryId
-        );
-        console.log('✅ SMS sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE);
-      }
-
-      // SMS to Customer
-      if (entry.contactNumber) {
-        await sendSMS(
-          entry.contactNumber,
-          SMSTemplates.customerRenewalConfirmation(
-            entryId,
-            formatDate(newExpiryDate),
-            amount
-          ),
-          entryId
-        );
-        console.log('✅ SMS sent to customer:', entry.contactNumber);
-      }
-    } catch (smsError) {
-      console.error('Error sending SMS:', smsError);
-      // Don't fail the renewal if SMS fails, but log the error
-      // You might want to add this error to the response for debugging
-    }
+    // SMS notifications are now handled by the frontend components using SMSService
+    // The frontend will send SMS to both admin and customer via Firebase Functions
+    // No SMS sending needed here to avoid duplication
 
     return NextResponse.json({ 
       success: true, 

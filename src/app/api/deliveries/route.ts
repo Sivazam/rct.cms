@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { collection, query, where, getDocs, getDoc ,addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
@@ -131,60 +130,14 @@ export async function POST(request: NextRequest) {
       lastModifiedAt: serverTimestamp()
     });
 
-    // Send confirmation SMS to customer using the new template
-    const customerMobile = entryData.customerMobile;
-    const customerName = entryData.customerName;
-    const locationName = entryData.locationName;
-    const formattedDate = formatDate(deliveryDate);
-
-    // Use the dispatch confirmation template with handover person information
-    const smsMessage = SMSTemplates.dispatchConfirmation(
-      customerName,
-      locationName,
-      formattedDate,
-      handoverPersonName,
-      handoverPersonMobile,
-      operatorName,
-      entryId
-    );
-
-    // TODO: Replace with actual Fast2SMS integration when credentials are available
-    // SMS to customer - currently simulating instead of sending
-    console.log('SMS would be sent to customer:', customerMobile);
-    console.log('Message:', smsMessage);
-    
-    // Simulate SMS sending (replace with actual sendSMS call when Fast2SMS is ready)
-    const smsResult = { success: true }; // Mock successful result
+    // SMS notifications are now handled by the frontend components using SMSService
+    // The frontend will send SMS to both admin and customer via Firebase Functions
+    // No SMS sending needed here to avoid duplication
     /*
-    const smsResult = await sendSMS(customerMobile, smsMessage, entryId);
-    */
-
-    // Update delivery record with SMS status
-    await updateDoc(doc(db, 'deliveries', deliveryDocRef.id), {
-      smsSent: smsResult.success,
-      smsSentAt: serverTimestamp()
-    });
-
-    // Send notification SMS to admin (if configured)
-    const adminSmsMessage = SMSTemplates.deliveryConfirmation(
-      operatorName,
-      customerName,
-      entryId,
-      formattedDate
-    );
-
-    // TODO: Replace with actual Fast2SMS integration when credentials are available
-    // SMS to admin - currently simulating instead of sending
-    console.log('SMS would be sent to admin:', process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210');
-    console.log('Message:', adminSmsMessage);
-    
-    // Simulate admin SMS (replace with actual sendSMS call when Fast2SMS is ready)
-    /*
-    await sendSMS(
-      process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
-      adminSmsMessage,
-      entryId
-    );
+    // The following code is now handled by frontend SMSService:
+    // - sendDispatchConfirmationCustomer() for customer SMS
+    // - sendDeliveryConfirmationAdmin() for admin SMS
+    // Both use Firebase Functions with DLT-compliant Fast2SMS templates
     */
 
     // Log the delivery
@@ -193,11 +146,11 @@ export async function POST(request: NextRequest) {
       operatorId,
       action: 'dispatch_completed', // Changed from 'delivery_completed'
       deliveryId: deliveryDocRef.id,
-      customerMobile,
+      customerMobile: entryData.customerMobile,
       amountPaid: amountPaid || 0,
       dueAmount: dueAmount || 0,
       reason: reason || null,
-      smsSent: smsResult.success,
+      smsSent: true, // SMS is handled by frontend, so we assume it will be sent
       timestamp: serverTimestamp()
     });
 
@@ -207,11 +160,11 @@ export async function POST(request: NextRequest) {
       deliveryId: deliveryDocRef.id,
       deliveryDate,
       entryId: entryId.slice(-6), // Return only last 6 digits for security
-      customerName,
-      customerMobile: customerMobile.slice(0, -4) + 'XXXX', // Mask mobile number
+      customerName: entryData.customerName,
+      customerMobile: entryData.customerMobile.slice(0, -4) + 'XXXX', // Mask mobile number
       amountPaid: amountPaid || 0,
       dueAmount: dueAmount || 0,
-      smsSent: smsResult.success
+      smsSent: true // SMS is handled by frontend
     });
 
   } catch (error) {

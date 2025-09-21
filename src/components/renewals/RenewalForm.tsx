@@ -112,24 +112,30 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
         status: 'active' // Reactivate if expired
       });
 
-      // Send SMS notification to admin
-      await smsService.sendRenewalNotification(
-        entry.customerName,
-        entry.locationId, // This should be location name, we'll need to fetch it
-        renewalSummary.amount,
-        entry.id
-      );
+      // Send SMS notification to both admin and customer using the new SMS service
+      try {
+        // Send renewal confirmation to customer
+        await smsService.sendRenewalConfirmationCustomer(
+          entry.customerMobile,
+          entry.customerName,
+          entry.locationId, // This should be location name, we'll need to fetch it
+          formatDate(renewalSummary.newExpiryDate),
+          entry.id
+        );
 
-      // Send SMS notification to customer
-      await smsService.sendEntryReminder(
-        entry.customerMobile,
-        entry.customerName,
-        entry.locationId, // This should be location name
-        formatDate(renewalSummary.newExpiryDate),
-        user?.name || 'Operator',
-        0, // 0 days since it's a renewal confirmation
-        entry.id
-      );
+        // Send renewal confirmation to admin
+        await smsService.sendRenewalConfirmationAdmin(
+          '+919014882779', // Admin mobile - this should be configurable
+          entry.locationId, // This should be location name
+          entry.customerName,
+          entry.id
+        );
+
+        console.log('✅ SMS notifications sent successfully for renewal');
+      } catch (smsError) {
+        console.error('❌ Failed to send SMS notifications:', smsError);
+        // Don't fail the renewal process if SMS fails, just log the error
+      }
 
       onSuccess({
         ...renewalData,

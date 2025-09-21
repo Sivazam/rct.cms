@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Phone, MapPin, Package, DollarSign, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { addCustomer, addEntry, getLocations } from '@/lib/firestore';
+import SMSService from '@/lib/sms-service';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +36,7 @@ interface CustomerEntryFormProps {
 export default function CustomerEntryForm({ customer, onSuccess, onCancel, loading = false }: CustomerEntryFormProps) {
   const { user } = useAuth();
   const { showSMSDialog } = useSMSDialog();
+  const smsService = new SMSService();
   const [formData, setFormData] = useState({
     name: '',  // Don't prefill name - it can be different for different entries
     mobile: customer?.mobile || '',
@@ -103,50 +105,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         paymentMethod: formData.paymentMethod
       });
 
-      // Send SMS notifications (using dialogs for now)
-      const location = locations.find(loc => loc.id === formData.locationId);
-      
-      // TODO: Replace with actual Fast2SMS integration when credentials are available
-      // SMS to Admin - currently showing dialog instead of sending
-      showSMSDialog(
-        process.env.NEXT_PUBLIC_ADMIN_MOBILE || '+919876543210',
-        SMSTemplates.entryConfirmation(
-          user.name || 'Operator',
-          location?.venueName || 'Unknown Location',
-          formData.name,
-          formData.numberOfPots,
-          entryId
-        ),
-        'entryConfirmation',
-        {
-          operatorName: user.name || 'Operator',
-          location: location?.venueName || 'Unknown Location',
-          customerName: formData.name,
-          pots: formData.numberOfPots,
-          entryId: entryId
-        },
-        entryId
-      );
-
-      // SMS to Customer
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-      
-      // TODO: Replace with actual Fast2SMS integration when credentials are available
-      // SMS to customer - currently showing dialog instead of sending
-      showSMSDialog(
-        formData.mobile,
-        SMSTemplates.customerEntryConfirmation(
-          entryId,
-          formatDate(expiryDate)
-        ),
-        'customerEntryConfirmation',
-        {
-          entryId: entryId,
-          expiryDate: formatDate(expiryDate)
-        },
-        entryId
-      );
+      // Entry created successfully - no SMS sent for entry creation as per requirements
 
       onSuccess({
         id: entryId,
