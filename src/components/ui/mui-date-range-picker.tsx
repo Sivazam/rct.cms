@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { DateRangePicker } from "@mui/x-date-pickers/DateRangePicker"
+import { useState, useEffect } from "react"
+import { DatePicker } from "@mui/x-date-pickers/DatePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+import { TextField, Stack } from "@mui/material"
 
 interface MUIDateRangePickerProps {
   onDateRangeChange: (range: { from: Date; to: Date } | undefined) => void
@@ -18,9 +19,19 @@ export function MUIDateRangePicker({
   initialDateRange,
   className
 }: MUIDateRangePickerProps) {
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>(
-    initialDateRange ? [initialDateRange.from, initialDateRange.to] : [null, null]
-  )
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
+
+  // Update internal state when initialDateRange changes
+  useEffect(() => {
+    if (initialDateRange) {
+      setStartDate(initialDateRange.from)
+      setEndDate(initialDateRange.to)
+    } else {
+      setStartDate(null)
+      setEndDate(null)
+    }
+  }, [initialDateRange])
 
   // Safety check for onDateRangeChange
   const safeOnDateRangeChange = (range: { from: Date; to: Date } | undefined) => {
@@ -35,44 +46,56 @@ export function MUIDateRangePicker({
     }
   }
 
-  const handleChange = (newRange: [Date | null, Date | null]) => {
-    setDateRange(newRange)
-    
-    if (newRange[0] && newRange[1]) {
-      const range = {
-        from: new Date(newRange[0]),
-        to: new Date(newRange[1])
-      }
-      safeOnDateRangeChange(range)
-    } else if (newRange[0] === null && newRange[1] === null) {
-      safeOnDateRangeChange(undefined)
+  const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date)
+    if (date && endDate) {
+      safeOnDateRangeChange({
+        from: new Date(date),
+        to: new Date(endDate)
+      })
     }
   }
 
-  // Update internal state when initialDateRange changes
-  useState(() => {
-    if (initialDateRange) {
-      setDateRange([initialDateRange.from, initialDateRange.to])
-    } else {
-      setDateRange([null, null])
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date)
+    if (startDate && date) {
+      safeOnDateRangeChange({
+        from: new Date(startDate),
+        to: new Date(date)
+      })
     }
-  })
+  }
 
   return (
     <div className={className}>
       <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <DateRangePicker
-          value={dateRange}
-          onChange={handleChange}
-          localeText={{ start: placeholder, end: "End date" }}
-          slotProps={{
-            textField: {
-              size: "small",
-              variant: "outlined",
-              helperText: "Select a date range to filter data"
-            }
-          }}
-        />
+        <Stack direction="row" spacing={2}>
+          <DatePicker
+            label="Start Date"
+            value={startDate}
+            onChange={handleStartDateChange}
+            slotProps={{
+              textField: {
+                size: "small",
+                variant: "outlined",
+                helperText: "Select start date"
+              }
+            }}
+          />
+          <DatePicker
+            label="End Date"
+            value={endDate}
+            onChange={handleEndDateChange}
+            minDate={startDate || undefined}
+            slotProps={{
+              textField: {
+                size: "small",
+                variant: "outlined",
+                helperText: "Select end date"
+              }
+            }}
+          />
+        </Stack>
       </LocalizationProvider>
     </div>
   )
