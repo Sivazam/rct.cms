@@ -716,6 +716,16 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
+    
+    // If it's already a Date object, use formatFirestoreDate
+    if (date instanceof Date) {
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+    
     console.log('Formatting date:', date, 'type:', typeof date);
     const formatted = formatFirestoreDate(date);
     console.log('Formatted date:', formatted);
@@ -768,7 +778,25 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
   // Helper function to get dispatch date from entry
   const getDispatchDate = (entry: Entry) => {
     // Try different possible field names for backward compatibility
-    return entry.deliveryDate || entry.dispatchDate || entry.deliveredAt;
+    const rawDate = entry.deliveryDate || entry.dispatchDate || entry.deliveredAt;
+    if (!rawDate) return null;
+    
+    // If it's a string (ISO format), convert to Date object
+    if (typeof rawDate === 'string') {
+      return new Date(rawDate);
+    }
+    
+    // If it's a Firestore timestamp, use toDate()
+    if (typeof rawDate === 'object' && 'toDate' in rawDate && typeof rawDate.toDate === 'function') {
+      return rawDate.toDate();
+    }
+    
+    // If it's already a Date object, return as-is
+    if (rawDate instanceof Date) {
+      return rawDate;
+    }
+    
+    return null;
   };
 
   // Helper function to get dispatch reason from entry

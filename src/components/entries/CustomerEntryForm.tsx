@@ -42,7 +42,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
   const [formData, setFormData] = useState({
     name: '',  // Don't prefill name - it can be different for different entries
     mobile: customer?.mobile || '',
-    city: customer?.city || '',
+    city: '',  // Don't prefill city for existing users
     additionalDetails: customer?.additionalDetails || '',
     numberOfPots: 1,
     paymentMethod: 'cash' as 'cash' | 'upi',
