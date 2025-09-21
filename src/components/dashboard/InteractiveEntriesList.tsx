@@ -380,7 +380,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('🚀 Sending renewal SMS notifications...');
         
-        // Send SMS to customer
+        // Send SMS to customer - the backend will automatically send to admin as well
         const customerSMSResult = await smsService.sendRenewalConfirmationCustomer(
           selectedEntryForRenewal.customerMobile,
           selectedEntryForRenewal.customerName,
@@ -394,28 +394,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('📱 Customer SMS Result:', customerSMSResult);
         
-        // Send SMS to admin
-        const adminSMSResult = await smsService.sendRenewalConfirmationAdmin(
-          '9876543210', // Default admin mobile - should be configurable
-          selectedEntryForRenewal.locationName || 'Unknown Location',
-          selectedEntryForRenewal.customerName,
-          selectedEntryForRenewal.id,
-          selectedEntryForRenewal.customerId,
-          selectedEntryForRenewal.locationId,
-          selectedEntryForRenewal.operatorId
-        );
-        
-        console.log('📞 Admin SMS Result:', adminSMSResult);
-        
         // Log SMS service status for debugging
         const serviceStatus = smsService.getServiceStatus();
         console.log('🔧 SMS Service Status:', serviceStatus);
         
-        // Show success message with SMS status
-        const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
-        const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
+        // The backend sendSMSV2 function automatically sends to both customer and admin
+        // when templateKey is 'renewalConfirmCustomer' or 'renewalConfirmAdmin'
+        // So we only need to call one function
         
-        alert(`Renewal processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
+        // Show success message with SMS status
+        const smsStatus = customerSMSResult.success ? 
+          '✅ SMS sent to customer and admin (via backend)' : 
+          '❌ Failed to send SMS notifications';
+        
+        alert(`Renewal processed successfully!\n${smsStatus}`);
         
       } catch (smsError) {
         console.error('❌ Error sending SMS notifications:', smsError);
@@ -523,7 +515,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('🚀 Sending dispatch SMS notifications...');
         
-        // Send SMS to customer
+        // Send SMS to customer - the backend will automatically send to admin as well
         const customerSMSResult = await smsService.sendDispatchConfirmationCustomer(
           selectedEntryForDispatch.customerMobile,
           selectedEntryForDispatch.customerName,
@@ -539,28 +531,20 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         
         console.log('📱 Customer SMS Result:', customerSMSResult);
         
-        // Send SMS to admin
-        const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
-          '9876543210', // Default admin mobile - should be configurable
-          selectedEntryForDispatch.customerName,
-          selectedEntryForDispatch.locationName || 'Unknown Location',
-          selectedEntryForDispatch.id,
-          selectedEntryForDispatch.customerId,
-          selectedEntryForDispatch.locationId,
-          selectedEntryForDispatch.operatorId
-        );
-        
-        console.log('📞 Admin SMS Result:', adminSMSResult);
-        
         // Log SMS service status for debugging
         const serviceStatus = smsService.getServiceStatus();
         console.log('🔧 SMS Service Status:', serviceStatus);
         
-        // Show success message with SMS status
-        const customerSMSSuccess = customerSMSResult.success ? '✅ SMS sent to customer' : '❌ Failed to send SMS to customer';
-        const adminSMSSuccess = adminSMSResult.success ? '✅ SMS sent to admin' : '❌ Failed to send SMS to admin';
+        // The backend sendSMSV2 function automatically sends to both customer and admin
+        // when templateKey is 'dispatchConfirmCustomer' or 'deliveryConfirmAdmin'
+        // So we only need to call one function
         
-        alert(`Dispatch processed successfully!\n${customerSMSSuccess}\n${adminSMSSuccess}`);
+        // Show success message with SMS status
+        const smsStatus = customerSMSResult.success ? 
+          '✅ SMS sent to customer and admin (via backend)' : 
+          '❌ Failed to send SMS notifications';
+        
+        alert(`Dispatch processed successfully!\n${smsStatus}`);
         
       } catch (smsError) {
         console.error('❌ Error sending SMS notifications:', smsError);
