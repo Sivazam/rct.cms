@@ -16,8 +16,8 @@ export default function SpiritualLoading({
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setRotation(prev => (prev + 2) % 360);
-    }, 50);
+      setRotation(prev => (prev + 1) % 360); // Changed from +2 to +1 for slower rotation
+    }, 100); // Keep the interval time the same
 
     return () => clearInterval(interval);
   }, []);
@@ -35,11 +35,11 @@ export default function SpiritualLoading({
               }}
             >
               <Image
-                src="/wheel.png"
+                src="/logo.webp"
                 alt="Loading Wheel"
                 width={96}
                 height={96}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain rounded-[8px]"
                 onError={(e) => {
                   // Fallback to simple spinner if image not found
                   const target = e.target as HTMLImageElement;

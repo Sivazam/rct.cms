@@ -11,7 +11,7 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
   const [appLoaded, setAppLoaded] = useState(false);
 
   useEffect(() => {
-    const duration = 10000; // 10 seconds
+    const duration = 7000; // Changed from 10000 to 7000 (7 seconds)
     const startTime = Date.now();
     
     const progressInterval = setInterval(() => {
@@ -51,18 +51,21 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
           <div className="relative z-10 flex flex-col items-center space-y-8">
             {/* Logo */}
             <div className="relative">
-              <img
-                src="/logo-placeholder.png"
-                alt="Logo"
-                width={160}
-                height={160}
-                style={{"border-radius":"8px"}}
-                className="w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-2xl"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
+              <div className="w-32 h-32 md:w-40 md:h-40 transition-transform duration-100 ease-linear animate-spin" style={{
+                animation: 'spin 8s linear infinite' // Changed from default to 8s for slower rotation
+              }}>
+                <img
+                  src="/logo.webp"
+                  alt="Logo"
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-contain rounded-[8px] drop-shadow-2xl"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </div>
             </div>
 
             {/* Loading Bar */}

@@ -265,7 +265,7 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
 
   // progress timer
   useEffect(() => {
-    const duration = 10000;
+    const duration = 7000; // Changed from 10000 to 7000 (7 seconds)
     const start = Date.now();
     const id = setInterval(() => {
       const elapsed = Date.now() - start;
@@ -317,17 +317,23 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
           <div className="flex flex-col items-center space-y-8">
             {/* Logo */}
-            <img
-              src="/logo-placeholder.png"
-              alt="Logo"
-              width={120}
-              height={120}
-              className="w-28 h-28 object-contain rounded-[12px] drop-shadow-2xl"
-              onError={(e) => {
-                const t = e.target as HTMLImageElement;
-                t.style.display = 'none';
-              }}
-            />
+            <div className="relative">
+              <div className="w-28 h-28 md:w-32 md:h-32 transition-transform duration-100 ease-linear animate-spin" style={{
+                animation: 'spin 8s linear infinite' // Changed from 3s to 8s for slower rotation
+              }}>
+                <img
+                  src="/logo.webp"
+                  alt="Logo"
+                  width={120}
+                  height={120}
+                  className="w-full h-full object-contain rounded-[12px] drop-shadow-2xl"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.style.display = 'none';
+                  }}
+                />
+              </div>
+            </div>
 
             {/* Loader bar */}
             <div className="w-72 max-w-full">

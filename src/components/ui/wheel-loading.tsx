@@ -16,8 +16,8 @@ export default function WheelLoading({
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setRotation(prev => (prev + 2) % 360);
-    }, 50);
+      setRotation(prev => (prev + 1) % 360); // Changed from +2 to +1 for slower rotation
+    }, 100); // Changed from 50ms to 100ms for even slower rotation
 
     return () => clearInterval(interval);
   }, []);
@@ -53,11 +53,11 @@ export default function WheelLoading({
             }}
           >
             <Image
-              src="/wheel.png"
+              src="/logo.webp"
               alt="Loading Wheel"
               width={size === 'lg' ? 128 : size === 'sm' ? 64 : 96}
               height={size === 'lg' ? 128 : size === 'sm' ? 64 : 96}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain rounded-[8px]"
               onError={(e) => {
                 // Fallback to a simple wheel if image not found
                 const target = e.target as HTMLImageElement;
