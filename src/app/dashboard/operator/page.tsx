@@ -22,7 +22,7 @@ import {
   Truck,
   Users,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   AlertTriangle,
   Clock,
   Phone,
@@ -385,25 +385,29 @@ export default function OperatorDashboard() {
                     title: 'My Active Entries',
                     value: stats.totalEntries,
                     icon: Package,
-                    color: 'amber'
+                    color: 'amber',
+                    clickable: true
                   },
                   {
                     title: 'Pending Renewals',
                     value: stats.totalRenewals,
                     icon: RefreshCw,
-                    color: 'orange'
+                    color: 'orange',
+                    clickable: true
                   },
                   {
                     title: 'Completed Deliveries',
                     value: stats.totalDeliveries,
                     icon: Truck,
-                    color: 'amber'
+                    color: 'amber',
+                    clickable: true
                   },
                   {
                     title: 'Monthly Revenue',
                     value: `₹${stats.monthlyRevenue.toLocaleString()}`,
-                    icon: DollarSign,
-                    color: 'orange'
+                    icon: IndianRupee,
+                    color: 'orange',
+                    clickable: true
                   }
                 ].map((stat, index) => (
                   <motion.div
@@ -413,7 +417,10 @@ export default function OperatorDashboard() {
                     transition={{ delay: index * 0.1 }}
                     className="group"
                   >
-                    <Card className="h-full hover:shadow-md transition-all duration-200 border-amber-200">
+                    <Card 
+                      className={`h-full hover:shadow-md transition-all duration-200 border-amber-200 ${stat.clickable ? 'cursor-pointer hover:scale-105' : ''}`}
+                      onClick={() => stat.clickable && handleCardClick(stat.title)}
+                    >
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-amber-700">
                           {stat.title}
@@ -432,6 +439,67 @@ export default function OperatorDashboard() {
                 ))}
               </div>
 
+              {/* Interactive Content Area */}
+              <div ref={expandedContentRef} className="space-y-6">
+                {expandedCard === 'My Active Entries' && (
+                  <InteractiveEntriesList 
+                    type="active" 
+                    locationId={selectedLocation}
+                    onDataChanged={fetchOperatorData}
+                  />
+                )}
+                {expandedCard === 'Pending Renewals' && (
+                  <InteractiveEntriesList 
+                    type="pending" 
+                    locationId={selectedLocation}
+                    onDataChanged={fetchOperatorData}
+                  />
+                )}
+                {expandedCard === 'Completed Deliveries' && (
+                  <InteractiveEntriesList 
+                    type="dispatched" 
+                    locationId={selectedLocation}
+                    onDataChanged={fetchOperatorData}
+                  />
+                )}
+                {expandedCard === 'Monthly Revenue' && (
+                  <Card className="border-amber-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <IndianRupee className="h-5 w-5" />
+                        Revenue Details
+                      </CardTitle>
+                      <CardDescription>
+                        Monthly revenue breakdown and transaction history
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="text-center p-4 bg-amber-50 rounded-lg">
+                            <p className="text-2xl font-bold text-amber-900">₹{stats.monthlyRevenue.toLocaleString()}</p>
+                            <p className="text-sm text-amber-600">This Month</p>
+                          </div>
+                          <div className="text-center p-4 bg-orange-50 rounded-lg">
+                            <p className="text-2xl font-bold text-orange-900">₹{stats.todayRevenue.toLocaleString()}</p>
+                            <p className="text-sm text-orange-600">Today</p>
+                          </div>
+                          <div className="text-center p-4 bg-green-50 rounded-lg">
+                            <p className="text-2xl font-bold text-green-900">{stats.todayEntries}</p>
+                            <p className="text-sm text-green-600">Today's Entries</p>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm text-amber-600">
+                            Revenue is calculated from entry payments and renewals
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
               {/* Tab Content */}
               <div className="space-y-6">
                 {activeTab === 'overview' && (
@@ -443,32 +511,48 @@ export default function OperatorDashboard() {
                           Recent Activity
                         </CardTitle>
                         <CardDescription>
-                          Your latest entries and activities
+                          Your latest entries, renewals, and deliveries
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {recentEntries.slice(0, 5).map((entry) => (
-                            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                                  <User className="h-4 w-4 text-amber-600" />
+                          {recentEntries.slice(0, 5).map((entry) => {
+                            // Determine activity type and icon based on entry data
+                            const hasRenewals = entry.renewals && entry.renewals.length > 0;
+                            const isDispatched = entry.status === 'dispatched';
+                            const activityType = isDispatched ? 'dispatch' : (hasRenewals ? 'renewal' : 'entry');
+                            const activityIcon = isDispatched ? Truck : (hasRenewals ? RefreshCw : Package);
+                            const activityText = isDispatched ? 'Dispatched' : (hasRenewals ? 'Renewed' : 'Entry');
+                            
+                            return (
+                              <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                                    <activityIcon className="h-4 w-4 text-amber-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
+                                    <p className="text-xs text-amber-600">{entry.customerPhone}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
-                                  <p className="text-xs text-amber-600">{entry.customerPhone}</p>
+                                <div className="text-right">
+                                  <p className="text-xs text-amber-600">
+                                    {entry.entryDate ? formatFirestoreDate(entry.entryDate) : 'N/A'}
+                                  </p>
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
+                                      {entry.status}
+                                    </Badge>
+                                    {hasRenewals && (
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                                        {activityText}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-xs text-amber-600">
-                                  {entry.entryDate ? formatFirestoreDate(entry.entryDate) : 'N/A'}
-                                </p>
-                                <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
-                                  {entry.status}
-                                </Badge>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                           {recentEntries.length === 0 && (
                             <p className="text-sm text-amber-600 text-center py-4">
                               No recent activity

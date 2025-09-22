@@ -31,7 +31,7 @@ import {
   RefreshCw, 
   AlertTriangle,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Package,
   Truck,
@@ -391,7 +391,7 @@ export default function AdminDashboard() {
                     {
                       title: 'Monthly Revenue',
                       value: `₹${stats.monthlyRevenue.toLocaleString()}`,
-                      icon: DollarSign,
+                      icon: IndianRupee,
                       color: 'orange',
                       change: '+15%',
                       type: 'revenue'

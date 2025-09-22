@@ -53,22 +53,25 @@ export default function OperatorManagement() {
     try {
       setLoading(true);
       console.log('Fetching operator data...');
+      
       const [pendingOps, activeOps, locs] = await Promise.all([
         getPendingOperators(),
         getActiveOperators(),
         getLocations()
       ]);
       
-      console.log('Pending operators:', pendingOps);
-      console.log('Active operators:', activeOps);
-      console.log('Locations:', locs);
+      console.log('Data fetched successfully:', {
+        pendingOperators: pendingOps.length,
+        activeOperators: activeOps.length,
+        locations: locs.length
+      });
       
       setPendingOperators(pendingOps);
       setActiveOperators(activeOps);
       setLocations(locs.filter(loc => loc.isActive));
     } catch (error) {
-      setError('Failed to fetch data');
       console.error('Error fetching data:', error);
+      setError('Failed to fetch data: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -83,17 +86,26 @@ export default function OperatorManagement() {
   const handleApprove = async () => {
     if (!selectedOperator || !user) {
       setError('Invalid operator or user');
+      console.error('Approval error: Missing operator or user', { selectedOperator, user });
       return;
     }
 
     try {
+      console.log('Approving operator:', {
+        operatorId: selectedOperator.id,
+        locationIds: selectedLocations,
+        approvedBy: user.uid
+      });
+      
       await approveOperator(selectedOperator.id, selectedLocations, user.uid);
       
+      console.log('Operator approved successfully');
       setIsApproveDialogOpen(false);
       setSelectedOperator(null);
       setSelectedLocations([]);
       fetchData();
     } catch (error: any) {
+      console.error('Error approving operator:', error);
       setError(error.message || 'Failed to approve operator');
     }
   };
@@ -104,9 +116,14 @@ export default function OperatorManagement() {
     }
 
     try {
+      console.log('Rejecting operator:', { operatorId, reason: 'Rejected by admin' });
+      
       await rejectOperator(operatorId, 'Rejected by admin');
+      
+      console.log('Operator rejected successfully');
       fetchData();
     } catch (error: any) {
+      console.error('Error rejecting operator:', error);
       setError(error.message || 'Failed to reject operator');
     }
   };
@@ -125,22 +142,32 @@ export default function OperatorManagement() {
     }
 
     try {
+      console.log('Deactivating operator:', { operatorId });
+      
       await updateUser(operatorId, {
         isActive: false
       });
+      
+      console.log('Operator deactivated successfully');
       fetchData();
     } catch (error: any) {
+      console.error('Error deactivating operator:', error);
       setError(error.message || 'Failed to deactivate operator');
     }
   };
 
   const handleActivate = async (operatorId: string) => {
     try {
+      console.log('Activating operator:', { operatorId });
+      
       await updateUser(operatorId, {
         isActive: true
       });
+      
+      console.log('Operator activated successfully');
       fetchData();
     } catch (error: any) {
+      console.error('Error activating operator:', error);
       setError(error.message || 'Failed to activate operator');
     }
   };
