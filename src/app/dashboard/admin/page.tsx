@@ -225,7 +225,7 @@ export default function AdminDashboard() {
     <ProtectedRoute requiredRole="admin">
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-white border-b border shadow-sm">
+        <header className="bg-white/80 border-b border-border/50 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden sm:flex justify-between items-center h-16">
@@ -333,7 +333,7 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Filters Section */}
-                <div className="bg-white rounded-lg border p-6 shadow-sm">
+                <div className="bg-white border-2 border-border/50 rounded-xl p-6">
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div className="flex flex-col gap-2">
                       <h3 className="text-lg font-semibold text-foreground">Dashboard Overview</h3>

@@ -20,7 +20,7 @@ export default function SpiritualDashboardWrapper({
     <div className="min-h-screen bg-background">
       <div className="relative z-10">
         {/* Header */}
-        <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border">
+        <header className="bg-white/80 backdrop-blur-sm border-b border-border/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-3">
@@ -44,7 +44,7 @@ export default function SpiritualDashboardWrapper({
         </main>
 
         {/* Footer */}
-        <footer className="bg-accent/50 border-t border mt-12">
+        <footer className="bg-white/60 border-t border-border/50 mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
               <div className="flex items-center space-x-2">

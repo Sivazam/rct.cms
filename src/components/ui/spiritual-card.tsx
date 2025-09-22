@@ -27,57 +27,57 @@ export default function SpiritualCard({
     switch (variant) {
       case 'sacred':
         return {
-          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-accent bg-accent/20',
+          card: 'bg-white border-2 border-primary/60 hover:border-primary hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-primary/30 bg-primary/10',
           title: 'text-foreground',
           description: 'text-muted-foreground'
         };
       case 'ritual':
         return {
-          card: 'bg-white border-orange-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-background bg-background/20',
+          card: 'bg-white border-2 border-orange-400/60 hover:border-orange-400 hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-orange-400/30 bg-orange-400/10',
           title: 'text-orange-900',
           description: 'text-orange-700'
         };
       case 'memorial':
         return {
-          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-accent bg-accent/20',
+          card: 'bg-white border-2 border-primary/60 hover:border-primary hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-primary/30 bg-primary/10',
           title: 'text-foreground',
           description: 'text-muted-foreground'
         };
       case 'professional':
         return {
-          card: 'bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-slate-100 bg-slate-50/50',
+          card: 'bg-white border-2 border-slate-400/60 hover:border-slate-400 hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-slate-400/30 bg-slate-400/10',
           title: 'text-slate-900',
           description: 'text-slate-600'
         };
       case 'warning':
         return {
-          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-accent bg-accent/20',
-          title: 'text-foreground',
-          description: 'text-muted-foreground'
+          card: 'bg-white border-2 border-yellow-500/60 hover:border-yellow-500 hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-yellow-500/30 bg-yellow-500/10',
+          title: 'text-yellow-900',
+          description: 'text-yellow-700'
         };
       case 'success':
         return {
-          card: 'bg-white border-green-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-green-50 bg-green-50/20',
+          card: 'bg-white border-2 border-green-500/60 hover:border-green-500 hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-green-500/30 bg-green-500/10',
           title: 'text-green-900',
           description: 'text-green-700'
         };
       case 'divine':
         return {
-          card: 'bg-white border-orange-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-background bg-background/30',
+          card: 'bg-white border-2 border-orange-400/60 hover:border-orange-400 hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-orange-400/30 bg-orange-400/20',
           title: 'text-orange-900',
           description: 'text-orange-700'
         };
       default:
         return {
-          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-accent',
+          card: 'bg-white border-2 border-border/80 hover:border-primary/60 hover:shadow-lg transition-all duration-200',
+          header: 'border-b border-border/30',
           title: 'text-foreground',
           description: 'text-muted-foreground'
         };

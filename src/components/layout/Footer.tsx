@@ -8,8 +8,25 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-primary text-primary-foreground mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="relative mt-auto overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/footer-bg.jpg')"
+        }}
+      />
+      
+      {/* Color Tint Overlay */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          backgroundColor: 'rgba(153, 3, 30, 0.85)' // #99031e with 85% opacity
+        }}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Organization Info */}
           <div className="lg:col-span-2">
