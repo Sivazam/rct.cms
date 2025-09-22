@@ -51,14 +51,7 @@ export function ThemeToggle() {
         <Moon className="h-5 w-5 text-saffron-200" />
       </div>
       
-      {/* Spiritual center icon (diya/lamp) - always visible but less prominent */}
-      <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-5">
-        <LampDesk className={`h-4 w-4 transition-all duration-300 ${
-          theme === 'light' 
-            ? 'text-orange-700 opacity-40' 
-            : 'text-saffron-300 opacity-50'
-        }`} />
-      </div>
+  
       
       {/* Animated ring */}
       <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-orange-400 dark:group-hover:border-red-500 transition-all duration-300" />

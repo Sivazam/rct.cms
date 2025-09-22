@@ -133,23 +133,23 @@
   --foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   
   /* Rich dark cards with temple red accents */
-  --card: oklch(0.11 0.018 28);
+  --card: oklch(0.11 0.018 28 / 0.7); /* Semi-transparent cards */
   --card-foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   
-  --popover: oklch(0.11 0.018 28);
+  --popover: oklch(0.11 0.018 28 / 0.7); /* Semi-transparent popover */
   --popover-foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   
   /* Warmer orange primary in dark mode */
   --primary: oklch(0.75 0.16 55);
   --primary-foreground: oklch(0.08 0.015 25);
   
-  --secondary: oklch(0.22 0.018 50);
+  --secondary: oklch(0.22 0.018 50 / 0.7); /* Semi-transparent secondary background */
   --secondary-foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   
-  --muted: oklch(0.18 0.015 45);
-  --muted-foreground: oklch(0.85 0.02 75); /* Significantly increased lightness for better readability */
+  --muted: oklch(0.18 0.015 45 / 0.6); /* Semi-transparent muted background */
+  --muted-foreground: oklch(0.9 0.02 75); /* Even brighter for better readability */
   
-  --accent: oklch(0.25 0.02 52);
+  --accent: oklch(0.25 0.02 52 / 0.7); /* Semi-transparent accent background */
   --accent-foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   
   --destructive: oklch(0.7 0.12 55);
@@ -167,11 +167,11 @@
   --chart-5: oklch(0.9 0.035 5);
   
   /* Dark temple sidebar */
-  --sidebar: oklch(0.09 0.015 30);
+  --sidebar: oklch(0.09 0.015 30 / 0.8); /* Semi-transparent sidebar */
   --sidebar-foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   --sidebar-primary: oklch(0.75 0.16 55);
   --sidebar-primary-foreground: oklch(0.08 0.015 25);
-  --sidebar-accent: oklch(0.22 0.018 50);
+  --sidebar-accent: oklch(0.22 0.018 50 / 0.7); /* Semi-transparent sidebar accent */
   --sidebar-accent-foreground: oklch(0.98 0.01 85); /* Increased lightness for better contrast */
   --sidebar-border: oklch(0.25 0.02 50);
   --sidebar-ring: oklch(0.75 0.16 55);
@@ -188,11 +188,20 @@
 
 /* Custom styles for outlined cards with professional appearance */
 .outlined-card {
-  @apply bg-white border-2 border-border/80;
+  @apply bg-background border-2 border-border/80;
 }
 
 .outlined-card:hover {
   @apply border-primary/60 shadow-lg;
+}
+
+/* Dark mode adjustments for cards */
+.dark .outlined-card {
+  @apply bg-card/80 backdrop-blur-sm;
+}
+
+.dark .outlined-card:hover {
+  @apply border-primary/70 shadow-lg;
 }
 
 /* Professional accent elements */
