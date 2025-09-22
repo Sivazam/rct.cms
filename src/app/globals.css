@@ -197,7 +197,7 @@
 
 /* Dark mode adjustments for cards */
 .dark .outlined-card {
-  @apply bg-card/80 backdrop-blur-sm;
+  @apply bg-card/80 backdrop-blur-sm border-white/20;
 }
 
 .dark .outlined-card:hover {
@@ -209,16 +209,88 @@
   @apply bg-background/80 backdrop-blur-sm;
 }
 
+/* Add white outline to all cards in dark mode */
+.dark .card,
+.dark [class*="Card"],
+.dark .bg-card {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
 /* Ensure button text is readable in dark mode */
 .dark .btn-primary,
 .dark .btn-secondary,
 .dark .btn-outline,
 .dark button {
-  color: oklch(0.15 0.015 25) !important;
+  color: white !important;
 }
 
 .dark .bg-primary {
+  color: white !important;
+}
+
+/* Make sure all text on dark backgrounds is white */
+.dark .text-foreground,
+.dark .text-muted-foreground,
+.dark .text-secondary-foreground,
+.dark .text-accent-foreground,
+.dark .text-card-foreground,
+.dark .text-popover-foreground,
+.dark .text-sidebar-foreground {
+  color: white !important;
+}
+
+/* Special case for buttons with light backgrounds - keep text dark */
+.dark .bg-primary,
+.dark .bg-secondary,
+.dark .bg-accent,
+.dark .bg-orange-100,
+.dark .bg-saffron-100,
+.dark [class*="bg-orange"],
+.dark [class*="bg-saffron"] {
   color: oklch(0.15 0.015 25) !important;
+}
+
+.dark .bg-primary .text-foreground,
+.dark .bg-secondary .text-foreground,
+.dark .bg-accent .text-foreground {
+  color: oklch(0.15 0.015 25) !important;
+}
+
+/* Make location dropdown text visible in dark mode */
+.dark .select-trigger,
+.dark .select-value,
+.dark .select-content,
+.dark .select-item,
+.dark [data-slot="select-trigger"],
+.dark [data-slot="select-value"],
+.dark [data-slot="select-content"],
+.dark [data-slot="select-item"] {
+  color: white !important;
+}
+
+.dark .select-trigger .text-muted-foreground,
+.dark .select-value .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Make sure dropdown background is visible */
+.dark .select-content,
+.dark [data-slot="select-content"] {
+  background-color: oklch(0.11 0.018 28 / 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .select-item,
+.dark [data-slot="select-item"] {
+  color: white !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .select-item:hover,
+.dark [data-slot="select-item"]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
 }
 
 /* Professional accent elements */
