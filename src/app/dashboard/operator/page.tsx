@@ -12,6 +12,8 @@ import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
+import RecentActivity from '@/components/dashboard/RecentActivity';
+import OperatorProfile from '@/components/operators/OperatorProfile';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
@@ -32,7 +34,8 @@ import {
   User,
   LogOut,
   FileText,
-  BarChart3
+  BarChart3,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -41,23 +44,22 @@ export default function OperatorDashboard() {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [locations, setLocations] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>({
+  const [stats, setStats] = useState({
     totalEntries: 0,
     totalRenewals: 0,
     totalDeliveries: 0,
     expiringIn7Days: 0,
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
+    renewalCollections: 0,
+    deliveryCollections: 0,
+    currentActive: 0
   });
-  const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [expiringEntries, setExpiringEntries] = useState<any[]>([]);
+  const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchOperatorData();
-  }, [selectedLocation, user, dateRange]);
 
   const handleCardClick = (cardType: string) => {
     console.log('Operator Card clicked:', cardType);
@@ -74,6 +76,24 @@ export default function OperatorDashboard() {
     }
   };
 
+  const safeLogout = async () => {
+    try {
+      if (typeof logout === 'function') {
+        await logout();
+      }
+    } catch (error) {
+      console.error('Error in logout:', error);
+    }
+  };
+
+  const safeSetDateRange = (range: { from: Date; to: Date } | undefined) => {
+    try {
+      setDateRange(range);
+    } catch (error) {
+      console.error('Error in setDateRange:', error);
+    }
+  };
+
   useEffect(() => {
     if (expandedCard && expandedContentRef.current) {
       setTimeout(() => {
@@ -84,6 +104,10 @@ export default function OperatorDashboard() {
       }, 150);
     }
   }, [expandedCard]);
+
+  useEffect(() => {
+    fetchOperatorData();
+  }, [selectedLocation, dateRange]);
 
   useEffect(() => {
     const handleUrlChange = () => {
@@ -105,11 +129,6 @@ export default function OperatorDashboard() {
   }, []);
 
   const fetchOperatorData = async () => {
-    if (!user) {
-      console.log('User not loaded yet, skipping data fetch');
-      return;
-    }
-
     try {
       setLoading(true);
       
@@ -136,96 +155,89 @@ export default function OperatorDashboard() {
           totalDeliveries: 0,
           expiringIn7Days: 0,
           monthlyRevenue: 0,
-          todayEntries: 0,
-          todayRevenue: 0,
-          pendingTasks: 0
+          renewalCollections: 0,
+          deliveryCollections: 0,
+          currentActive: 0
         });
-        setRecentEntries([]);
         setExpiringEntries([]);
+        setRecentEntries([]);
       } else if (selectedLocation) {
-        const [activeEntries, pendingRenewalsEntries, deliveredEntries, allEntries, expiringSoonEntries] = await Promise.all([
+        const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
+        const statsData = await getSystemStats(locationId, dateRange) || {};
+        
+        const [activeEntries, pendingRenewals, deliveries, allEntries, expiring] = await Promise.all([
           getEntries({
-            locationId: selectedLocation,
+            locationId: locationId,
             status: 'active'
           }),
           getEntries({
-            locationId: selectedLocation,
+            locationId: locationId,
             needsRenewal: true
           }),
           getEntries({
-            locationId: selectedLocation,
-            status: 'delivered'
+            locationId: locationId,
+            status: 'dispatched'
           }),
           getEntries({
-            locationId: selectedLocation
+            locationId: locationId
           }),
           getEntries({
-            locationId: selectedLocation,
+            locationId: locationId,
             expiringSoon: true
           })
         ]);
         
+        // Filter entries to only show operator's own entries
         const operatorEntries = allEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorActiveEntries = activeEntries.filter(entry => entry.operatorId === user?.uid);
-        const operatorPendingRenewalsEntries = pendingRenewalsEntries.filter(entry => entry.operatorId === user?.uid);
-        const operatorDeliveredEntries = deliveredEntries.filter(entry => entry.operatorId === user?.uid);
-        const operatorExpiringSoonEntries = expiringSoonEntries.filter(entry => entry.operatorId === user?.uid);
+        const operatorPendingRenewals = pendingRenewals.filter(entry => entry.operatorId === user?.uid);
+        const operatorDeliveries = deliveries.filter(entry => entry.operatorId === user?.uid);
+        const operatorExpiring = expiring.filter(entry => entry.operatorId === user?.uid);
         
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        const todayEntries = operatorEntries.filter(entry => {
-          const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
-          return entryDate && entryDate >= today && entryDate < tomorrow;
-        });
-        
-        const todayRevenue = todayEntries.reduce((sum, entry) => {
+        // Calculate operator-specific revenue
+        const operatorMonthlyRevenue = operatorEntries.reduce((sum, entry) => {
           return sum + (entry.payments?.reduce((paymentSum: number, payment: any) => {
-            const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
-            return paymentSum + (paymentDate && paymentDate >= today && paymentDate < tomorrow ? payment.amount : 0);
+            const paymentDate = payment.date?.toDate ? payment.date.toDate() : new Date(payment.date);
+            const currentMonth = new Date();
+            currentMonth.setDate(1);
+            currentMonth.setHours(0, 0, 0, 0);
+            return paymentSum + (paymentDate >= currentMonth ? payment.amount : 0);
           }, 0) || 0);
         }, 0);
         
-        const currentMonth = new Date();
-        currentMonth.setDate(1);
-        currentMonth.setHours(0, 0, 0, 0);
-        
-        const monthlyRevenue = operatorEntries.reduce((sum, entry) => {
-          return sum + (entry.payments?.reduce((paymentSum: number, payment: any) => {
-            const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
-            return paymentSum + (paymentDate && paymentDate >= currentMonth ? payment.amount : 0);
+        const operatorRenewalCollections = operatorEntries.reduce((sum, entry) => {
+          return sum + (entry.renewals?.reduce((renewalSum: number, renewal: any) => {
+            const renewalDate = renewal.date?.toDate ? renewal.date.toDate() : new Date(renewal.date);
+            const currentMonth = new Date();
+            currentMonth.setDate(1);
+            currentMonth.setHours(0, 0, 0, 0);
+            return renewalSum + (renewalDate >= currentMonth ? renewal.amount : 0);
           }, 0) || 0);
         }, 0);
         
-        const pendingTasks = operatorExpiringSoonEntries.length + operatorActiveEntries.filter(entry => {
-          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
-          return expiryDate && expiryDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        }).length;
+        const operatorDeliveryCollections = operatorEntries.reduce((sum, entry) => {
+          return sum + (entry.status === 'dispatched' ? 500 : 0); // Fixed delivery fee
+        }, 0);
         
         setStats({
           totalEntries: operatorActiveEntries.length,
-          totalRenewals: operatorPendingRenewalsEntries.length,
-          totalDeliveries: operatorDeliveredEntries.length,
-          expiringIn7Days: operatorExpiringSoonEntries.length,
-          monthlyRevenue: monthlyRevenue,
-          todayEntries: todayEntries.length,
-          todayRevenue: todayRevenue,
-          pendingTasks: pendingTasks
+          totalRenewals: operatorPendingRenewals.length,
+          totalDeliveries: operatorDeliveries.length,
+          expiringIn7Days: operatorExpiring.length,
+          monthlyRevenue: operatorMonthlyRevenue,
+          renewalCollections: operatorRenewalCollections,
+          deliveryCollections: operatorDeliveryCollections,
+          currentActive: operatorActiveEntries.length
         });
         
+        setExpiringEntries(operatorExpiring);
         setRecentEntries(operatorEntries.slice(0, 5));
-        setExpiringEntries(operatorExpiringSoonEntries);
         
         console.log('Operator stats updated:', {
           totalEntries: operatorActiveEntries.length,
-          totalRenewals: operatorPendingRenewalsEntries.length,
-          totalDeliveries: operatorDeliveredEntries.length,
-          monthlyRevenue: monthlyRevenue,
-          todayEntries: todayEntries.length,
-          todayRevenue: todayRevenue,
-          pendingTasks: pendingTasks
+          totalRenewals: operatorPendingRenewals.length,
+          totalDeliveries: operatorDeliveries.length,
+          monthlyRevenue: operatorMonthlyRevenue
         });
       }
       
@@ -236,18 +248,22 @@ export default function OperatorDashboard() {
     }
   };
 
+  const handleEntriesDataChanged = () => {
+    console.log('Entries data changed, refreshing operator dashboard');
+    fetchOperatorData();
+  };
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('tab', tab);
       window.history.pushState({}, '', url.toString());
-      window.dispatchEvent(new Event('urlchange'));
     }
   };
 
   const handleLogout = async () => {
-    await logout();
+    await safeLogout();
   };
 
   return (
@@ -269,7 +285,7 @@ export default function OperatorDashboard() {
                 </div>
                 <Badge variant="outline" className="ml-4 border-amber-200 text-amber-700">Operator</Badge>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="w-56">
                     <SelectValue placeholder="Select Location" />
@@ -283,7 +299,7 @@ export default function OperatorDashboard() {
                   </SelectContent>
                 </Select>
                 <div className="text-sm text-amber-700">
-                  Welcome, {user?.name}
+                  Welcome, {user?.name || 'Operator'}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
@@ -323,6 +339,35 @@ export default function OperatorDashboard() {
           </div>
         </header>
 
+        {/* Desktop Tabs - Hidden when mobile bottom nav is visible */}
+        <div className="hidden md:block">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="border-b border-amber-200">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+                  { id: 'profile', label: 'Profile', icon: User }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`
+                      group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm
+                      ${activeTab === tab.id
+                        ? 'border-amber-500 text-amber-600'
+                        : 'border-transparent text-amber-700 hover:text-amber-900 hover:border-amber-300'
+                      }
+                    `}
+                  >
+                    <tab.icon className="h-4 w-4 mr-2" />
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+        </div>
+
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 sm:pb-8">
           {locations.length === 0 ? (
@@ -350,226 +395,322 @@ export default function OperatorDashboard() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Button 
-                  variant="default" 
-                  className="h-auto p-4 flex flex-col items-center gap-2 bg-amber-600 hover:bg-amber-700"
-                  onClick={() => handleTabChange('entries')}
-                >
-                  <Plus className="h-6 w-6" />
-                  <span className="text-sm font-medium">New Entry</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-auto p-4 flex flex-col items-center gap-2 border-amber-200 text-amber-700"
-                  onClick={() => handleTabChange('renewals')}
-                >
-                  <RefreshCw className="h-6 w-6" />
-                  <span className="text-sm font-medium">Renewals</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-auto p-4 flex flex-col items-center gap-2 border-amber-200 text-amber-700"
-                  onClick={() => handleTabChange('deliveries')}
-                >
-                  <Truck className="h-6 w-6" />
-                  <span className="text-sm font-medium">Deliveries</span>
-                </Button>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  {
-                    title: 'My Active Entries',
-                    value: stats.totalEntries,
-                    icon: Package,
-                    color: 'amber',
-                    clickable: true
-                  },
-                  {
-                    title: 'Pending Renewals',
-                    value: stats.totalRenewals,
-                    icon: RefreshCw,
-                    color: 'orange',
-                    clickable: true
-                  },
-                  {
-                    title: 'Completed Deliveries',
-                    value: stats.totalDeliveries,
-                    icon: Truck,
-                    color: 'amber',
-                    clickable: true
-                  },
-                  {
-                    title: 'Monthly Revenue',
-                    value: `₹${stats.monthlyRevenue.toLocaleString()}`,
-                    icon: IndianRupee,
-                    color: 'orange',
-                    clickable: true
-                  }
-                ].map((stat, index) => (
-                  <motion.div
-                    key={stat.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="group"
-                  >
-                    <Card 
-                      className={`h-full hover:shadow-md transition-all duration-200 border-amber-200 ${stat.clickable ? 'cursor-pointer hover:scale-105' : ''}`}
-                      onClick={() => stat.clickable && handleCardClick(stat.title)}
-                    >
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-amber-700">
-                          {stat.title}
-                        </CardTitle>
-                        <div className={`p-2 rounded-lg bg-${stat.color}-50`}>
-                          <stat.icon className={`h-4 w-4 text-${stat.color}-600`} />
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-amber-900">
-                          {stat.value}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Interactive Content Area */}
-              <div ref={expandedContentRef} className="space-y-6">
-                {expandedCard === 'My Active Entries' && (
-                  <InteractiveEntriesList 
-                    type="active" 
-                    locationId={selectedLocation}
-                    onDataChanged={fetchOperatorData}
-                  />
-                )}
-                {expandedCard === 'Pending Renewals' && (
-                  <InteractiveEntriesList 
-                    type="pending" 
-                    locationId={selectedLocation}
-                    onDataChanged={fetchOperatorData}
-                  />
-                )}
-                {expandedCard === 'Completed Deliveries' && (
-                  <InteractiveEntriesList 
-                    type="dispatched" 
-                    locationId={selectedLocation}
-                    onDataChanged={fetchOperatorData}
-                  />
-                )}
-                {expandedCard === 'Monthly Revenue' && (
-                  <Card className="border-amber-200">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <IndianRupee className="h-5 w-5" />
-                        Revenue Details
-                      </CardTitle>
-                      <CardDescription>
-                        Monthly revenue breakdown and transaction history
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="text-center p-4 bg-amber-50 rounded-lg">
-                            <p className="text-2xl font-bold text-amber-900">₹{stats.monthlyRevenue.toLocaleString()}</p>
-                            <p className="text-sm text-amber-600">This Month</p>
-                          </div>
-                          <div className="text-center p-4 bg-orange-50 rounded-lg">
-                            <p className="text-2xl font-bold text-orange-900">₹{stats.todayRevenue.toLocaleString()}</p>
-                            <p className="text-sm text-orange-600">Today</p>
-                          </div>
-                          <div className="text-center p-4 bg-green-50 rounded-lg">
-                            <p className="text-2xl font-bold text-green-900">{stats.todayEntries}</p>
-                            <p className="text-sm text-green-600">Today's Entries</p>
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm text-amber-600">
-                            Revenue is calculated from entry payments and renewals
-                          </p>
-                        </div>
+              {/* Dashboard Tab */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  {/* Filters Section */}
+                  <div className="bg-white rounded-lg border-amber-200 p-6 shadow-sm">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-lg font-semibold text-amber-900">Dashboard Overview</h3>
+                        <p className="text-sm text-amber-700">
+                          {dateRange 
+                            ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+                            : 'Showing data till today'
+                          }
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <ResponsiveDateRangePicker 
+                          onDateRangeChange={safeSetDateRange}
+                          placeholder="Select date range"
+                          initialDateRange={dateRange}
+                        />
+                        <Button 
+                          variant="outline" 
+                          onClick={() => fetchOperatorData()}
+                          className="flex items-center gap-2 border-amber-200 text-amber-700"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          Refresh
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Tab Content */}
-              <div className="space-y-6">
-                {activeTab === 'overview' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="border-amber-200">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Clock className="h-5 w-5" />
-                          Recent Activity
-                        </CardTitle>
-                        <CardDescription>
-                          Your latest entries, renewals, and deliveries
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {recentEntries.slice(0, 5).map((entry) => {
-                            // Determine activity type and icon based on entry data
-                            const hasRenewals = entry.renewals && entry.renewals.length > 0;
-                            const isDispatched = entry.status === 'dispatched';
-                            const activityType = isDispatched ? 'dispatch' : (hasRenewals ? 'renewal' : 'entry');
-                            const activityIcon = isDispatched ? Truck : (hasRenewals ? RefreshCw : Package);
-                            const activityText = isDispatched ? 'Dispatched' : (hasRenewals ? 'Renewed' : 'Entry');
-                            
-                            return (
-                              <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                                    <activityIcon className="h-4 w-4 text-amber-600" />
+                  {/* Stats Grid - Matching Admin Dashboard */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[
+                      {
+                        title: 'Total Active Ash Pots',
+                        value: stats.totalEntries,
+                        icon: Package,
+                        color: 'amber',
+                        change: '+12%',
+                        type: 'active'
+                      },
+                      {
+                        title: 'Pending Ash Pots',
+                        value: stats.totalRenewals,
+                        icon: RefreshCw,
+                        color: 'orange',
+                        change: '+5%',
+                        type: 'pending'
+                      },
+                      {
+                        title: 'Dispatched Ash Pots',
+                        value: stats.totalDeliveries,
+                        icon: Truck,
+                        color: 'amber',
+                        change: '+8%',
+                        type: 'dispatched'
+                      },
+                      {
+                        title: 'Monthly Revenue',
+                        value: `₹${stats.monthlyRevenue.toLocaleString()}`,
+                        icon: IndianRupee,
+                        color: 'orange',
+                        change: '+15%',
+                        type: 'revenue'
+                      }
+                    ].map((stat, index) => (
+                      <motion.div
+                        key={stat.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="group"
+                      >
+                        <Card 
+                          className="h-full hover:shadow-md transition-all duration-200 border-amber-200 cursor-pointer hover:scale-105"
+                          onClick={() => handleCardClick(stat.type)}
+                        >
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-amber-700">
+                              {stat.title}
+                            </CardTitle>
+                            <div className={`p-2 rounded-lg bg-${stat.color}-50`}>
+                              <stat.icon className={`h-4 w-4 text-${stat.color}-600`} />
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-amber-900">
+                              {stat.value}
+                            </div>
+                            <p className="text-xs text-amber-600">
+                              <span className="text-green-600 font-medium">{stat.change}</span> from last month
+                            </p>
+                            <p className="text-xs text-amber-500 mt-1">
+                              Click to view details
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Expandable Content Sections */}
+                  <div ref={expandedContentRef} className="space-y-6">
+                    {/* Active Ash Pots Details */}
+                    {expandedCard === 'active' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      >
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-amber-900">Active Ash Pots Details</h3>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setExpandedCard(null)}
+                            className="text-amber-700"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                        <InteractiveEntriesList type="active" locationId={selectedLocation} onDataChanged={handleEntriesDataChanged} />
+                      </motion.div>
+                    )}
+
+                    {/* Pending Ash Pots Details */}
+                    {expandedCard === 'pending' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      >
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-amber-900">Pending Ash Pots Details</h3>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setExpandedCard(null)}
+                            className="text-amber-700"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                        <InteractiveEntriesList type="pending" locationId={selectedLocation} onDataChanged={handleEntriesDataChanged} />
+                      </motion.div>
+                    )}
+
+                    {/* Dispatched Ash Pots Details */}
+                    {expandedCard === 'dispatched' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      >
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-amber-900">Dispatched Ash Pots Details</h3>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setExpandedCard(null)}
+                            className="text-amber-700"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                        <InteractiveEntriesList type="dispatched" locationId={selectedLocation} onDataChanged={handleEntriesDataChanged} />
+                      </motion.div>
+                    )}
+
+                    {/* Revenue Details */}
+                    {expandedCard === 'revenue' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      >
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-amber-900">Revenue Details</h3>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setExpandedCard(null)}
+                            className="text-amber-700"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {/* Monthly Revenue Summary */}
+                          <Card className="border-amber-100">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium text-amber-700">Monthly Revenue</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold text-amber-900">
+                                ₹{stats.monthlyRevenue.toLocaleString()}
+                              </div>
+                              <p className="text-xs text-amber-600 mt-1">
+                                <span className="text-green-600">+15%</span> from last month
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          {/* Renewal Collections */}
+                          <Card className="border-green-100">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium text-green-700">Renewal Collections</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold text-green-900">
+                                ₹{stats.renewalCollections.toLocaleString()}
+                              </div>
+                              <p className="text-xs text-green-600 mt-1">
+                                From {stats.totalRenewals} renewals
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          {/* Delivery Collections */}
+                          <Card className="border-blue-100">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-medium text-blue-700">Delivery Collections</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="text-2xl font-bold text-blue-900">
+                                ₹{stats.deliveryCollections.toLocaleString()}
+                              </div>
+                              <p className="text-xs text-blue-600 mt-1">
+                                From {stats.totalDeliveries} deliveries
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Revenue Breakdown */}
+                        <div className="mt-6">
+                          <h4 className="font-medium text-amber-900 mb-3">Revenue Breakdown</h4>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                <span className="text-sm text-amber-800">Renewal Revenue</span>
+                              </div>
+                              <span className="font-medium text-amber-900">₹{stats.renewalCollections.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span className="text-sm text-blue-800">Delivery Revenue</span>
+                              </div>
+                              <span className="font-medium text-blue-900">₹{stats.deliveryCollections.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border-t-2 border-green-200">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-green-800">Total Revenue</span>
+                              </div>
+                              <span className="font-bold text-green-900">₹{stats.monthlyRevenue.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Recent Transactions */}
+                        <div className="mt-6">
+                          <h4 className="font-medium text-amber-900 mb-3">Recent Transactions</h4>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {recentEntries.slice(0, 10).map((entry) => (
+                              <div key={entry.id} className="flex items-center justify-between p-2 border-b border-amber-100">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                                    <IndianRupee className="h-4 w-4 text-amber-600" />
                                   </div>
                                   <div>
-                                    <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
+                                    <p className="text-sm font-medium text-amber-900">{entry.customerName}</p>
                                     <p className="text-xs text-amber-600">{entry.customerPhone}</p>
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-xs text-amber-600">
-                                    {entry.entryDate ? formatFirestoreDate(entry.entryDate) : 'N/A'}
-                                  </p>
-                                  <div className="flex items-center gap-1">
-                                    <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
-                                      {entry.status}
-                                    </Badge>
-                                    {hasRenewals && (
-                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                                        {activityText}
-                                      </Badge>
-                                    )}
-                                  </div>
+                                  {entry.payments && entry.payments.length > 0 && (
+                                    <>
+                                      <p className="text-sm font-medium text-green-600">
+                                        ₹{entry.payments[0].amount.toLocaleString()}
+                                      </p>
+                                      <p className="text-xs text-amber-500">
+                                        {entry.payments[0].date ? formatFirestoreDate(entry.payments[0].date) : 'N/A'}
+                                      </p>
+                                    </>
+                                  )}
                                 </div>
                               </div>
-                            );
-                          })}
-                          {recentEntries.length === 0 && (
-                            <p className="text-sm text-amber-600 text-center py-4">
-                              No recent activity
-                            </p>
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </motion.div>
+                    )}
+                  </div>
 
+                  {/* Recent Activity - Using the same component as admin */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <RecentActivity locationId={selectedLocation === 'all' ? undefined : selectedLocation} dateRange={dateRange} />
+                    
                     <Card className="border-amber-200">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <AlertTriangle className="h-5 w-5 text-amber-600" />
-                          Attention Required
+                          Expiring Soon
                         </CardTitle>
                         <CardDescription>
-                          Entries requiring your attention
+                          Entries requiring attention
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -592,19 +733,18 @@ export default function OperatorDashboard() {
                           ))}
                           {expiringEntries.length === 0 && (
                             <p className="text-sm text-amber-600 text-center py-4">
-                              No items require attention
+                              No entries expiring soon
                             </p>
                           )}
                         </div>
                       </CardContent>
                     </Card>
                   </div>
-                )}
+                </div>
+              )}
 
-                {activeTab === 'entries' && <CustomerEntrySystem />}
-                {activeTab === 'renewals' && <RenewalSystem />}
-                {activeTab === 'deliveries' && <DeliverySystem />}
-              </div>
+              {/* Profile Tab */}
+              {activeTab === 'profile' && <OperatorProfile />}
             </div>
           )}
         </main>
