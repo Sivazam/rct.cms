@@ -278,7 +278,7 @@ export default function OperatorDashboard() {
                 <div className="flex items-center space-x-3">
                   <div>
                     <h1 className="text-xl font-bold text-amber-900">
-                      Cremation Management System
+                      CMS
                     </h1>
                     <p className="text-xs text-amber-600">Operator Dashboard</p>
                   </div>

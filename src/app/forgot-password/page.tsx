@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-3xl font-bold text-amber-900 mb-2">
-              Cremation Management System
+              CMS
             </h1>
             <p className="text-amber-700">
               Management system for cremation services
