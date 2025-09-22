@@ -53,7 +53,7 @@ export default function SpiritualInput({
         htmlFor={id} 
         className={cn(
           "text-sm font-medium transition-colors",
-          isFocused ? "text-amber-900" : "text-amber-800"
+          isFocused ? "text-foreground" : "text-foreground"
         )}
       >
         {label}
@@ -64,7 +64,7 @@ export default function SpiritualInput({
         {/* Icon background */}
         {icon && (
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <div className="text-amber-500">
+            <div className="text-muted-foreground">
               {getIcon()}
             </div>
           </div>
@@ -80,9 +80,9 @@ export default function SpiritualInput({
           className={cn(
             icon ? "pl-10" : "pl-3",
             "pr-10 transition-all duration-200",
-            "border-amber-200 focus:border-amber-400 focus:ring-amber-400",
+            "border focus:border-primary focus:ring-primary",
             "bg-white focus:bg-white",
-            "placeholder:text-amber-300",
+            "placeholder:text-muted-foreground",
             isFocused && "shadow-sm"
           )}
           onFocus={() => setIsFocused(true)}
@@ -95,7 +95,7 @@ export default function SpiritualInput({
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-amber-500 hover:text-amber-600 transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>

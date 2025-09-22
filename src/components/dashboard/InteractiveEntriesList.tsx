@@ -707,7 +707,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
     switch (status) {
       case 'active': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'expired': return 'bg-red-100 text-red-800 border-red-200';
-      case 'delivered': return 'bg-amber-100 text-amber-800 border-amber-200'; // Keep for backward compatibility
+      case 'delivered': return 'bg-accent text-foreground border-accent'; // Keep for backward compatibility
       case 'dispatched': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'disposed': return 'bg-stone-100 text-stone-800 border-stone-200';
       default: return 'bg-stone-100 text-stone-800 border-stone-200';
@@ -821,8 +821,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         };
       case 'dispatched':
         return {
-          icon: <Calendar className="h-4 w-4 text-amber-600" />,
-          statusColor: 'text-amber-600',
+          icon: <Calendar className="h-4 w-4 text-primary" />,
+          statusColor: 'text-primary',
           badgeVariant: 'secondary' as const
         };
       default:
@@ -956,8 +956,8 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
       {/* Header for Dispatched type */}
       {type === 'dispatched' && (
         <div>
-          <h3 className="text-lg font-semibold text-amber-800">Dispatched Ash Pots</h3>
-          <p className="text-sm text-amber-600">Dispatched ash pot entries</p>
+          <h3 className="text-lg font-semibold text-foreground">Dispatched Ash Pots</h3>
+          <p className="text-sm text-primary">Dispatched ash pot entries</p>
         </div>
       )}
 
@@ -966,7 +966,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         <div className="flex-1">
           <div className="relative">
             <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${
-              isSearchFocused ? 'text-orange-500' : 'text-gray-400'
+              isSearchFocused ? 'text-background0' : 'text-gray-400'
             }`} />
             <Input
               placeholder="Search by name, mobile, or city..."
@@ -1037,7 +1037,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                 } className="text-center py-12">
                   <div className="flex flex-col items-center space-y-4">
                     <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
-                      <Package className="h-8 w-8 text-orange-500" />
+                      <Package className="h-8 w-8 text-background0" />
                     </div>
                     <div>
                       <p className="text-gray-700 font-medium">No {type} entries found</p>
@@ -1055,7 +1055,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                             setSearchTerm('');
                             setLocationFilter('all');
                           }}
-                          className="mt-3 border-orange-200 text-orange-700 hover:bg-orange-50"
+                          className="mt-3 border-orange-200 text-orange-700 hover:bg-background"
                         >
                           Clear Filters
                         </Button>
@@ -1227,7 +1227,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
         {filteredEntries.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="h-8 w-8 text-orange-500" />
+              <Package className="h-8 w-8 text-background0" />
             </div>
             <p className="text-gray-700 font-medium">No {type} entries found</p>
             <p className="text-sm text-gray-500 mt-1">
@@ -1671,7 +1671,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
               </div>
 
               {/* Due Amount Calculation */}
-              <div className="bg-orange-50 border border-orange-200 p-3 sm:p-4 rounded-lg">
+              <div className="bg-background border border-orange-200 p-3 sm:p-4 rounded-lg">
                 <h4 className="font-medium mb-2 sm:mb-3 text-orange-800 flex items-center text-sm sm:text-base">
                   <Calculator className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Till Date Due Amount

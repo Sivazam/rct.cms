@@ -8,7 +8,7 @@ interface NavigationLoadingProps {
 
 export default function NavigationLoading({ message = "Loading..." }: NavigationLoadingProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-amber-500 via-orange-500 to-red-500">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary via-primary/80 to-destructive">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-[url('/KB1.webp')] bg-cover bg-center mix-blend-overlay"></div>

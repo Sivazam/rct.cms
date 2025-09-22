@@ -167,8 +167,8 @@ export default function OperatorProfile() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-amber-600" />
+              <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center">
+                <User className="h-8 w-8 text-muted-foreground" />
               </div>
               <div>
                 <CardTitle className="text-xl">Operator Profile</CardTitle>
@@ -306,7 +306,7 @@ export default function OperatorProfile() {
                     className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
                   >
                     <div className="flex items-start space-x-3">
-                      <MapPin className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{location.venueName}</h4>
                         <p className="text-sm text-gray-600 mt-1">{location.address}</p>

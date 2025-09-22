@@ -55,7 +55,7 @@ export default function LoginPage() {
       </div>
 
       {/* Form Side - Always Visible */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-amber-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-background">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -64,31 +64,31 @@ export default function LoginPage() {
         >
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-amber-900 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               Cremation Management System
             </h1>
-            <p className="text-amber-700">
+            <p className="text-muted-foreground">
               Management system for cremation services
             </p>
           </div>
 
-          <Card className="border-amber-200 shadow-lg">
+          <Card className="border shadow-lg">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-amber-900">
+              <CardTitle className="text-2xl font-bold text-foreground">
                 Sign In
               </CardTitle>
-              <CardDescription className="text-amber-700">
+              <CardDescription className="text-muted-foreground">
                 Enter your credentials to access the system
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-amber-800">
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
                     Email Address
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-amber-500" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
@@ -96,17 +96,17 @@ export default function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       placeholder="Enter your email address"
-                      className="pl-10 border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                      className="pl-10 focus:ring-primary"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-amber-800">
+                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
                     Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-amber-500" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -114,12 +114,12 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       placeholder="Enter your password"
-                      className="pl-10 pr-10 border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                      className="pl-10 pr-10 focus:ring-primary"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-500 hover:text-amber-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -127,8 +127,8 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                  <Alert variant="destructive" className="border-red-200 bg-red-50">
-                    <AlertDescription className="text-red-700">
+                  <Alert variant="destructive">
+                    <AlertDescription>
                       {error}
                     </AlertDescription>
                   </Alert>
@@ -136,7 +136,7 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3"
+                  className="w-full text-white font-medium py-3"
                   disabled={loading}
                 >
                   {loading ? (
@@ -153,30 +153,30 @@ export default function LoginPage() {
               <div className="space-y-4">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-amber-200"></div>
+                    <div className="w-full border-t border-border"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-amber-50 text-amber-700">
+                    <span className="px-4 bg-background text-muted-foreground">
                       Cremation Management System
                     </span>
                   </div>
                 </div>
 
                 <div className="text-center space-y-2">
-                  <p className="text-sm text-amber-700">
+                  <p className="text-sm text-muted-foreground">
                     New to the system?{' '}
                     <Link 
                       href="/signup" 
-                      className="text-amber-800 hover:text-amber-900 font-medium underline"
+                      className="text-foreground hover:text-foreground/80 font-medium underline"
                     >
                       Create an account
                     </Link>
                   </p>
                   
-                  <p className="text-xs text-amber-600">
+                  <p className="text-xs text-muted-foreground">
                     <Link 
                       href="/forgot-password" 
-                      className="text-amber-800 hover:text-amber-900 underline"
+                      className="text-foreground hover:text-foreground/80 underline"
                     >
                       Forgot password?
                     </Link>

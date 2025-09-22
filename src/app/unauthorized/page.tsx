@@ -21,12 +21,12 @@ export default function UnauthorizedPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 p-4 relative">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/20 p-4 relative">
       {/* Background spiritual elements */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
         <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
-        <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
+        <div className="absolute bottom-20 left-20 text-5xl text-primary">🔥</div>
         <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
       </div>
       <motion.div
@@ -55,7 +55,7 @@ export default function UnauthorizedPage() {
                 Please contact your administrator if you believe this is an error.
               </p>
               {user && (
-                <div className="bg-orange-50 p-4 rounded-lg mb-4 border border-orange-200">
+                <div className="bg-background p-4 rounded-lg mb-4 border border-orange-200">
                   <p className="text-sm text-orange-800">
                     <strong>Current User:</strong><br />
                     Name: {user.name}<br />
@@ -66,7 +66,7 @@ export default function UnauthorizedPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Button onClick={handleBack} variant="outline" className="w-full border-orange-200 text-orange-700 hover:bg-orange-50">
+              <Button onClick={handleBack} variant="outline" className="w-full border-orange-200 text-orange-700 hover:bg-background">
                 Go Back
               </Button>
               <Button onClick={handleLogout} className="w-full bg-orange-600 hover:bg-orange-700">

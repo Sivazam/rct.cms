@@ -42,7 +42,7 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="relative w-full h-full bg-gradient-to-br from-orange-900 via-amber-900 to-red-900">
+      <div className="relative w-full h-full bg-gradient-to-br from-primary via-primary/90 to-destructive">
         {/* Black Tint Overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-60" />
         
@@ -75,7 +75,7 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
                 <div className="w-full h-2 bg-gray-600 rounded-full overflow-hidden">
                   {/* Progress fill */}
                   <div 
-                    className="h-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 rounded-full transition-all duration-300 ease-out"
+                    className="h-full bg-gradient-to-r from-primary/80 via-primary/90 to-primary rounded-full transition-all duration-300 ease-out"
                     style={{ width: `${progress}%` }}
                   />
                 </div>

@@ -44,7 +44,7 @@ export function CollectionToggle({
   const totalCollections = safeRenewalCollections + (showWithDispatch ? safeDeliveryCollections : 0)
 
   return (
-    <Card className="border-orange-200 bg-orange-50">
+    <Card className="border-orange-200 bg-background">
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-2">

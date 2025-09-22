@@ -124,7 +124,7 @@ export default function EntriesList() {
     switch (status) {
       case 'active': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'expired': return 'bg-red-100 text-red-800 border-red-200';
-      case 'delivered': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'delivered': return 'bg-accent text-foreground border';
       case 'disposed': return 'bg-stone-100 text-stone-800 border-stone-200';
       default: return 'bg-stone-100 text-stone-800 border-stone-200';
     }
@@ -396,19 +396,19 @@ export default function EntriesList() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-          <div className="text-center p-3 bg-orange-50 rounded-lg">
+          <div className="text-center p-3 bg-background rounded-lg">
             <div className="text-2xl font-bold text-orange-600">
               {entries.filter(e => e.status === 'active').length}
             </div>
             <div className="text-sm text-orange-700">Active</div>
           </div>
-          <div className="text-center p-3 bg-amber-50 rounded-lg">
-            <div className="text-2xl font-bold text-amber-600">
+          <div className="text-center p-3 bg-background rounded-lg">
+            <div className="text-2xl font-bold text-primary">
               {entries.filter(e => e.status === 'expired').length}
             </div>
-            <div className="text-sm text-amber-700">Expired</div>
+            <div className="text-sm text-muted-foreground">Expired</div>
           </div>
-          <div className="text-center p-3 bg-orange-50 rounded-lg">
+          <div className="text-center p-3 bg-background rounded-lg">
             <div className="text-2xl font-bold text-orange-600">
               {entries.filter(e => e.status === 'delivered').length}
             </div>

@@ -167,7 +167,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
   const getActivityColor = (type: Activity['type']) => {
     switch (type) {
       case 'entry':
-        return 'bg-amber-100 text-amber-600 border-amber-200';
+        return 'bg-accent text-primary border-accent';
       case 'renewal':
         return 'bg-green-100 text-green-600 border-green-200';
       case 'delivery':

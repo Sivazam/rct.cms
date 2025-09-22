@@ -63,7 +63,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/20 p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -115,24 +115,24 @@ export default function SignupPage() {
             />
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-orange-700">
-                Role <span className="text-red-500">*</span>
+              <label className="text-sm font-medium text-foreground">
+                Role <span className="text-destructive">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <div className="text-orange-600">
+                  <div className="text-muted-foreground">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                 </div>
                 <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
-                  <SelectTrigger className="pl-10 pr-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400 bg-orange-50/50 focus:bg-orange-50">
+                  <SelectTrigger className="pl-10 pr-12 focus:ring-primary">
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="operator" className="text-orange-700">Operator</SelectItem>
-                    <SelectItem value="admin" className="text-red-700">Administrator</SelectItem>
+                    <SelectItem value="operator">Operator</SelectItem>
+                    <SelectItem value="admin">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -163,8 +163,8 @@ export default function SignupPage() {
             />
 
             {error && (
-              <Alert variant="destructive" className="border-red-200 bg-red-50">
-                <AlertDescription className="text-red-700">
+              <Alert variant="destructive">
+                <AlertDescription>
                   {error}
                 </AlertDescription>
               </Alert>
@@ -186,20 +186,20 @@ export default function SignupPage() {
           <div className="mt-8 text-center space-y-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-orange-200"></div>
+                <div className="w-full border-t border-border"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-orange-50 text-orange-600 rounded-full">
+                <span className="px-4 bg-background text-muted-foreground rounded-full">
                   Cremation Management System
                 </span>
               </div>
             </div>
 
-            <p className="text-sm text-orange-700">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link 
                 href="/login" 
-                className="text-orange-600 hover:text-orange-800 underline font-medium"
+                className="text-foreground hover:text-foreground/80 underline font-medium"
               >
                 Login here
               </Link>

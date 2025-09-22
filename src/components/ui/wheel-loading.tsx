@@ -42,7 +42,7 @@ export default function WheelLoading({
   const sizeClasses = getSizeClasses();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="relative z-10 flex flex-col items-center space-y-8">
         {/* Rotating Wheel */}
         <div className="relative">
@@ -63,7 +63,7 @@ export default function WheelLoading({
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
                 const fallback = document.createElement('div');
-                fallback.className = 'w-full h-full rounded-full border-4 border-amber-600 border-t-amber-800 animate-spin';
+                fallback.className = 'w-full h-full rounded-full border-4 border-primary border-t-primary animate-spin';
                 fallback.style.background = 'conic-gradient(from 0deg, #d97706, #92400e, #d97706)';
                 target.parentNode?.appendChild(fallback);
               }}
@@ -73,16 +73,16 @@ export default function WheelLoading({
 
         {/* Loading Message */}
         <div className="text-center space-y-2">
-          <div className={`${sizeClasses.text} text-amber-800 font-medium`}>
+          <div className={`${sizeClasses.text} text-foreground font-medium`}>
             {message}
           </div>
         </div>
 
         {/* Simple animated dots */}
         <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="w-2 h-2 bg-background0 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-background0 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-background0 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
         </div>
       </div>
     </div>

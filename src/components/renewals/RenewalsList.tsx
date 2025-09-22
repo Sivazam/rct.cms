@@ -156,7 +156,7 @@ export default function RenewalsList() {
   const getPaymentMethodColor = (method: string) => {
     switch (method) {
       case 'cash': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'upi': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'upi': return 'bg-accent text-foreground border-accent';
       default: return 'bg-stone-100 text-stone-800 border-stone-200';
     }
   };

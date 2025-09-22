@@ -250,7 +250,7 @@ export default function DeliveryPayment({
           </div>
 
           {/* Due Amount Calculation */}
-          <Card className="border-orange-200 bg-orange-50">
+          <Card className="border-orange-200 bg-background">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center space-x-2 text-orange-800">
                 <Clock className="h-5 w-5" />

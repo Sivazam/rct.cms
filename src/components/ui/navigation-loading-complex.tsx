@@ -9,7 +9,7 @@ interface NavigationLoadingProps {
 
 export default function NavigationLoading({ message = "Loading..." }: NavigationLoadingProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-orange-500">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background0">
       {/* Logo centered with bounding */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -37,7 +37,7 @@ export default function NavigationLoading({ message = "Loading..." }: Navigation
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
                 const fallback = document.createElement('div');
-                fallback.className = 'relative z-10 w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center text-orange-500 text-2xl font-bold drop-shadow-lg';
+                fallback.className = 'relative z-10 w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center text-background0 text-2xl font-bold drop-shadow-lg';
                 fallback.textContent = 'CMS';
                 target.parentNode?.appendChild(fallback);
               }}

@@ -27,24 +27,24 @@ export default function SpiritualCard({
     switch (variant) {
       case 'sacred':
         return {
-          card: 'bg-white border-amber-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-amber-50 bg-amber-50/20',
-          title: 'text-amber-900',
-          description: 'text-amber-700'
+          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-accent bg-accent/20',
+          title: 'text-foreground',
+          description: 'text-muted-foreground'
         };
       case 'ritual':
         return {
           card: 'bg-white border-orange-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-orange-50 bg-orange-50/20',
+          header: 'border-background bg-background/20',
           title: 'text-orange-900',
           description: 'text-orange-700'
         };
       case 'memorial':
         return {
-          card: 'bg-white border-amber-50 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-amber-50 bg-amber-50/20',
-          title: 'text-amber-800',
-          description: 'text-amber-600'
+          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-accent bg-accent/20',
+          title: 'text-foreground',
+          description: 'text-muted-foreground'
         };
       case 'professional':
         return {
@@ -55,10 +55,10 @@ export default function SpiritualCard({
         };
       case 'warning':
         return {
-          card: 'bg-white border-amber-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-amber-50 bg-amber-50/20',
-          title: 'text-amber-900',
-          description: 'text-amber-700'
+          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-accent bg-accent/20',
+          title: 'text-foreground',
+          description: 'text-muted-foreground'
         };
       case 'success':
         return {
@@ -70,16 +70,16 @@ export default function SpiritualCard({
       case 'divine':
         return {
           card: 'bg-white border-orange-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-orange-50 bg-orange-50/30',
+          header: 'border-background bg-background/30',
           title: 'text-orange-900',
           description: 'text-orange-700'
         };
       default:
         return {
-          card: 'bg-white border-amber-100 shadow-sm hover:shadow-md transition-shadow',
-          header: 'border-amber-100',
-          title: 'text-amber-900',
-          description: 'text-amber-700'
+          card: 'bg-white border-accent shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-accent',
+          title: 'text-foreground',
+          description: 'text-muted-foreground'
         };
     }
   };

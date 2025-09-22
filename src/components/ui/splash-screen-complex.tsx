@@ -86,7 +86,7 @@
 //   return (
 //     <div className="fixed inset-0 z-50 overflow-hidden">
 //       {/* Carousel Background */}
-//       <div className="relative w-full h-full bg-gradient-to-br from-orange-900 via-amber-900 to-red-900">
+//       <div className="relative w-full h-full bg-gradient-to-br from-primary via-primary/90 to-destructive">
 //         <AnimatePresence mode="wait">
 //           {/* <motion.div
 //             key={currentImageIndex}
@@ -176,7 +176,7 @@
 //                 <div className="w-full h-2 bg-gray-600 rounded-full overflow-hidden">
 //                   {/* Progress fill */}
 //                   <motion.div
-//                     className="h-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 rounded-full"
+//                     className="h-full bg-gradient-to-r from-primary/80 via-primary/80 to-primary rounded-full"
 //                     initial={{ width: 0 }}
 //                     animate={{ width: `${progress}%` }}
 //                     transition={{ duration: 0.3, ease: "easeOut" }}

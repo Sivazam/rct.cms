@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       {/* Form Side - Always Visible */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-amber-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-background">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -64,28 +64,28 @@ export default function ForgotPasswordPage() {
         >
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-3xl font-bold text-amber-900 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               CMS
             </h1>
-            <p className="text-amber-700">
+            <p className="text-muted-foreground">
               Management system for cremation services
             </p>
           </div>
 
-          <Card className="border-amber-200 shadow-lg">
+          <Card className="border shadow-lg">
             <CardHeader className="space-y-1">
               <div className="flex items-center space-x-2 mb-2">
                 <Link 
                   href="/login" 
-                  className="text-amber-600 hover:text-amber-700 transition-colors"
+                  className="text-primary hover:text-muted-foreground transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
-                <CardTitle className="text-2xl font-bold text-amber-900">
+                <CardTitle className="text-2xl font-bold text-foreground">
                   Forgot Password
                 </CardTitle>
               </div>
-              <CardDescription className="text-amber-700">
+              <CardDescription className="text-muted-foreground">
                 Enter your email address and we'll send you a reset link
               </CardDescription>
             </CardHeader>
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
                   </Alert>
                   <Button 
                     onClick={() => router.push('/login')}
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3"
+                    className="w-full bg-primary hover:bg-primary text-white font-medium py-3"
                   >
                     Back to Login
                   </Button>
@@ -107,11 +107,11 @@ export default function ForgotPasswordPage() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-amber-800">
+                    <Label htmlFor="email" className="text-sm font-medium text-foreground">
                       Email Address
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-amber-500" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-primary" />
                       <Input
                         id="email"
                         type="email"
@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="Enter your email address"
-                        className="pl-10 border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                        className="pl-10 border focus:border-primary focus:ring-primary"
                       />
                     </div>
                   </div>
@@ -134,7 +134,7 @@ export default function ForgotPasswordPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3"
+                    className="w-full bg-primary hover:bg-primary text-white font-medium py-3"
                     disabled={loading}
                   >
                     {loading ? (
@@ -152,21 +152,21 @@ export default function ForgotPasswordPage() {
               <div className="space-y-4">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-amber-200"></div>
+                    <div className="w-full border-t border"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-amber-50 text-amber-700">
+                    <span className="px-4 bg-background text-muted-foreground">
                       Cremation Management System
                     </span>
                   </div>
                 </div>
 
                 <div className="text-center">
-                  <p className="text-sm text-amber-700">
+                  <p className="text-sm text-muted-foreground">
                     Remember your password?{' '}
                     <Link 
                       href="/login" 
-                      className="text-amber-800 hover:text-amber-900 font-medium underline"
+                      className="text-foreground hover:text-foreground font-medium underline"
                     >
                       Back to login
                     </Link>

@@ -30,7 +30,7 @@ export default function SpiritualButton({
     switch (variant) {
       case 'sacred':
         return {
-          button: 'bg-amber-700 hover:bg-amber-800 text-white border-amber-700',
+          button: 'bg-primary hover:bg-primary/90 text-white border-primary',
           hover: 'shadow-sm hover:shadow-md'
         };
       case 'ritual':
@@ -40,7 +40,7 @@ export default function SpiritualButton({
         };
       case 'memorial':
         return {
-          button: 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600',
+          button: 'bg-primary hover:bg-primary text-white border-primary',
           hover: 'shadow-sm hover:shadow-md'
         };
       case 'divine':
@@ -50,7 +50,7 @@ export default function SpiritualButton({
         };
       default:
         return {
-          button: 'bg-amber-700 hover:bg-amber-800 text-white border-amber-700',
+          button: 'bg-primary hover:bg-primary/90 text-white border-primary',
           hover: 'shadow-sm hover:shadow-md'
         };
     }

@@ -23,7 +23,7 @@ export default function SpiritualLoading({
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="relative z-10 flex flex-col items-center space-y-8">
         {/* Rotating Wheel or Simple Spinner */}
         <div className="relative">
@@ -45,14 +45,14 @@ export default function SpiritualLoading({
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   const fallback = document.createElement('div');
-                  fallback.className = 'w-16 h-16 rounded-full border-4 border-amber-200 border-t-amber-600 animate-spin';
+                  fallback.className = 'w-16 h-16 rounded-full border-4 border border-t-primary animate-spin';
                   target.parentNode?.appendChild(fallback);
                 }}
               />
             </div>
           ) : (
             <div 
-              className="w-16 h-16 rounded-full border-4 border-amber-200 border-t-amber-600 animate-spin"
+              className="w-16 h-16 rounded-full border-4 border border-t-primary animate-spin"
               style={{
                 animation: 'spin 1s linear infinite'
               }}
@@ -62,14 +62,14 @@ export default function SpiritualLoading({
 
         {/* Loading Message */}
         <div className="text-center space-y-2">
-          <div className="text-base text-amber-800 font-medium">{message}</div>
+          <div className="text-base text-foreground font-medium">{message}</div>
         </div>
 
         {/* Simple animated dots */}
         <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="w-2 h-2 bg-background0 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-background0 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-background0 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
         </div>
       </div>
 

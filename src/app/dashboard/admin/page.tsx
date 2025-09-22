@@ -223,22 +223,22 @@ export default function AdminDashboard() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="min-h-screen bg-amber-50">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-white border-b border-amber-200 shadow-sm">
+        <header className="bg-white border-b border shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden sm:flex justify-between items-center h-16">
               <div className="flex items-center">
                 <div className="flex items-center space-x-3">
                   <div>
-                    <h1 className="text-xl font-bold text-amber-900">
+                    <h1 className="text-xl font-bold text-foreground">
                       CMS
                     </h1>
-                    <p className="text-xs text-amber-600">Administrative Dashboard</p>
+                    <p className="text-xs text-muted-foreground">Administrative Dashboard</p>
                   </div>
                 </div>
-                <Badge variant="outline" className="ml-4 border-amber-200 text-amber-700">Admin</Badge>
+                <Badge variant="outline" className="ml-4 border text-muted-foreground">Admin</Badge>
               </div>
               <div className="flex items-center gap-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="text-sm text-amber-700">
+                <div className="text-sm text-muted-foreground">
                   Welcome, {user?.name || 'Admin'}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
@@ -268,10 +268,10 @@ export default function AdminDashboard() {
             <div className="flex sm:hidden justify-between items-center h-14">
               <div className="flex items-center">
                 <div>
-                  <h1 className="text-sm font-bold text-amber-900 leading-tight">
+                  <h1 className="text-sm font-bold text-foreground leading-tight">
                     CMS
                   </h1>
-                  <p className="text-xs text-amber-600">Admin</p>
+                  <p className="text-xs text-muted-foreground">Admin</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 sm:pb-8">
           {/* Desktop Tabs */}
           <div className="hidden md:block mb-8">
-            <div className="border-b border-amber-200">
+            <div className="border-b border">
               <nav className="-mb-px flex space-x-8">
                 {[
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
@@ -314,8 +314,8 @@ export default function AdminDashboard() {
                     className={`
                       group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm
                       ${activeTab === tab.id
-                        ? 'border-amber-500 text-amber-600'
-                        : 'border-transparent text-amber-700 hover:text-amber-900 hover:border-amber-300'
+                        ? 'border-primary text-muted-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
                       }
                     `}
                   >
@@ -333,11 +333,11 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Filters Section */}
-                <div className="bg-white rounded-lg border-amber-200 p-6 shadow-sm">
+                <div className="bg-white rounded-lg border p-6 shadow-sm">
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div className="flex flex-col gap-2">
-                      <h3 className="text-lg font-semibold text-amber-900">Dashboard Overview</h3>
-                      <p className="text-sm text-amber-700">
+                      <h3 className="text-lg font-semibold text-foreground">Dashboard Overview</h3>
+                      <p className="text-sm text-muted-foreground">
                         {dateRange 
                           ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
                           : 'Showing data till today'
@@ -353,7 +353,7 @@ export default function AdminDashboard() {
                       <Button 
                         variant="outline" 
                         onClick={() => fetchDashboardData()}
-                        className="flex items-center gap-2 border-amber-200 text-amber-700"
+                        className="flex items-center gap-2 border text-muted-foreground"
                       >
                         <RefreshCw className="h-4 w-4" />
                         Refresh
@@ -406,11 +406,11 @@ export default function AdminDashboard() {
                       className="group"
                     >
                       <Card 
-                        className="h-full hover:shadow-md transition-all duration-200 border-amber-200 cursor-pointer hover:scale-105"
+                        className="h-full hover:shadow-md transition-all duration-200 border cursor-pointer hover:scale-105"
                         onClick={() => handleCardClick(stat.type)}
                       >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium text-amber-700">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">
                             {stat.title}
                           </CardTitle>
                           <div className={`p-2 rounded-lg bg-${stat.color}-50`}>
@@ -418,13 +418,13 @@ export default function AdminDashboard() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-amber-900">
+                          <div className="text-2xl font-bold text-foreground">
                             {stat.value}
                           </div>
-                          <p className="text-xs text-amber-600">
+                          <p className="text-xs text-muted-foreground">
                             <span className="text-green-600 font-medium">{stat.change}</span> from last month
                           </p>
-                          <p className="text-xs text-amber-500 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             Click to view details
                           </p>
                         </CardContent>
@@ -441,15 +441,15 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-amber-900">Active Ash Pots Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Active Ash Pots Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => setExpandedCard(null)}
-                          className="text-amber-700"
+                          className="text-muted-foreground"
                         >
                           Close
                         </Button>
@@ -464,15 +464,15 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-amber-900">Pending Ash Pots Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Pending Ash Pots Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => setExpandedCard(null)}
-                          className="text-amber-700"
+                          className="text-muted-foreground"
                         >
                           Close
                         </Button>
@@ -487,15 +487,15 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-amber-900">Dispatched Ash Pots Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Dispatched Ash Pots Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => setExpandedCard(null)}
-                          className="text-amber-700"
+                          className="text-muted-foreground"
                         >
                           Close
                         </Button>
@@ -510,30 +510,30 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                      className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-amber-900">Revenue Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Revenue Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => setExpandedCard(null)}
-                          className="text-amber-700"
+                          className="text-muted-foreground"
                         >
                           Close
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Monthly Revenue Summary */}
-                        <Card className="border-amber-100">
+                        <Card className="border-accent">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-amber-700">Monthly Revenue</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Revenue</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold text-amber-900">
+                            <div className="text-2xl font-bold text-foreground">
                               ₹{stats.monthlyRevenue.toLocaleString()}
                             </div>
-                            <p className="text-xs text-amber-600 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               <span className="text-green-600">+15%</span> from last month
                             </p>
                           </CardContent>
@@ -572,14 +572,14 @@ export default function AdminDashboard() {
 
                       {/* Revenue Breakdown */}
                       <div className="mt-6">
-                        <h4 className="font-medium text-amber-900 mb-3">Revenue Breakdown</h4>
+                        <h4 className="font-medium text-foreground mb-3">Revenue Breakdown</h4>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                          <div className="flex justify-between items-center p-3 bg-background rounded-lg">
                             <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                              <span className="text-sm text-amber-800">Renewal Revenue</span>
+                              <div className="w-3 h-3 bg-primary rounded-full"></div>
+                              <span className="text-sm text-foreground">Renewal Revenue</span>
                             </div>
-                            <span className="font-medium text-amber-900">₹{stats.renewalCollections.toLocaleString()}</span>
+                            <span className="font-medium text-foreground">₹{stats.renewalCollections.toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                             <div className="flex items-center space-x-2">
@@ -600,17 +600,17 @@ export default function AdminDashboard() {
 
                       {/* Recent Transactions */}
                       <div className="mt-6">
-                        <h4 className="font-medium text-amber-900 mb-3">Recent Transactions</h4>
+                        <h4 className="font-medium text-foreground mb-3">Recent Transactions</h4>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
                           {recentEntries.slice(0, 10).map((entry) => (
-                            <div key={entry.id} className="flex items-center justify-between p-2 border-b border-amber-100">
+                            <div key={entry.id} className="flex items-center justify-between p-2 border-b border-accent">
                               <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                                  <IndianRupee className="h-4 w-4 text-amber-600" />
+                                <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                                  <IndianRupee className="h-4 w-4 text-muted-foreground" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-amber-900">{entry.customerName}</p>
-                                  <p className="text-xs text-amber-600">{entry.customerPhone}</p>
+                                  <p className="text-sm font-medium text-foreground">{entry.customerName}</p>
+                                  <p className="text-xs text-muted-foreground">{entry.customerPhone}</p>
                                 </div>
                               </div>
                               <div className="text-right">
@@ -619,7 +619,7 @@ export default function AdminDashboard() {
                                     <p className="text-sm font-medium text-green-600">
                                       ₹{entry.payments[0].amount.toLocaleString()}
                                     </p>
-                                    <p className="text-xs text-amber-500">
+                                    <p className="text-xs text-muted-foreground">
                                       {entry.payments[0].date ? formatFirestoreDate(entry.payments[0].date) : 'N/A'}
                                     </p>
                                   </>
@@ -637,10 +637,10 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <RecentActivity locationId={selectedLocation === 'all' ? undefined : selectedLocation} dateRange={dateRange} />
                   
-                  <Card className="border-amber-200">
+                  <Card className="border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-amber-600" />
+                        <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                         Expiring Soon
                       </CardTitle>
                       <CardDescription>
@@ -650,14 +650,14 @@ export default function AdminDashboard() {
                     <CardContent>
                       <div className="space-y-3">
                         {expiringEntries.slice(0, 5).map((entry) => (
-                          <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                          <div key={entry.id} className="flex items-center justify-between py-2 border-b border-accent last:border-0">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                              <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center">
+                                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                               </div>
                               <div>
-                                <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
-                                <p className="text-xs text-amber-600">Expires: {entry.expiryDate ? formatFirestoreDate(entry.expiryDate) : 'N/A'}</p>
+                                <p className="font-medium text-sm text-foreground">{entry.customerName}</p>
+                                <p className="text-xs text-muted-foreground">Expires: {entry.expiryDate ? formatFirestoreDate(entry.expiryDate) : 'N/A'}</p>
                               </div>
                             </div>
                             <Badge variant="destructive" className="text-xs">
@@ -666,7 +666,7 @@ export default function AdminDashboard() {
                           </div>
                         ))}
                         {expiringEntries.length === 0 && (
-                          <p className="text-sm text-amber-600 text-center py-4">
+                          <p className="text-sm text-muted-foreground text-center py-4">
                             No entries expiring soon
                           </p>
                         )}
