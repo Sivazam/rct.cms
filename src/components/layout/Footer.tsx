@@ -13,7 +13,7 @@ export default function Footer() {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/footer-bg.jpg')"
+          backgroundImage: "url('/KB1.webp')"
         }}
       />
       
@@ -21,7 +21,7 @@ export default function Footer() {
       <div 
         className="absolute inset-0"
         style={{
-          backgroundColor: 'rgba(153, 3, 30, 0.85)' // #99031e with 85% opacity
+          backgroundColor: 'rgba(234, 88, 12, 0.85)' // #ea580c with 85% opacity
         }}
       />
       

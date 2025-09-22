@@ -270,7 +270,7 @@ export default function OperatorDashboard() {
     <ProtectedRoute requiredRole="operator">
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-white border-b border shadow-sm">
+        <header className="bg-white border-b border-primary/20 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden md:flex justify-between items-center h-16">
@@ -342,7 +342,7 @@ export default function OperatorDashboard() {
         {/* Desktop Tabs - Hidden when mobile bottom nav is visible */}
         <div className="hidden md:block">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="border-b border">
+            <div className="border-b border-primary/20">
               <nav className="-mb-px flex space-x-8">
                 {[
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
@@ -354,8 +354,8 @@ export default function OperatorDashboard() {
                     className={`
                       group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm
                       ${activeTab === tab.id
-                        ? 'border-primary text-muted-foreground'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/50'
                       }
                     `}
                   >

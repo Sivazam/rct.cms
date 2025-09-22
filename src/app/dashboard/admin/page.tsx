@@ -225,7 +225,7 @@ export default function AdminDashboard() {
     <ProtectedRoute requiredRole="admin">
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-white/80 border-b border-border/50 backdrop-blur-sm">
+        <header className="bg-white/80 border-b border-primary/20 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden sm:flex justify-between items-center h-16">
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 sm:pb-8">
           {/* Desktop Tabs */}
           <div className="hidden md:block mb-8">
-            <div className="border-b border">
+            <div className="border-b border-primary/20">
               <nav className="-mb-px flex space-x-8">
                 {[
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
@@ -314,8 +314,8 @@ export default function AdminDashboard() {
                     className={`
                       group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm
                       ${activeTab === tab.id
-                        ? 'border-primary text-muted-foreground'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/50'
                       }
                     `}
                   >
