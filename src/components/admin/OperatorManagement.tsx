@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { getUsers, updateUser, getLocations, getPendingOperators, getActiveOperators, approveOperator, rejectOperator } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatFirestoreDate } from '@/lib/date-utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface Operator {
   id: string;
@@ -36,8 +37,10 @@ interface Location {
 
 export default function OperatorManagement() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [pendingOperators, setPendingOperators] = useState<Operator[]>([]);
   const [activeOperators, setActiveOperators] = useState<Operator[]>([]);
+  const [inactiveOperators, setInactiveOperators] = useState<Operator[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,20 +57,23 @@ export default function OperatorManagement() {
       setLoading(true);
       console.log('Fetching operator data...');
       
-      const [pendingOps, activeOps, locs] = await Promise.all([
+      const [pendingOps, activeOps, inactiveOps, locs] = await Promise.all([
         getPendingOperators(),
         getActiveOperators(),
+        getUsers().then(users => users.filter(user => user.role === 'operator' && !user.isActive && !user.isRejected)),
         getLocations()
       ]);
       
       console.log('Data fetched successfully:', {
         pendingOperators: pendingOps.length,
         activeOperators: activeOps.length,
+        inactiveOperators: inactiveOps.length,
         locations: locs.length
       });
       
       setPendingOperators(pendingOps);
       setActiveOperators(activeOps);
+      setInactiveOperators(inactiveOps);
       setLocations(locs.filter(loc => loc.isActive));
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -90,6 +96,11 @@ export default function OperatorManagement() {
       return;
     }
 
+    if (selectedLocations.length === 0) {
+      setError('Please select at least one location for the operator');
+      return;
+    }
+
     try {
       console.log('Approving operator:', {
         operatorId: selectedOperator.id,
@@ -100,18 +111,39 @@ export default function OperatorManagement() {
       await approveOperator(selectedOperator.id, selectedLocations, user.uid);
       
       console.log('Operator approved successfully');
+      
+      // Show success toast
+      toast({
+        title: "Operator Approved",
+        description: `${selectedOperator.name} has been successfully approved and assigned to ${selectedLocations.length} location(s).`,
+      });
+      
       setIsApproveDialogOpen(false);
       setSelectedOperator(null);
       setSelectedLocations([]);
       fetchData();
     } catch (error: any) {
       console.error('Error approving operator:', error);
-      setError(error.message || 'Failed to approve operator');
+      const errorMessage = error.message || 'Failed to approve operator';
+      setError(errorMessage);
+      
+      // Show error toast
+      toast({
+        title: "Approval Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
   const handleReject = async (operatorId: string) => {
-    if (!confirm('Are you sure you want to reject this operator? This will delete their account.')) {
+    const operator = pendingOperators.find(op => op.id === operatorId);
+    if (!operator) {
+      setError('Operator not found');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to reject ${operator.name}? This will deactivate their account.`)) {
       return;
     }
 
@@ -121,10 +153,25 @@ export default function OperatorManagement() {
       await rejectOperator(operatorId, 'Rejected by admin');
       
       console.log('Operator rejected successfully');
+      
+      // Show success toast
+      toast({
+        title: "Operator Rejected",
+        description: `${operator.name} has been rejected and their account has been deactivated.`,
+      });
+      
       fetchData();
     } catch (error: any) {
       console.error('Error rejecting operator:', error);
-      setError(error.message || 'Failed to reject operator');
+      const errorMessage = error.message || 'Failed to reject operator';
+      setError(errorMessage);
+      
+      // Show error toast
+      toast({
+        title: "Rejection Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -137,7 +184,13 @@ export default function OperatorManagement() {
   };
 
   const handleDeactivate = async (operatorId: string) => {
-    if (!confirm('Are you sure you want to deactivate this operator?')) {
+    const operator = activeOperators.find(op => op.id === operatorId);
+    if (!operator) {
+      setError('Operator not found');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to deactivate ${operator.name}? They will no longer be able to access the system.`)) {
       return;
     }
 
@@ -149,14 +202,35 @@ export default function OperatorManagement() {
       });
       
       console.log('Operator deactivated successfully');
+      
+      // Show success toast
+      toast({
+        title: "Operator Deactivated",
+        description: `${operator.name} has been deactivated and can no longer access the system.`,
+      });
+      
       fetchData();
     } catch (error: any) {
       console.error('Error deactivating operator:', error);
-      setError(error.message || 'Failed to deactivate operator');
+      const errorMessage = error.message || 'Failed to deactivate operator';
+      setError(errorMessage);
+      
+      // Show error toast
+      toast({
+        title: "Deactivation Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
   const handleActivate = async (operatorId: string) => {
+    const operator = inactiveOperators.find(op => op.id === operatorId);
+    if (!operator) {
+      setError('Operator not found');
+      return;
+    }
+
     try {
       console.log('Activating operator:', { operatorId });
       
@@ -165,10 +239,25 @@ export default function OperatorManagement() {
       });
       
       console.log('Operator activated successfully');
+      
+      // Show success toast
+      toast({
+        title: "Operator Activated",
+        description: `${operator.name} has been activated and can now access the system.`,
+      });
+      
       fetchData();
     } catch (error: any) {
       console.error('Error activating operator:', error);
-      setError(error.message || 'Failed to activate operator');
+      const errorMessage = error.message || 'Failed to activate operator';
+      setError(errorMessage);
+      
+      // Show error toast
+      toast({
+        title: "Activation Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -335,6 +424,86 @@ export default function OperatorManagement() {
                       className="text-red-600 hover:text-red-700 whitespace-nowrap"
                     >
                       Deactivate
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Inactive Operators */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Users className="h-5 w-5 text-gray-500" />
+            <span>Inactive Operators</span>
+          </CardTitle>
+          <CardDescription>
+            Deactivated operators that can be reactivated
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {inactiveOperators.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-500">No inactive operators found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {inactiveOperators.map((operator, index) => (
+                <motion.div
+                  key={operator.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4 bg-gray-50"
+                >
+                  <div className="flex items-start space-x-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Users className="h-6 w-6 text-gray-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium truncate">{operator.name}</h4>
+                        <Badge variant="secondary">Inactive</Badge>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.mobile}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span>
+                          {operator.locationIds?.length || 0} location(s) assigned
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleApproveClick(operator)}
+                      className="whitespace-nowrap"
+                    >
+                      Edit Assignment
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleActivate(operator.id)}
+                      className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Activate
                     </Button>
                   </div>
                 </motion.div>

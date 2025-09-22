@@ -18,6 +18,7 @@ import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
+import RecentActivity from '@/components/dashboard/RecentActivity';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
@@ -406,7 +407,7 @@ export default function AdminDashboard() {
                     >
                       <Card 
                         className="h-full hover:shadow-md transition-all duration-200 border-amber-200 cursor-pointer hover:scale-105"
-                        onClick={() => stat.type !== 'revenue' && handleCardClick(stat.type)}
+                        onClick={() => handleCardClick(stat.type)}
                       >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                           <CardTitle className="text-sm font-medium text-amber-700">
@@ -423,11 +424,9 @@ export default function AdminDashboard() {
                           <p className="text-xs text-amber-600">
                             <span className="text-green-600 font-medium">{stat.change}</span> from last month
                           </p>
-                          {stat.type !== 'revenue' && (
-                            <p className="text-xs text-amber-500 mt-1">
-                              Click to view details
-                            </p>
-                          )}
+                          <p className="text-xs text-amber-500 mt-1">
+                            Click to view details
+                          </p>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -504,52 +503,140 @@ export default function AdminDashboard() {
                       <InteractiveEntriesList type="dispatched" onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
+
+                  {/* Revenue Details */}
+                  {expandedCard === 'revenue' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-amber-900">Revenue Details</h3>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setExpandedCard(null)}
+                          className="text-amber-700"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Monthly Revenue Summary */}
+                        <Card className="border-amber-100">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-amber-700">Monthly Revenue</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-amber-900">
+                              ₹{stats.monthlyRevenue.toLocaleString()}
+                            </div>
+                            <p className="text-xs text-amber-600 mt-1">
+                              <span className="text-green-600">+15%</span> from last month
+                            </p>
+                          </CardContent>
+                        </Card>
+
+                        {/* Renewal Collections */}
+                        <Card className="border-green-100">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-green-700">Renewal Collections</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-green-900">
+                              ₹{stats.renewalCollections.toLocaleString()}
+                            </div>
+                            <p className="text-xs text-green-600 mt-1">
+                              From {stats.totalRenewals} renewals
+                            </p>
+                          </CardContent>
+                        </Card>
+
+                        {/* Delivery Collections */}
+                        <Card className="border-blue-100">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-blue-700">Delivery Collections</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold text-blue-900">
+                              ₹{stats.deliveryCollections.toLocaleString()}
+                            </div>
+                            <p className="text-xs text-blue-600 mt-1">
+                              From {stats.totalDeliveries} deliveries
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Revenue Breakdown */}
+                      <div className="mt-6">
+                        <h4 className="font-medium text-amber-900 mb-3">Revenue Breakdown</h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                              <span className="text-sm text-amber-800">Renewal Revenue</span>
+                            </div>
+                            <span className="font-medium text-amber-900">₹{stats.renewalCollections.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                              <span className="text-sm text-blue-800">Delivery Revenue</span>
+                            </div>
+                            <span className="font-medium text-blue-900">₹{stats.deliveryCollections.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border-t-2 border-green-200">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-green-800">Total Revenue</span>
+                            </div>
+                            <span className="font-bold text-green-900">₹{stats.monthlyRevenue.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recent Transactions */}
+                      <div className="mt-6">
+                        <h4 className="font-medium text-amber-900 mb-3">Recent Transactions</h4>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {recentEntries.slice(0, 10).map((entry) => (
+                            <div key={entry.id} className="flex items-center justify-between p-2 border-b border-amber-100">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                                  <IndianRupee className="h-4 w-4 text-amber-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-amber-900">{entry.customerName}</p>
+                                  <p className="text-xs text-amber-600">{entry.customerPhone}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                {entry.payments && entry.payments.length > 0 && (
+                                  <>
+                                    <p className="text-sm font-medium text-green-600">
+                                      ₹{entry.payments[0].amount.toLocaleString()}
+                                    </p>
+                                    <p className="text-xs text-amber-500">
+                                      {entry.payments[0].date ? formatFirestoreDate(entry.payments[0].date) : 'N/A'}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Recent Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card className="border-amber-200">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Clock className="h-5 w-5" />
-                        Recent Entries
-                      </CardTitle>
-                      <CardDescription>
-                        Latest customer entries in the system
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {recentEntries.slice(0, 5).map((entry) => (
-                          <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-                                <User className="h-4 w-4 text-amber-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
-                                <p className="text-xs text-amber-600">{entry.customerPhone}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-amber-600">
-                                {entry.entryDate ? formatFirestoreDate(entry.entryDate) : 'N/A'}
-                              </p>
-                              <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
-                                {entry.status}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                        {recentEntries.length === 0 && (
-                          <p className="text-sm text-amber-600 text-center py-4">
-                            No recent entries found
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
+                  <RecentActivity locationId={selectedLocation === 'all' ? undefined : selectedLocation} dateRange={dateRange} />
+                  
                   <Card className="border-amber-200">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
