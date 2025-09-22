@@ -153,10 +153,10 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Search className="h-5 w-5" />
-            <span>Search for Delivery</span>
+            <span>Search for Dispatch</span>
           </CardTitle>
           <CardDescription>
-            Search for active entries that are ready for delivery
+            Search for active entries that are ready for Dispatch
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -216,7 +216,7 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
           <CardHeader>
             <CardTitle>Search Results</CardTitle>
             <CardDescription>
-              Found {searchResults.length} active entries ready for delivery
+              Found {searchResults.length} active entries ready for Dispatch
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -283,7 +283,7 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
                         onClick={() => onEntrySelect(entry)}
                         disabled={loading}
                       >
-                        Process Delivery
+                        Process Dispatch
                       </Button>
                     </div>
                   </motion.div>
@@ -298,7 +298,7 @@ export default function DeliverySearch({ onEntrySelect, loading = false }: Deliv
         <Card>
           <CardContent className="text-center py-8">
             <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">No active entries found for delivery</p>
+            <p className="text-gray-600">No active entries found for Dispatch</p>
           </CardContent>
         </Card>
       )}

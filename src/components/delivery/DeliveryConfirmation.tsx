@@ -99,14 +99,14 @@ export default function DeliveryConfirmation({
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="h-12 w-12 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-green-800 mb-2">Delivery Successful!</h2>
+        <h2 className="text-2xl font-bold text-green-800 mb-2">Dispatch Successful!</h2>
         <p className="text-gray-600">Ash pots have been successfully delivered to the customer</p>
       </motion.div>
 
       {/* Progress */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Delivery Progress</CardTitle>
+          <CardTitle className="text-lg">Dispatch Progress</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -138,8 +138,8 @@ export default function DeliveryConfirmation({
       {/* Delivery Details */}
       <Card>
         <CardHeader>
-          <CardTitle>Delivery Details</CardTitle>
-          <CardDescription>Summary of the completed delivery</CardDescription>
+          <CardTitle>Dispatch Details</CardTitle>
+          <CardDescription>Summary of the completed Dispatch</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -164,15 +164,15 @@ export default function DeliveryConfirmation({
 
             {/* Delivery Information */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-800 border-b pb-2">Delivery Information</h3>
+              <h3 className="font-semibold text-gray-800 border-b pb-2">Dispatch Information</h3>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Package className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{entry.pots} pot(s) delivered</span>
+                  <span className="text-sm">{entry.pots} pot(s) Dispatched</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">Delivered on: {formatDate(deliveryData.deliveryDate)}</span>
+                  <span className="text-sm">Dispatch on: {formatDate(deliveryData.deliveryDate)}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-gray-500" />
@@ -235,7 +235,7 @@ export default function DeliveryConfirmation({
                   <div className="flex items-start space-x-2 bg-blue-50 p-2 rounded">
                     <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div className="text-xs text-blue-800">
-                      <strong>Free Delivery:</strong> No payment collected for this delivery
+                      <strong>Free Dispatch:</strong> No payment collected for this Dispatch
                       {deliveryData.reason && (
                         <div className="mt-1">
                           <strong>Reason:</strong> {deliveryData.reason}
@@ -302,7 +302,7 @@ export default function DeliveryConfirmation({
           className="flex-1"
         >
           <Calendar className="h-4 w-4 mr-2" />
-          View Delivery History
+          View Dispatch History
         </Button>
         <Button
           onClick={onNewDelivery}

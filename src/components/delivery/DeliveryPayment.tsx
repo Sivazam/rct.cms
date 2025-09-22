@@ -225,7 +225,7 @@ export default function DeliveryPayment({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calculator className="h-5 w-5" />
-            <span>Delivery Payment Processing</span>
+            <span>Dispatch Payment Processing</span>
           </CardTitle>
           <CardDescription>
             Calculate and process payment for dispatch/delivery
@@ -234,7 +234,7 @@ export default function DeliveryPayment({
         <CardContent className="space-y-6">
           {/* Entry Details */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-3">Delivery Details</h3>
+            <h3 className="font-semibold mb-3">Dispatch Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p><strong>Customer:</strong> {entry.customer.name}</p>
@@ -388,7 +388,7 @@ export default function DeliveryPayment({
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Note:</strong> Once delivery is processed, the account will be marked as settled 
+                  <strong>Note:</strong> Once Dispatch is processed, the account will be marked as settled 
                   regardless of partial payment. No further balance will be collected.
                 </AlertDescription>
               </Alert>

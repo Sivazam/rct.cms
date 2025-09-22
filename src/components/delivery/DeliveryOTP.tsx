@@ -182,16 +182,16 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Shield className="h-5 w-5" />
-            <span>Delivery Verification</span>
+            <span>Dispatch Verification</span>
           </CardTitle>
           <CardDescription>
-            Verify customer identity with OTP for secure delivery
+            Verify customer identity with OTP for secure Dispatch
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Entry Details */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Delivery Details</h3>
+            <h3 className="font-semibold mb-2">Dispatch Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p><strong>Customer:</strong> {entry.customer.name}</p>
@@ -210,7 +210,7 @@ export default function DeliveryOTP({ entry, onOTPVerified, onBack, loading = fa
             <div className="text-center space-y-4">
               <MessageSquare className="h-16 w-16 mx-auto text-blue-600" />
               <div>
-                <h3 className="text-lg font-semibold mb-2">Send OTP for Delivery Verification</h3>
+                <h3 className="text-lg font-semibold mb-2">Send OTP for Dispatch Verification</h3>
                 <p className="text-gray-600 mb-4">
                   A one-time password will be sent to the customer's mobile number 
                   <span className="font-semibold"> {entry.customer.mobile}</span>

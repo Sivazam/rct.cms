@@ -557,14 +557,14 @@ export default function AdminDashboard() {
                         {/* Delivery Collections */}
                         <Card className="border-blue-100">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-blue-700">Delivery Collections</CardTitle>
+                            <CardTitle className="text-sm font-medium text-blue-700">Dispatch Collections</CardTitle>
                           </CardHeader>
                           <CardContent>
                             <div className="text-2xl font-bold text-blue-900">
                               ₹{stats.deliveryCollections.toLocaleString()}
                             </div>
                             <p className="text-xs text-blue-600 mt-1">
-                              From {stats.totalDeliveries} deliveries
+                              From {stats.totalDeliveries} dispacthes
                             </p>
                           </CardContent>
                         </Card>
@@ -584,7 +584,7 @@ export default function AdminDashboard() {
                           <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                             <div className="flex items-center space-x-2">
                               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                              <span className="text-sm text-blue-800">Delivery Revenue</span>
+                              <span className="text-sm text-blue-800">Dispatch Revenue</span>
                             </div>
                             <span className="font-medium text-blue-900">₹{stats.deliveryCollections.toLocaleString()}</span>
                           </div>

@@ -1095,7 +1095,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                             <Truck className="h-3 w-3 mr-1" />
                             Dispatch
                           </Button>
-                          {user?.role === 'admin' && (
+                          {/* {user?.role === 'admin' && (
                             <SendSMSButton 
                               entry={{
                                 id: entry.id,
@@ -1110,7 +1110,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
                               }}
                               onSMSsent={fetchData}
                             />
-                          )}
+                          )} */}
                         </div>
                       </TableCell>
                     )}

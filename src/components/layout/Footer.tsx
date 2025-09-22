@@ -23,7 +23,7 @@ export default function Footer() {
             </div>
             <p className="text-amber-200 mb-4 leading-relaxed">
               A comprehensive cremation management system dedicated to providing dignified and respectful services 
-              for ash pot storage, renewal management, and delivery coordination. Serving the community with 
+              for ash pot storage, renewal management, and Dispatch coordination. Serving the community with 
               compassion and excellence.
             </p>
             <div className="flex items-center space-x-2 text-amber-200">
