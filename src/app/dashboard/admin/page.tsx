@@ -455,7 +455,7 @@ export default function AdminDashboard() {
                           Close
                         </Button>
                       </div>
-                      <CustomerEntrySystem />
+                      <InteractiveEntriesList type="active" onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
 
@@ -478,7 +478,7 @@ export default function AdminDashboard() {
                           Close
                         </Button>
                       </div>
-                      <RenewalSystem />
+                      <InteractiveEntriesList type="pending" onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
 
@@ -501,7 +501,7 @@ export default function AdminDashboard() {
                           Close
                         </Button>
                       </div>
-                      <DeliverySystem />
+                      <InteractiveEntriesList type="dispatched" onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
                 </div>
