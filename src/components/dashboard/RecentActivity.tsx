@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatFirestoreDate } from '@/lib/date-utils';
-import { getEntries } from '@/lib/firestore';
+import { getEntries, getLocations } from '@/lib/firestore';
 
 interface Activity {
   id: string;
@@ -42,12 +42,28 @@ interface RecentActivityProps {
 export default function RecentActivity({ locationId, dateRange, limit = 10 }: RecentActivityProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locations, setLocations] = useState<any[]>([]);
 
   useEffect(() => {
+    fetchLocations();
     fetchActivities();
   }, [locationId, dateRange]);
 
-  const fetchActivities = async () => {
+  const fetchLocations = async () => {
+    try {
+      const locationsData = await getLocations();
+      setLocations(locationsData);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+    }
+  };
+
+  const getLocationName = (locationId: string) => {
+    const location = locations.find(loc => loc.id === locationId);
+    return location ? location.venueName : 'Unknown Location';
+  };
+
+  const fetchActivities = async (showAll: boolean = false) => {
     try {
       setLoading(true);
       
@@ -68,7 +84,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
           description: `Ash pot entry created`,
           customerName: entry.customerName,
           customerMobile: entry.customerMobile,
-          locationName: entry.locationName || 'Unknown Location',
+          locationName: getLocationName(entry.locationId),
           timestamp: entry.entryDate,
           status: entry.status,
           operatorName: entry.operatorName
@@ -84,7 +100,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
               description: `Renewed for ${renewal.months || 1} month(s)`,
               customerName: entry.customerName,
               customerMobile: entry.customerMobile,
-              locationName: entry.locationName || 'Unknown Location',
+              locationName: getLocationName(entry.locationId),
               timestamp: renewal.date,
               amount: renewal.amount,
               operatorName: entry.operatorName
@@ -101,7 +117,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
             description: entry.dispatchReason || 'Dispatched to family',
             customerName: entry.customerName,
             customerMobile: entry.customerMobile,
-            locationName: entry.locationName || 'Unknown Location',
+            locationName: getLocationName(entry.locationId),
             timestamp: entry.deliveryDate,
             status: entry.status,
             operatorName: entry.operatorName
@@ -125,8 +141,9 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         });
       }
 
-      // Limit the number of activities
-      setActivities(filteredActivities.slice(0, limit));
+      // Use a higher limit when showing all activities
+      const activityLimit = showAll ? 100 : limit;
+      setActivities(filteredActivities.slice(0, activityLimit));
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
@@ -282,8 +299,22 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         
         {activities.length > 0 && (
           <div className="mt-4 pt-4 border-t">
-            <Button variant="outline" size="sm" className="w-full">
-              View All Activity
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={() => {
+                // Toggle between showing limited and all activities
+                if (activities.length >= 100) {
+                  // Currently showing all, show limited
+                  fetchActivities(false);
+                } else {
+                  // Currently showing limited, show all
+                  fetchActivities(true);
+                }
+              }}
+            >
+              {activities.length >= 100 ? 'Show Less Activity' : 'View All Activity'}
             </Button>
           </div>
         )}

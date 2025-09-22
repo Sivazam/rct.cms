@@ -198,7 +198,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                 value={formData.city}
                 onChange={(e) => handleChange('city', e.target.value)}
                 required
-                disabled={isExistingCustomer || submitting}
+                disabled={submitting}
                 placeholder="Enter city name"
               />
             </div>
@@ -209,7 +209,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                 id="additionalDetails"
                 value={formData.additionalDetails}
                 onChange={(e) => handleChange('additionalDetails', e.target.value)}
-                disabled={isExistingCustomer || submitting}
+                disabled={submitting}
                 placeholder="Any additional notes or details"
                 rows={3}
               />
