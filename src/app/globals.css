@@ -41,10 +41,44 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Indian Temple inspired colors */
+  --color-saffron: var(--saffron);
+  --color-saffron-50: var(--saffron-50);
+  --color-saffron-100: var(--saffron-100);
+  --color-saffron-200: var(--saffron-200);
+  --color-saffron-300: var(--saffron-300);
+  --color-saffron-400: var(--saffron-400);
+  --color-saffron-500: var(--saffron-500);
+  --color-saffron-600: var(--saffron-600);
+  --color-saffron-700: var(--saffron-700);
+  --color-saffron-800: var(--saffron-800);
+  --color-saffron-900: var(--saffron-900);
+  --color-saffron-950: var(--saffron-950);
+  --color-temple-red: var(--temple-red);
+  --color-temple-gold: var(--temple-gold);
 }
 
 :root {
   --radius: 0.625rem;
+  
+  /* Indian Temple Inspired Colors */
+  --saffron: oklch(0.65 0.18 60);
+  --saffron-50: oklch(0.98 0.02 60);
+  --saffron-100: oklch(0.96 0.04 60);
+  --saffron-200: oklch(0.92 0.08 60);
+  --saffron-300: oklch(0.86 0.12 60);
+  --saffron-400: oklch(0.78 0.16 60);
+  --saffron-500: oklch(0.65 0.18 60);
+  --saffron-600: oklch(0.55 0.16 60);
+  --saffron-700: oklch(0.45 0.14 60);
+  --saffron-800: oklch(0.35 0.12 60);
+  --saffron-900: oklch(0.25 0.10 60);
+  --saffron-950: oklch(0.15 0.08 60);
+  
+  --temple-red: oklch(0.55 0.22 20);
+  --temple-gold: oklch(0.85 0.15 80);
+  
   /* White background theme */
   --background: oklch(1 0 0);
   --foreground: oklch(0.2 0.015 25);
@@ -57,7 +91,7 @@
   --popover-foreground: oklch(0.2 0.015 25);
   
   /* Primary color using #ea580c (orange - converted to oklch) */
-  --primary: oklch(0.65 0.18 60);
+  --primary: var(--saffron);
   --primary-foreground: oklch(0.98 0.001 106);
   
   --secondary: oklch(0.95 0.015 85);
@@ -74,10 +108,10 @@
   /* Borders for outlined cards */
   --border: oklch(0.88 0.015 70);
   --input: oklch(0.92 0.012 75);
-  --ring: oklch(0.65 0.18 60);
+  --ring: var(--saffron);
   
   /* Chart colors with accent */
-  --chart-1: oklch(0.65 0.18 60);
+  --chart-1: var(--saffron);
   --chart-2: oklch(0.75 0.065 35);
   --chart-3: oklch(0.85 0.045 25);
   --chart-4: oklch(0.95 0.035 15);
@@ -85,46 +119,62 @@
   
   --sidebar: oklch(0.99 0.001 100);
   --sidebar-foreground: oklch(0.2 0.015 25);
-  --sidebar-primary: oklch(0.65 0.18 60);
+  --sidebar-primary: var(--saffron);
   --sidebar-primary-foreground: oklch(0.98 0.001 106);
   --sidebar-accent: oklch(0.95 0.01 85);
   --sidebar-accent-foreground: oklch(0.3 0.085 45);
   --sidebar-border: oklch(0.88 0.015 70);
-  --sidebar-ring: oklch(0.65 0.18 60);
+  --sidebar-ring: var(--saffron);
 }
 
 .dark {
-  --background: oklch(0.12 0.015 30);
+  /* Deep temple-inspired dark background */
+  --background: oklch(0.08 0.02 25);
   --foreground: oklch(0.95 0.01 85);
-  --card: oklch(0.15 0.015 35);
+  
+  /* Rich dark cards with temple red accents */
+  --card: oklch(0.11 0.018 28);
   --card-foreground: oklch(0.95 0.01 85);
-  --popover: oklch(0.15 0.015 35);
+  
+  --popover: oklch(0.11 0.018 28);
   --popover-foreground: oklch(0.95 0.01 85);
-  --primary: oklch(0.75 0.12 60);
-  --primary-foreground: oklch(0.12 0.015 30);
+  
+  /* Warmer orange primary in dark mode */
+  --primary: oklch(0.75 0.16 55);
+  --primary-foreground: oklch(0.08 0.015 25);
+  
   --secondary: oklch(0.22 0.018 50);
   --secondary-foreground: oklch(0.95 0.01 85);
-  --muted: oklch(0.20 0.015 48);
+  
+  --muted: oklch(0.18 0.015 45);
   --muted-foreground: oklch(0.75 0.02 75);
+  
   --accent: oklch(0.25 0.02 52);
   --accent-foreground: oklch(0.95 0.01 85);
-  --destructive: oklch(0.7 0.1 60);
-  --border: oklch(0.28 0.02 55);
-  --input: oklch(0.25 0.018 50);
-  --ring: oklch(0.75 0.12 60);
-  --chart-1: oklch(0.75 0.12 60);
-  --chart-2: oklch(0.55 0.065 35);
-  --chart-3: oklch(0.45 0.085 25);
-  --chart-4: oklch(0.75 0.035 15);
-  --chart-5: oklch(0.85 0.025 5);
-  --sidebar: oklch(0.12 0.015 30);
+  
+  --destructive: oklch(0.7 0.12 55);
+  
+  /* Temple-inspired borders */
+  --border: oklch(0.25 0.02 50);
+  --input: oklch(0.22 0.018 48);
+  --ring: oklch(0.75 0.16 55);
+  
+  /* Enhanced chart colors for dark mode */
+  --chart-1: oklch(0.75 0.16 55);
+  --chart-2: oklch(0.55 0.085 35);
+  --chart-3: oklch(0.45 0.095 25);
+  --chart-4: oklch(0.8 0.045 15);
+  --chart-5: oklch(0.9 0.035 5);
+  
+  /* Dark temple sidebar */
+  --sidebar: oklch(0.09 0.015 30);
   --sidebar-foreground: oklch(0.95 0.01 85);
-  --sidebar-primary: oklch(0.75 0.12 60);
-  --sidebar-primary-foreground: oklch(0.12 0.015 30);
+  --sidebar-primary: oklch(0.75 0.16 55);
+  --sidebar-primary-foreground: oklch(0.08 0.015 25);
   --sidebar-accent: oklch(0.22 0.018 50);
   --sidebar-accent-foreground: oklch(0.95 0.01 85);
-  --sidebar-border: oklch(0.28 0.02 55);
-  --sidebar-ring: oklch(0.75 0.12 60);
+  --sidebar-border: oklch(0.25 0.02 50);
+  --sidebar-ring: oklch(0.75 0.16 55);
 }
 
 @layer base {
@@ -147,15 +197,15 @@
 
 /* Professional accent elements */
 .accent-border {
-  border-color: oklch(0.65 0.18 60);
+  border-color: var(--saffron);
 }
 
 .accent-bg {
-  background-color: oklch(0.65 0.18 60);
+  background-color: var(--saffron);
 }
 
 .accent-text {
-  color: oklch(0.65 0.18 60);
+  color: var(--saffron);
 }
 
 /* Enhanced professional styling */

@@ -14,6 +14,8 @@ import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import OperatorProfile from '@/components/operators/OperatorProfile';
+import DateTimeBar from '@/components/ui/DateTimeBar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
@@ -269,6 +271,9 @@ export default function OperatorDashboard() {
   return (
     <ProtectedRoute requiredRole="operator">
       <div className="min-h-screen bg-background">
+        {/* Date Time Bar */}
+        <DateTimeBar />
+        
         {/* Header */}
         <header className="bg-white border-b border-primary/20 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -286,6 +291,7 @@ export default function OperatorDashboard() {
                 <Badge variant="outline" className="ml-4 border text-muted-foreground">Operator</Badge>
               </div>
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="w-56">
                     <SelectValue placeholder="Select Location" />
@@ -319,6 +325,7 @@ export default function OperatorDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <ThemeToggle />
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue placeholder="Location" />

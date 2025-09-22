@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 import PageTransitionLoader from "@/components/ui/page-transition-loader";
 import FooterWrapper from "@/components/layout/FooterWrapper";
 
@@ -83,16 +84,23 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
-        <LoadingProvider>
-          <AuthProvider>
-            <div className="flex-1">
-              {children}
-            </div>
-            <FooterWrapper />
-            <Toaster />
-            <PageTransitionLoader />
-          </AuthProvider>
-        </LoadingProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange={false}
+        >
+          <LoadingProvider>
+            <AuthProvider>
+              <div className="flex-1">
+                {children}
+              </div>
+              <FooterWrapper />
+              <Toaster />
+              <PageTransitionLoader />
+            </AuthProvider>
+          </LoadingProvider>
+        </ThemeProvider>
         
         {/* Service Worker Registration */}
         <script

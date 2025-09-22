@@ -23,6 +23,8 @@ import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
 import { Switch } from '@/components/ui/switch';
+import DateTimeBar from '@/components/ui/DateTimeBar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { getLocations, getEntries, getSystemStats } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
@@ -224,6 +226,9 @@ export default function AdminDashboard() {
   return (
     <ProtectedRoute requiredRole="admin">
       <div className="min-h-screen bg-background">
+        {/* Date Time Bar */}
+        <DateTimeBar />
+        
         {/* Header */}
         <header className="bg-white/80 border-b border-primary/20 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -241,6 +246,7 @@ export default function AdminDashboard() {
                 <Badge variant="outline" className="ml-4 border text-muted-foreground">Admin</Badge>
               </div>
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="w-56">
                     <SelectValue placeholder="Select Location" />
@@ -275,6 +281,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <ThemeToggle />
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                   <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue placeholder="Location" />
