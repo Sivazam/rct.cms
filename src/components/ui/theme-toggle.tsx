@@ -36,8 +36,8 @@ export function ThemeToggle() {
       {/* Light mode icon */}
       <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 transform ${
         theme === 'light' 
-          ? 'opacity-100 scale-100 rotate-0' 
-          : 'opacity-0 scale-75 -rotate-90'
+          ? 'opacity-100 scale-100 rotate-0 z-10' 
+          : 'opacity-0 scale-75 -rotate-90 z-0'
       }`}>
         <Sun className="h-5 w-5 text-orange-600" />
       </div>
@@ -45,18 +45,18 @@ export function ThemeToggle() {
       {/* Dark mode icon */}
       <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 transform ${
         theme === 'dark' 
-          ? 'opacity-100 scale-100 rotate-0' 
-          : 'opacity-0 scale-75 rotate-90'
+          ? 'opacity-100 scale-100 rotate-0 z-10' 
+          : 'opacity-0 scale-75 rotate-90 z-0'
       }`}>
         <Moon className="h-5 w-5 text-saffron-200" />
       </div>
       
-      {/* Spiritual center icon (diya/lamp) */}
-      <div className="absolute inset-0 flex items-center justify-center transition-all duration-300">
+      {/* Spiritual center icon (diya/lamp) - always visible but less prominent */}
+      <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 z-5">
         <LampDesk className={`h-4 w-4 transition-all duration-300 ${
           theme === 'light' 
-            ? 'text-orange-700 opacity-60' 
-            : 'text-saffron-300 opacity-80'
+            ? 'text-orange-700 opacity-40' 
+            : 'text-saffron-300 opacity-50'
         }`} />
       </div>
       
