@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Save, RotateCcw, Smartphone, Shield } from 'lucide-react';
+import { Settings, Save, RotateCcw, Smartphone, Shield, MapPin, MessageSquare } from 'lucide-react';
 import { useAdminConfigStore } from '@/stores/admin-config';
+import LocationManagement from './LocationManagement';
+import SMSLogsTable from './SMSLogsTable';
 
 export default function AdminSettings() {
   const { adminMobile, setAdminMobile, resetToDefault } = useAdminConfigStore();
@@ -47,14 +49,28 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center space-x-2">
         <Settings className="h-6 w-6" />
         <h2 className="text-2xl font-bold">Admin Settings</h2>
       </div>
 
+      {/* Location Management Section */}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <MapPin className="h-5 w-5" />
+          <h3 className="text-xl font-semibold">Location Management</h3>
+        </div>
+        <LocationManagement />
+      </div>
+
       {/* Admin Mobile Configuration */}
-      <Card>
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Smartphone className="h-5 w-5" />
+          <h3 className="text-xl font-semibold">Admin Mobile Configuration</h3>
+        </div>
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Smartphone className="h-5 w-5" />
@@ -145,6 +161,16 @@ export default function AdminSettings() {
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      {/* SMS Logs Section */}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <MessageSquare className="h-5 w-5" />
+          <h3 className="text-xl font-semibold">SMS Logs & Reports</h3>
+        </div>
+        <SMSLogsTable />
+      </div>
     </div>
   );
 }

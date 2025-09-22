@@ -365,32 +365,36 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                     {
-                      title: 'Total Active Entries',
+                      title: 'Total Active Ash Pots',
                       value: stats.totalEntries,
                       icon: Package,
                       color: 'amber',
-                      change: '+12%'
+                      change: '+12%',
+                      type: 'active'
                     },
                     {
-                      title: 'Pending Renewals',
+                      title: 'Pending Ash Pots',
                       value: stats.totalRenewals,
                       icon: RefreshCw,
                       color: 'orange',
-                      change: '+5%'
+                      change: '+5%',
+                      type: 'pending'
                     },
                     {
-                      title: 'Total Deliveries',
+                      title: 'Dispatched Ash Pots',
                       value: stats.totalDeliveries,
                       icon: Truck,
                       color: 'amber',
-                      change: '+8%'
+                      change: '+8%',
+                      type: 'dispatched'
                     },
                     {
                       title: 'Monthly Revenue',
                       value: `₹${stats.monthlyRevenue.toLocaleString()}`,
                       icon: DollarSign,
                       color: 'orange',
-                      change: '+15%'
+                      change: '+15%',
+                      type: 'revenue'
                     }
                   ].map((stat, index) => (
                     <motion.div
@@ -400,7 +404,10 @@ export default function AdminDashboard() {
                       transition={{ delay: index * 0.1 }}
                       className="group"
                     >
-                      <Card className="h-full hover:shadow-md transition-all duration-200 border-amber-200">
+                      <Card 
+                        className="h-full hover:shadow-md transition-all duration-200 border-amber-200 cursor-pointer hover:scale-105"
+                        onClick={() => stat.type !== 'revenue' && handleCardClick(stat.type)}
+                      >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                           <CardTitle className="text-sm font-medium text-amber-700">
                             {stat.title}
@@ -416,10 +423,87 @@ export default function AdminDashboard() {
                           <p className="text-xs text-amber-600">
                             <span className="text-green-600 font-medium">{stat.change}</span> from last month
                           </p>
+                          {stat.type !== 'revenue' && (
+                            <p className="text-xs text-amber-500 mt-1">
+                              Click to view details
+                            </p>
+                          )}
                         </CardContent>
                       </Card>
                     </motion.div>
                   ))}
+                </div>
+
+                {/* Expandable Content Sections */}
+                <div ref={expandedContentRef} className="space-y-6">
+                  {/* Active Ash Pots Details */}
+                  {expandedCard === 'active' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-amber-900">Active Ash Pots Details</h3>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setExpandedCard(null)}
+                          className="text-amber-700"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      <CustomerEntrySystem />
+                    </motion.div>
+                  )}
+
+                  {/* Pending Ash Pots Details */}
+                  {expandedCard === 'pending' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-amber-900">Pending Ash Pots Details</h3>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setExpandedCard(null)}
+                          className="text-amber-700"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      <RenewalSystem />
+                    </motion.div>
+                  )}
+
+                  {/* Dispatched Ash Pots Details */}
+                  {expandedCard === 'dispatched' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-white rounded-lg border-amber-200 p-6 shadow-sm"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-amber-900">Dispatched Ash Pots Details</h3>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setExpandedCard(null)}
+                          className="text-amber-700"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      <DeliverySystem />
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Recent Activity */}

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NavigationLoading from '@/components/ui/navigation-loading';
-import SplashScreen from '@/components/ui/splash-screen';
+import SplashScreen from '@/components/ui/splash-screen-complex';
 
 export default function Home() {
   const router = useRouter();
