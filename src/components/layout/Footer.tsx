@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Phone, Mail, MapPin, Calendar } from "lucide-react"
+import Image from "next/image"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -9,25 +10,43 @@ export default function Footer() {
   return (
     <footer className="bg-amber-900 text-amber-50 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Organization Info */}
-          <div className="md:col-span-2">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-amber-700 rounded-full flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-amber-50" />
+          <div className="lg:col-span-2">
+            <div className="flex items-center space-x-4 mb-6">
+              {/* Logo Container */}
+              <div className="relative w-16 h-16 bg-white rounded-full flex items-center justify-center drop-shadow-lg flex-shrink-0">
+                <div className="w-12 h-12">
+                  <Image
+                    src="/logo.webp"
+                    alt="Cremation Management System Logo"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-contain"
+                    priority
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = document.createElement('div');
+                      fallback.className = 'absolute inset-0 flex items-center justify-center text-amber-700 text-xl font-bold';
+                      fallback.textContent = 'CMS';
+                      target.parentNode?.appendChild(fallback);
+                    }}
+                  />
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-amber-50">Cremation Management System</h3>
+              <div className="min-w-0">
+                <h3 className="text-xl font-bold text-amber-50 truncate">Cremation Management System</h3>
                 <p className="text-amber-200 text-sm">Rotary Charitable Trust</p>
               </div>
             </div>
-            <p className="text-amber-200 mb-4 leading-relaxed">
+            <p className="text-amber-200 mb-4 leading-relaxed text-sm sm:text-base">
               A comprehensive cremation management system dedicated to providing dignified and respectful services 
               for ash pot storage, renewal management, and Dispatch coordination. Serving the community with 
               compassion and excellence.
             </p>
             <div className="flex items-center space-x-2 text-amber-200">
-              <span className="text-sm">© {currentYear} All Rights Reserved to CMS</span>
+              <span className="text-xs sm:text-sm">© {currentYear} All Rights Reserved to CMS</span>
             </div>
           </div>
 
@@ -64,11 +83,11 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
                 <Phone className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-amber-200 text-sm font-medium">Phone</p>
                   <a 
                     href="tel:+919876543210" 
-                    className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                    className="text-amber-50 hover:text-amber-100 transition-colors text-sm break-all"
                   >
                     +91 98765 43210
                   </a>
@@ -77,11 +96,11 @@ export default function Footer() {
               
               <div className="flex items-start space-x-3">
                 <Mail className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-amber-200 text-sm font-medium">Email</p>
                   <a 
                     href="mailto:info@rotarycremation.org" 
-                    className="text-amber-50 hover:text-amber-100 transition-colors text-sm"
+                    className="text-amber-50 hover:text-amber-100 transition-colors text-sm break-all"
                   >
                     info@rotarycremation.org
                   </a>
@@ -90,7 +109,7 @@ export default function Footer() {
               
               <div className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-amber-200 text-sm font-medium">Locations</p>
                   <p className="text-amber-50 text-sm">
                     Multiple locations across the city
@@ -106,13 +125,13 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="border-t border-amber-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-center md:text-left">
+          <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
+            <div className="text-center lg:text-left">
               <p className="text-amber-200 text-sm">
                 Build by HartTe Labs | Designed with ❤️ for Rotary Charitable Trust
               </p>
             </div>
-            <div className="flex items-center justify-center space-x-6 text-amber-200 text-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-amber-200 text-sm">
               <a href="#" className="hover:text-amber-50 transition-colors">
                 Privacy Policy
               </a>
