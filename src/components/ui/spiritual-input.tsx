@@ -15,7 +15,6 @@ interface SpiritualInputProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   icon?: 'user' | 'mail' | 'phone' | 'location' | 'lock' | 'calendar' | 'package';
-  mantra?: string;
   className?: string;
 }
 
@@ -28,7 +27,6 @@ export default function SpiritualInput({
   onChange,
   required = false,
   icon,
-  mantra,
   className = ''
 }: SpiritualInputProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -51,24 +49,16 @@ export default function SpiritualInput({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="flex items-center justify-between">
-        <Label 
-          htmlFor={id} 
-          className={cn(
-            "text-sm font-medium transition-colors",
-            isFocused ? "text-amber-900" : "text-amber-800"
-          )}
-        >
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </Label>
-        
-        {mantra && (
-          <div className="text-xs text-amber-600 italic">
-            {mantra}
-          </div>
+      <Label 
+        htmlFor={id} 
+        className={cn(
+          "text-sm font-medium transition-colors",
+          isFocused ? "text-amber-900" : "text-amber-800"
         )}
-      </div>
+      >
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
 
       <div className="relative">
         {/* Icon background */}
@@ -109,18 +99,9 @@ export default function SpiritualInput({
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
-          ) : (
-            <div className="text-amber-200 text-sm">ॐ</div>
-          )}
+          ) : null}
         </div>
       </div>
-
-      {/* Subtle hint */}
-      {isFocused && type === 'password' && (
-        <div className="text-xs text-amber-600 italic">
-          Please enter a secure password
-        </div>
-      )}
     </div>
   );
 }

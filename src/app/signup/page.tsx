@@ -64,14 +64,6 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 p-4">
-      {/* Background spiritual elements */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
-        <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
-        <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
-        <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
-      </div>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -83,7 +75,7 @@ export default function SignupPage() {
           title="Sign Up"
           description="Create your account for the Cremation Management System"
           mantra=""
-          showOm={true}
+          showOm={false}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <SpiritualInput
@@ -143,12 +135,6 @@ export default function SignupPage() {
                     <SelectItem value="admin" className="text-red-700">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <div className="text-orange-400 text-sm">ॐ</div>
-                </div>
-              </div>
-              <div className="text-xs text-orange-600 italic">
-                "Perform your duty equipoised, O Arjuna" - Bhagavad Gita 2.38
               </div>
             </div>
 
@@ -189,7 +175,7 @@ export default function SignupPage() {
               variant="ritual"
               size="lg"
               mantra=""
-              showOm={true}
+              showOm={false}
               className="w-full"
               disabled={loading}
             >
@@ -204,7 +190,7 @@ export default function SignupPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-orange-50 text-orange-600 rounded-full">
-                  ॐ Cremation Management System ॐ
+                  Cremation Management System
                 </span>
               </div>
             </div>
@@ -218,27 +204,9 @@ export default function SignupPage() {
                 Login here
               </Link>
             </p>
-
-            <div className="text-xs text-orange-600 italic text-sanskrit">
-              "Whatever action a great man performs, common men follow" - Bhagavad Gita 3.21
-            </div>
           </div>
         </SpiritualCard>
-
-        {/* Decorative elements */}
-        <div className="mt-8 text-center">
-          <div className="text-2xl text-red-600 animate-pulse">ॐ</div>
-          <div className="text-xs text-orange-500 mt-2">
-            Cremation Management System
-          </div>
-        </div>
       </motion.div>
-
-      <style jsx>{`
-        .text-sanskrit {
-          font-family: 'Noto Sans Devanagari', serif;
-        }
-      `}</style>
     </div>
   );
 }

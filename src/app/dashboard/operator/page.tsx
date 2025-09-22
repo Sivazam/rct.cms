@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import SpiritualCard from '@/components/ui/spiritual-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -28,7 +27,12 @@ import {
   Clock,
   Phone,
   Calendar,
-  Plus
+  Plus,
+  Building2,
+  User,
+  LogOut,
+  FileText,
+  BarChart3
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -48,66 +52,50 @@ export default function OperatorDashboard() {
   const [expiringEntries, setExpiringEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [expandedCard, setExpandedCard] = useState<string | null>(null); // Track which card is expanded
-  const expandedContentRef = useRef<HTMLDivElement>(null); // Ref for scrolling to expanded content
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const expandedContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchOperatorData();
   }, [selectedLocation, user, dateRange]);
 
-  // Handle card expansion with smooth scrolling
   const handleCardClick = (cardType: string) => {
-    console.log('🔥 Operator Card clicked:', cardType);
-    console.log('🔥 Current expandedCard:', expandedCard);
+    console.log('Operator Card clicked:', cardType);
     const newExpandedCard = expandedCard === cardType ? null : cardType;
-    console.log('🔥 New expandedCard will be:', newExpandedCard);
     setExpandedCard(newExpandedCard);
     
-    // Scroll to expanded content after a short delay to allow DOM update
     if (newExpandedCard && expandedContentRef.current) {
       setTimeout(() => {
         expandedContentRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start' 
         });
-        console.log('🔜 Scrolled to operator expanded content');
       }, 100);
     }
   };
 
   useEffect(() => {
-    console.log('OperatorDashboard: expandedCard changed to:', expandedCard);
-    
-    // Scroll to expanded content when it changes
     if (expandedCard && expandedContentRef.current) {
       setTimeout(() => {
         expandedContentRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start' 
         });
-        console.log('🔜 Scrolled to operator expanded content from useEffect');
       }, 150);
     }
   }, [expandedCard]);
 
   useEffect(() => {
-    // Handle tab changes from URL parameters
     const handleUrlChange = () => {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab') || 'overview';
-        console.log('OperatorDashboard: URL changed, updating tab to:', tab);
         setActiveTab(tab);
       }
     };
 
-    // Initial load
     handleUrlChange();
-
-    // Listen for popstate events (browser back/forward)
     window.addEventListener('popstate', handleUrlChange);
-    
-    // Custom event for URL changes
     window.addEventListener('urlchange', handleUrlChange);
 
     return () => {
@@ -125,11 +113,9 @@ export default function OperatorDashboard() {
     try {
       setLoading(true);
       
-      // Get operator's assigned locations
       const operatorLocations = user?.locationIds || [];
       console.log('Operator locations:', operatorLocations);
       
-      // Fetch all available locations
       const allLocations = await getLocations();
       const assignedLocations = allLocations.filter(loc => 
         operatorLocations.includes(loc.id) && loc.isActive
@@ -138,14 +124,12 @@ export default function OperatorDashboard() {
       console.log('Assigned locations:', assignedLocations);
       setLocations(assignedLocations);
       
-      // Set default selected location
       if (!selectedLocation && assignedLocations.length > 0) {
         setSelectedLocation(assignedLocations[0].id);
       }
       
       if (assignedLocations.length === 0) {
         console.log('No locations assigned to operator - showing empty state');
-        // Set empty stats for operators with no locations
         setStats({
           totalEntries: 0,
           totalRenewals: 0,
@@ -159,7 +143,6 @@ export default function OperatorDashboard() {
         setRecentEntries([]);
         setExpiringEntries([]);
       } else if (selectedLocation) {
-        // Fetch comprehensive statistics for selected location and current operator
         const [activeEntries, pendingRenewalsEntries, deliveredEntries, allEntries, expiringSoonEntries] = await Promise.all([
           getEntries({
             locationId: selectedLocation,
@@ -182,14 +165,12 @@ export default function OperatorDashboard() {
           })
         ]);
         
-        // Filter entries to only include those made by the current operator
         const operatorEntries = allEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorActiveEntries = activeEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorPendingRenewalsEntries = pendingRenewalsEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorDeliveredEntries = deliveredEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorExpiringSoonEntries = expiringSoonEntries.filter(entry => entry.operatorId === user?.uid);
         
-        // Calculate today's entries and revenue
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
@@ -207,7 +188,6 @@ export default function OperatorDashboard() {
           }, 0) || 0);
         }, 0);
         
-        // Calculate monthly revenue
         const currentMonth = new Date();
         currentMonth.setDate(1);
         currentMonth.setHours(0, 0, 0, 0);
@@ -219,7 +199,6 @@ export default function OperatorDashboard() {
           }, 0) || 0);
         }, 0);
         
-        // Calculate pending tasks (expiring entries + entries needing delivery)
         const pendingTasks = operatorExpiringSoonEntries.length + operatorActiveEntries.filter(entry => {
           const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
           return expiryDate && expiryDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -230,13 +209,13 @@ export default function OperatorDashboard() {
           totalRenewals: operatorPendingRenewalsEntries.length,
           totalDeliveries: operatorDeliveredEntries.length,
           expiringIn7Days: operatorExpiringSoonEntries.length,
-          monthlyRevenue: monthlyRevenue, // Use the calculated monthly revenue instead of statsData
+          monthlyRevenue: monthlyRevenue,
           todayEntries: todayEntries.length,
           todayRevenue: todayRevenue,
           pendingTasks: pendingTasks
         });
         
-        setRecentEntries(operatorEntries.slice(0, 5)); // Show last 5 entries from this operator
+        setRecentEntries(operatorEntries.slice(0, 5));
         setExpiringEntries(operatorExpiringSoonEntries);
         
         console.log('Operator stats updated:', {
@@ -258,16 +237,11 @@ export default function OperatorDashboard() {
   };
 
   const handleTabChange = (tab: string) => {
-    console.log('OperatorDashboard: handleTabChange called', { tab });
     setActiveTab(tab);
-    // Update URL without page reload
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('tab', tab);
       window.history.pushState({}, '', url.toString());
-      console.log('OperatorDashboard: URL updated to:', url.toString());
-      
-      // Dispatch custom event to notify any listeners of URL change
       window.dispatchEvent(new Event('urlchange'));
     }
   };
@@ -278,24 +252,22 @@ export default function OperatorDashboard() {
 
   return (
     <ProtectedRoute requiredRole="operator">
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 relative">
-        {/* Background spiritual elements */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
-          <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
-          <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
-          <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
-        </div>
+      <div className="min-h-screen bg-amber-50">
         {/* Header */}
-        <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-orange-200 relative z-10">
+        <header className="bg-white border-b border-amber-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden md:flex justify-between items-center h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-orange-900">
-                  ॐ Cremation Management System ॐ
-                </h1>
-                <Badge variant="outline" className="ml-3 border-orange-200 text-orange-700">Operator</Badge>
+                <div className="flex items-center space-x-3">
+                  <div>
+                    <h1 className="text-xl font-bold text-amber-900">
+                      Cremation Management System
+                    </h1>
+                    <p className="text-xs text-amber-600">Operator Dashboard</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="ml-4 border-amber-200 text-amber-700">Operator</Badge>
               </div>
               <div className="flex items-center space-x-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -310,10 +282,11 @@ export default function OperatorDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="text-sm text-orange-700">
+                <div className="text-sm text-amber-700">
                   Welcome, {user?.name}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
               </div>
@@ -322,14 +295,16 @@ export default function OperatorDashboard() {
             {/* Mobile Header */}
             <div className="flex md:hidden justify-between items-center h-14">
               <div className="flex items-center">
-                <h1 className="text-base font-semibold text-orange-900 truncate">
-                  ॐ CMS ॐ
-                </h1>
-                <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700 text-xs">Operator</Badge>
+                <div>
+                  <h1 className="text-sm font-bold text-amber-900 leading-tight">
+                    CMS
+                  </h1>
+                  <p className="text-xs text-amber-600">Operator</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-40 h-8 text-xs">
+                  <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -340,10 +315,8 @@ export default function OperatorDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2 text-xs">
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2">
+                  <LogOut className="h-3 w-3" />
                 </Button>
               </div>
             </div>
@@ -351,448 +324,202 @@ export default function OperatorDashboard() {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 sm:pb-8">
           {locations.length === 0 ? (
-            <div>
-              {/* No locations assigned state */}
-              <SpiritualCard
-                variant="ritual"
-                title="No Locations Assigned"
-                description="You haven't been assigned to any locations yet. Please contact your administrator to get location access."
-                showOm={true}
-                className="text-center"
-              >
-                <div className="space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center">
-                    <MapPin className="h-8 w-8 text-orange-600" />
+            <div className="flex items-center justify-center min-h-[400px]">
+              <Card className="w-full max-w-md border-slate-200">
+                <CardHeader className="text-center">
+                  <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <MapPin className="h-8 w-8 text-slate-600" />
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-orange-700">
-                      Your account is active but you need to be assigned to at least one location to perform operations.
-                    </p>
-                    <p className="text-sm text-orange-600">
-                      Please ask your administrator to assign you to a location in the Admin Dashboard.
-                    </p>
-                  </div>
-                  <Button variant="outline" onClick={handleLogout} className="border-orange-200 text-orange-700 hover:bg-orange-50">
+                  <CardTitle className="text-slate-900">No Locations Assigned</CardTitle>
+                  <CardDescription className="text-slate-600">
+                    You haven't been assigned to any locations yet. Please contact your administrator to get location access.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-slate-500 mb-4">
+                    Your account is active but you need to be assigned to at least one location to perform operations.
+                  </p>
+                  <Button variant="outline" onClick={handleLogout} className="border-slate-200 text-slate-700">
+                    <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </Button>
-                </div>
-              </SpiritualCard>
+                </CardContent>
+              </Card>
             </div>
           ) : (
-            <div>
-              {/* Desktop Tabs - Simplified to Dashboard Only */}
-              <div className="hidden md:block mb-6">
-                <div className="w-full overflow-x-auto">
-                  <div className="flex flex-wrap gap-1 p-1 bg-orange-100 rounded-lg min-w-max">
-                    <button
-                      onClick={() => handleTabChange('overview')}
-                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeTab === 'overview' 
-                          ? 'bg-orange-500 text-white shadow-sm' 
-                          : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                      }`}
-                    >
-                      Dashboard
-                    </button>
-                  </div>
-                </div>
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Button 
+                  variant="default" 
+                  className="h-auto p-4 flex flex-col items-center gap-2 bg-amber-600 hover:bg-amber-700"
+                  onClick={() => handleTabChange('entries')}
+                >
+                  <Plus className="h-6 w-6" />
+                  <span className="text-sm font-medium">New Entry</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col items-center gap-2 border-amber-200 text-amber-700"
+                  onClick={() => handleTabChange('renewals')}
+                >
+                  <RefreshCw className="h-6 w-6" />
+                  <span className="text-sm font-medium">Renewals</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col items-center gap-2 border-amber-200 text-amber-700"
+                  onClick={() => handleTabChange('deliveries')}
+                >
+                  <Truck className="h-6 w-6" />
+                  <span className="text-sm font-medium">Deliveries</span>
+                </Button>
               </div>
 
-              {/* Responsive Content - Works for both desktop and mobile */}
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  {
+                    title: 'My Active Entries',
+                    value: stats.totalEntries,
+                    icon: Package,
+                    color: 'amber'
+                  },
+                  {
+                    title: 'Pending Renewals',
+                    value: stats.totalRenewals,
+                    icon: RefreshCw,
+                    color: 'orange'
+                  },
+                  {
+                    title: 'Completed Deliveries',
+                    value: stats.totalDeliveries,
+                    icon: Truck,
+                    color: 'amber'
+                  },
+                  {
+                    title: 'Monthly Revenue',
+                    value: `₹${stats.monthlyRevenue.toLocaleString()}`,
+                    icon: DollarSign,
+                    color: 'orange'
+                  }
+                ].map((stat, index) => (
+                  <motion.div
+                    key={stat.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="group"
+                  >
+                    <Card className="h-full hover:shadow-md transition-all duration-200 border-amber-200">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-amber-700">
+                          {stat.title}
+                        </CardTitle>
+                        <div className={`p-2 rounded-lg bg-${stat.color}-50`}>
+                          <stat.icon className={`h-4 w-4 text-${stat.color}-600`} />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-amber-900">
+                          {stat.value}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Tab Content */}
               <div className="space-y-6">
-                {/* Dashboard Tab - Always Show */}
-                <div className="space-y-6">
-                    {/* Date Range Picker */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-orange-200">
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-lg font-semibold text-orange-800">Dashboard Dashboard</h3>
-                        <p className="text-sm text-orange-600">
-                          {dateRange 
-                            ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
-                            : 'Showing data till today'
-                          }
-                        </p>
-                      </div>
-                      <ResponsiveDateRangePicker 
-                        onDateRangeChange={setDateRange}
-                        placeholder="Select date range (optional)"
-                        initialDateRange={dateRange}
-                      />
-                    </div>
-
-                    {/* Enhanced Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                      >
-                        <SpiritualCard
-                          variant="sacred" 
-                          title="Total Ash Pots"
-                          showOm={true}
-                          className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
-                          onClick={() => handleCardClick('active')}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-3xl font-bold text-orange-800">{stats.totalEntries}</div>
-                              <p className="text-sm text-orange-600 mt-1">
-                                +12% from last month
-                              </p>
-                            </div>
-                            <Package className="h-8 w-8 text-orange-600" />
-                          </div>
-                        </SpiritualCard>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <SpiritualCard
-                          variant="sacred"
-                          title="Pending Ash Pots"
-                          showOm={true}
-                          className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
-                          onClick={() => handleCardClick('pending')}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-3xl font-bold text-orange-800">{stats.totalRenewals}</div>
-                              <p className="text-sm text-orange-600 mt-1">
-                                +8% from last month
-                              </p>
-                              <div className="mt-2 text-xs text-orange-500">
-                                This month
-                              </div>
-                            </div>
-                            <RefreshCw className="h-8 w-8 text-orange-600" />
-                          </div>
-                        </SpiritualCard>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        <SpiritualCard
-                          variant="sacred"
-                          title="Deliveries"
-                          showOm={true}
-                          className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
-                          onClick={() => handleCardClick('dispatched')}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-3xl font-bold text-orange-800">{stats.totalDeliveries}</div>
-                              <p className="text-sm text-orange-600 mt-1">
-                                +5% from last month
-                              </p>
-                              <div className="mt-2 text-xs text-orange-500">
-                                Completed
-                              </div>
-                            </div>
-                            <Truck className="h-8 w-8 text-orange-600" />
-                          </div>
-                        </SpiritualCard>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        <SpiritualCard
-                          variant="sacred"
-                          title="Revenue"
-                          showOm={true}
-                          className="h-full"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-3xl font-bold text-orange-800">₹{stats.monthlyRevenue.toLocaleString()}</div>
-                              <p className="text-sm text-orange-600 mt-1">
-                                +15% from last month
-                              </p>
-                              <div className="mt-2 text-xs text-orange-500">
-                                Monthly collection
-                              </div>
-                            </div>
-                            <DollarSign className="h-8 w-8 text-orange-600" />
-                          </div>
-                        </SpiritualCard>
-                      </motion.div>
-                    </div>
-
-                    {/* Interactive Lists Section - Shows when cards are clicked */}
-                    <div ref={expandedContentRef} className="scroll-mt-4">
-                      {expandedCard && (
-                        console.log('🚀 Rendering operator expanded content for:', expandedCard),
-                        <Card className="border-orange-200 bg-orange-50 shadow-md">
-                          <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                              <span className="flex items-center space-x-2">
-                                {expandedCard === 'active' && <Package className="h-5 w-5" />}
-                                {expandedCard === 'pending' && <RefreshCw className="h-5 w-5" />}
-                                {expandedCard === 'dispatched' && <Truck className="h-5 w-5" />}
-                                <span>
-                                  {expandedCard === 'active' && 'Active Ash Pots'}
-                                  {expandedCard === 'pending' && 'Pending Ash Pots'}
-                                  {expandedCard === 'dispatched' && 'Deliveries'}
-                                </span>
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setExpandedCard(null)}
-                                className="text-orange-600 hover:text-orange-800"
-                              >
-                                Close
-                              </Button>
-                            </CardTitle>
-                            <CardDescription>
-                              {expandedCard === 'active' && 'Currently active ash pot entries'}
-                              {expandedCard === 'pending' && 'Entries pending renewal or processing'}
-                              {expandedCard === 'dispatched' && 'Completed deliveries'}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <InteractiveEntriesList 
-                              type={expandedCard}
-                              locationId={selectedLocation}
-                              dateRange={dateRange}
-                            />
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-
-                    {/* Quick Actions */}
-                    {/* <SpiritualCard
-                      variant="sacred"
-                      title="Quick Actions"
-                      description="Perform common tasks quickly"
-                      showOm={true}
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Button 
-                          className="h-20 flex-col space-y-2 bg-orange-600 hover:bg-orange-700" 
-                          onClick={() => handleTabChange('entries')}
-                        >
-                          <span className="font-medium">New Entry</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="h-20 flex-col space-y-2 border-orange-200 text-orange-700 hover:bg-orange-50" 
-                          onClick={() => handleTabChange('renewals')}
-                        >
-                          <span className="font-medium">Renewal</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="h-20 flex-col space-y-2 border-orange-200 text-orange-700 hover:bg-orange-50" 
-                          onClick={() => handleTabChange('deliveries')}
-                        >
-                          <span className="font-medium">Dispatch</span>
-                        </Button>
-                      </div>
-                    </SpiritualCard> */}
-
-                    {/* Today's Summary */}
-                    {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <SpiritualCard
-                        variant="ritual"
-                        title="Today's Entries"
-                        showOm={true}
-                        className="h-full"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-3xl font-bold text-red-800">{stats.todayEntries || 0}</div>
-                            <p className="text-sm text-red-600 mt-1">Active today</p>
-                          </div>
-                          <Package className="h-8 w-8 text-red-600" />
-                        </div>
-                      </SpiritualCard>
-                      <SpiritualCard
-                        variant="memorial"
-                        title="Today's Revenue"
-                        showOm={true}
-                        className="h-full"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-3xl font-bold text-amber-800">₹{stats.todayRevenue?.toLocaleString() || 0}</div>
-                            <p className="text-sm text-amber-600 mt-1">Collected today</p>
-                          </div>
-                          <DollarSign className="h-8 w-8 text-amber-600" />
-                        </div>
-                      </SpiritualCard>
-                      <SpiritualCard
-                        variant="sacred"
-                        title="Pending Tasks"
-                        showOm={true}
-                        className="h-full"
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-3xl font-bold text-orange-800">{stats.pendingTasks || 0}</div>
-                              <p className="text-sm text-orange-600 mt-1">Need attention</p>
-                            </div>
-                            <Clock className="h-8 w-8 text-orange-600" />
-                          </div>
-                        </CardContent>
-                      </SpiritualCard>
-                    </div> */}
-
-                    {/* Spiritual Quote */}
-                    {/* <SpiritualCard
-                      variant="ritual"
-                      title="Daily Wisdom"
-                      mantra="The soul is unborn, eternal, ever-existing, undying and primeval. - Bhagavad Gita 2.20"
-                      showOm={true}
-                      className="text-center"
-                    >
-                      <div className="text-orange-700 italic">
-                        "Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure."
-                      </div>
-                      <div className="text-sm text-orange-600 mt-2">
-                        - Bhagavad Gita 2.38
-                      </div>
-                    </SpiritualCard> */}
-
-                    {/* Expiring Soon */}
-                    {expiringEntries.length > 0 && (
-                      <Card className="border-orange-200 bg-orange-50">
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2 text-orange-800">
-                            <AlertTriangle className="h-5 w-5" />
-                            <span>Expiring Soon ({expiringEntries.length})</span>
-                          </CardTitle>
-                          <CardDescription className="text-orange-700">
-                            Entries expiring in the next 7 days
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {expiringEntries
-                              .slice(0, 3) // Show top 3 expiring entries
-                              .map((entry) => {
-                                const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
-                                const daysUntilExpiry = expiryDate ? 
-                                  Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
-                                
-                                return (
-                                  <div key={entry.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200">
-                                    <div className="flex items-center space-x-3">
-                                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                        <Package className="h-4 w-4 text-orange-600" />
-                                      </div>
-                                      <div>
-                                        <h4 className="font-medium text-sm">{entry.customerName}</h4>
-                                        <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                          <div className="flex items-center space-x-1">
-                                            <Phone className="h-3 w-3" />
-                                            <span>{entry.customerMobile}</span>
-                                          </div>
-                                          <div className="flex items-center space-x-1">
-                                            <Package className="h-3 w-3" />
-                                            <span>{entry.numberOfPots} pot(s)</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <Badge 
-                                        variant={daysUntilExpiry <= 3 ? "destructive" : "secondary"}
-                                        className="mb-1"
-                                      >
-                                        {daysUntilExpiry <= 0 ? 'Expired' : `${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`}
-                                      </Badge>
-                                      <div className="text-xs text-gray-500">
-                                        {formatFirestoreDate(expiryDate)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                          </div>
-                          {expiringEntries.length > 3 && (
-                            <div className="mt-4 text-center">
-                              <Button variant="outline" className="text-orange-800 border-orange-300 hover:bg-orange-100">
-                                View All {expiringEntries.length} Expiring Entries
-                              </Button>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Recent Entries */}
-                    {recentEntries.length > 0 && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center space-x-2">
-                            <Clock className="h-5 w-5" />
-                            <span>Recent Entries ({recentEntries.length})</span>
-                          </CardTitle>
-                          <CardDescription>
-                            Latest customer entries at your location
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {recentEntries.map((entry) => {
-                              const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
-                              const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
-                              
-                              return (
-                                <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                      <Users className="h-4 w-4 text-blue-600" />
-                                    </div>
-                                    <div>
-                                      <h4 className="font-medium text-sm">{entry.customerName}</h4>
-                                      <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                        <div className="flex items-center space-x-1">
-                                          <Phone className="h-3 w-3" />
-                                          <span>{entry.customerMobile}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-1">
-                                          <Package className="h-3 w-3" />
-                                          <span>{entry.numberOfPots} pot(s)</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <Badge variant={entry.status === 'active' ? 'default' : 'secondary'}>
-                                      {entry.status === 'active' ? 'Active' : entry.status}
-                                    </Badge>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      {formatFirestoreDate(entryDate)}
-                                    </div>
-                                    {expiryDate && (
-                                      <div className="text-xs text-gray-400">
-                                        Expires: {formatFirestoreDate(expiryDate)}
-                                      </div>
-                                    )}
-                                  </div>
+                {activeTab === 'overview' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="border-amber-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="h-5 w-5" />
+                          Recent Activity
+                        </CardTitle>
+                        <CardDescription>
+                          Your latest entries and activities
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {recentEntries.slice(0, 5).map((entry) => (
+                            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                                  <User className="h-4 w-4 text-amber-600" />
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
+                                  <p className="text-xs text-amber-600">{entry.customerPhone}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-amber-600">
+                                  {entry.entryDate ? formatFirestoreDate(entry.entryDate) : 'N/A'}
+                                </p>
+                                <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
+                                  {entry.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                          {recentEntries.length === 0 && (
+                            <p className="text-sm text-amber-600 text-center py-4">
+                              No recent activity
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-amber-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <AlertTriangle className="h-5 w-5 text-amber-600" />
+                          Attention Required
+                        </CardTitle>
+                        <CardDescription>
+                          Entries requiring your attention
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {expiringEntries.slice(0, 5).map((entry) => (
+                            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
+                                  <p className="text-xs text-amber-600">Expires: {entry.expiryDate ? formatFirestoreDate(entry.expiryDate) : 'N/A'}</p>
+                                </div>
+                              </div>
+                              <Badge variant="destructive" className="text-xs">
+                                Urgent
+                              </Badge>
+                            </div>
+                          ))}
+                          {expiringEntries.length === 0 && (
+                            <p className="text-sm text-amber-600 text-center py-4">
+                              No items require attention
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {activeTab === 'entries' && <CustomerEntrySystem />}
+                {activeTab === 'renewals' && <RenewalSystem />}
+                {activeTab === 'deliveries' && <DeliverySystem />}
               </div>
             </div>
           )}

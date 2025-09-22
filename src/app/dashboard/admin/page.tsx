@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import SpiritualCard from '@/components/ui/spiritual-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -39,7 +38,11 @@ import {
   Clock,
   User,
   Phone,
-  LogOut
+  LogOut,
+  Building2,
+  FileText,
+  BarChart3,
+  Settings as SettingsIcon
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -62,71 +65,57 @@ export default function AdminDashboard() {
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [expandedCard, setExpandedCard] = useState<string | null>(null); // Track which card is expanded
-  const expandedContentRef = useRef<HTMLDivElement>(null); // Ref for scrolling to expanded content
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const expandedContentRef = useRef<HTMLDivElement>(null);
 
-  // Debug function to handle card expansion
   const handleCardClick = (cardType: string) => {
-    console.log('🔥 Card clicked:', cardType);
-    console.log('🔥 Current expandedCard:', expandedCard);
+    console.log('Card clicked:', cardType);
     const newExpandedCard = expandedCard === cardType ? null : cardType;
-    console.log('🔥 New expandedCard will be:', newExpandedCard);
     setExpandedCard(newExpandedCard);
     
-    // Scroll to expanded content after a short delay to allow DOM update
     if (newExpandedCard && expandedContentRef.current) {
       setTimeout(() => {
         expandedContentRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start' 
         });
-        console.log('🔜 Scrolled to expanded content');
       }, 100);
     }
   };
 
-  // Safety wrapper for logout
   const safeLogout = async () => {
     try {
       if (typeof logout === 'function') {
         await logout();
-      } else {
-        console.warn('AdminDashboard: logout is not a function');
       }
     } catch (error) {
-      console.error('AdminDashboard: Error in logout:', error);
+      console.error('Error in logout:', error);
     }
   };
 
-  // Safety wrapper for setDateRange
   const safeSetDateRange = (range: { from: Date; to: Date } | undefined) => {
     try {
       setDateRange(range);
     } catch (error) {
-      console.error('AdminDashboard: Error in setDateRange:', error);
+      console.error('Error in setDateRange:', error);
     }
   };
 
-  // Safety wrapper for setShowWithDispatch
   const safeSetShowWithDispatch = (show: boolean) => {
     try {
       setShowWithDispatch(show);
     } catch (error) {
-      console.error('AdminDashboard: Error in setShowWithDispatch:', error);
+      console.error('Error in setShowWithDispatch:', error);
     }
   };
 
   useEffect(() => {
-    console.log('AdminDashboard: expandedCard changed to:', expandedCard);
-    
-    // Scroll to expanded content when it changes
     if (expandedCard && expandedContentRef.current) {
       setTimeout(() => {
         expandedContentRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start' 
         });
-        console.log('🔜 Scrolled to expanded content from useEffect');
       }, 150);
     }
   }, [expandedCard]);
@@ -136,23 +125,16 @@ export default function AdminDashboard() {
   }, [selectedLocation, dateRange, showWithDispatch]);
 
   useEffect(() => {
-    // Handle tab changes from URL parameters
     const handleUrlChange = () => {
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab') || 'overview';
-        console.log('AdminDashboard: URL changed, updating tab to:', tab);
         setActiveTab(tab);
       }
     };
 
-    // Initial load
     handleUrlChange();
-
-    // Listen for popstate events (browser back/forward)
     window.addEventListener('popstate', handleUrlChange);
-    
-    // Custom event for URL changes
     window.addEventListener('urlchange', handleUrlChange);
 
     return () => {
@@ -164,53 +146,38 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching dashboard data for location:', selectedLocation, 'dateRange:', dateRange);
       
-      // Fetch locations
       const locationsData = await getLocations();
       const activeLocations = locationsData.filter(loc => loc.isActive);
       setLocations(activeLocations);
-      console.log('Active locations:', activeLocations.length);
       
-      // Fetch statistics based on selected location and date range
       const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
       const statsData = await getSystemStats(locationId, dateRange) || {};
       
-      // Fetch real entries count with date range filtering
       const entries = await getEntries({
         locationId: locationId,
         status: 'active'
       });
-      console.log('Active entries found:', entries.length);
       
-      // Fetch pending renewals count (entries that need renewal)
       const pendingRenewals = await getEntries({
         locationId: locationId,
         needsRenewal: true
       });
-      console.log('Pending renewals (needing renewal) found:', pendingRenewals.length);
       
-      // Fetch deliveries count
       const deliveries = await getEntries({
         locationId: locationId,
         status: 'dispatched'
       });
-      console.log('Dispatched entries found:', deliveries.length);
       
-      // Fetch recent entries for display (always show recent, not filtered by date range)
       const allEntries = await getEntries({
         locationId: locationId
       });
-      console.log('All entries found:', allEntries.length);
-      const recent = allEntries.slice(0, 5); // Show last 5 entries
-      console.log('Recent entries (first 5):', recent.length);
+      const recent = allEntries.slice(0, 5);
       
-      // Fetch expiring entries with details (always show current expiring, not filtered by date range)
       const expiring = await getEntries({
         locationId: locationId,
         expiringSoon: true
       });
-      console.log('Expiring entries found:', expiring.length);
       
       setStats({
         totalEntries: statsData?.totalEntries || 0,
@@ -228,8 +195,6 @@ export default function AdminDashboard() {
       setExpiringEntries(expiring);
       setRecentEntries(recent);
       
-      console.log('Dashboard data updated successfully');
-      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -237,21 +202,17 @@ export default function AdminDashboard() {
     }
   };
 
-  // Callback function to refresh dashboard data when entries change
   const handleEntriesDataChanged = () => {
-    console.log('AdminDashboard: Entries data changed, refreshing dashboard');
+    console.log('Entries data changed, refreshing dashboard');
     fetchDashboardData();
   };
 
   const handleTabChange = (tab: string) => {
-    console.log('AdminDashboard: handleTabChange called', { tab });
     setActiveTab(tab);
-    // Update URL without page reload
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('tab', tab);
       window.history.pushState({}, '', url.toString());
-      console.log('AdminDashboard: URL updated to:', url.toString());
     }
   };
 
@@ -261,24 +222,22 @@ export default function AdminDashboard() {
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 relative">
-        {/* Background spiritual elements */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-10 left-10 text-6xl text-orange-600">ॐ</div>
-          <div className="absolute top-20 right-20 text-4xl text-red-600">卍</div>
-          <div className="absolute bottom-20 left-20 text-5xl text-amber-600">🔥</div>
-          <div className="absolute bottom-10 right-10 text-3xl text-orange-700">𑀰𑀺𑀪𑁆𑀢</div>
-        </div>
+      <div className="min-h-screen bg-amber-50">
         {/* Header */}
-        <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-orange-200 relative z-10">
+        <header className="bg-white border-b border-amber-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Desktop Header */}
             <div className="hidden sm:flex justify-between items-center h-16">
               <div className="flex items-center">
-                <h1 className="text-lg sm:text-xl font-semibold text-orange-900">
-                  ॐ CMS ॐ
-                </h1>
-                <Badge variant="outline" className="ml-3 border-orange-200 text-orange-700">Admin</Badge>
+                <div className="flex items-center space-x-3">
+                  <div>
+                    <h1 className="text-xl font-bold text-amber-900">
+                      Cremation Management System
+                    </h1>
+                    <p className="text-xs text-amber-600">Administrative Dashboard</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="ml-4 border-amber-200 text-amber-700">Admin</Badge>
               </div>
               <div className="flex items-center gap-4">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -294,26 +253,29 @@ export default function AdminDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="text-sm text-orange-700">
+                <div className="text-sm text-amber-700">
                   Welcome, {user?.name || 'Admin'}
                 </div>
                 <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
               </div>
             </div>
 
-            {/* Mobile Header - Compact Navbar */}
+            {/* Mobile Header */}
             <div className="flex sm:hidden justify-between items-center h-14">
               <div className="flex items-center">
-                <h1 className="text-base font-semibold text-orange-900 truncate">
-                  ॐ CMS ॐ
-                </h1>
-                <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700 text-xs">Admin</Badge>
+                <div>
+                  <h1 className="text-sm font-bold text-amber-900 leading-tight">
+                    CMS
+                  </h1>
+                  <p className="text-xs text-amber-600">Admin</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-40 h-8 text-xs">
+                  <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -325,7 +287,7 @@ export default function AdminDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2 text-xs">
+                <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2">
                   <LogOut className="h-3 w-3" />
                 </Button>
               </div>
@@ -334,732 +296,229 @@ export default function AdminDashboard() {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 sm:pb-8">
-          {/* Desktop Tabs Only - Reduced to 4 tabs */}
-          <div className="hidden md:block mb-6">
-            <div className="w-full overflow-x-auto">
-              <div className="grid w-full min-w-max grid-cols-4 gap-1 p-1 bg-orange-100 rounded-lg">
-                <button
-                  onClick={() => handleTabChange('overview')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'overview' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => handleTabChange('operators')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'operators' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Operators
-                </button>
-                <button
-                  onClick={() => handleTabChange('analytics')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'analytics' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Analytics
-                </button>
-                <button
-                  onClick={() => handleTabChange('settings')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'settings' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Settings
-                </button>
-                {/* Hidden tabs - kept for functionality but not shown in menu */}
-                {/* <button
-                  onClick={() => handleTabChange('locations')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'locations' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Locations
-                </button>
-                <button
-                  onClick={() => handleTabChange('entries')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'entries' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Entries
-                </button>
-                <button
-                  onClick={() => handleTabChange('renewals')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'renewals' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Renewals
-                </button>
-                <button
-                  onClick={() => handleTabChange('deliveries')}
-                  className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'deliveries' 
-                      ? 'bg-orange-500 text-white shadow-sm' 
-                      : 'text-orange-700 hover:text-orange-900 hover:bg-orange-50'
-                  }`}
-                >
-                  Deliveries
-                </button> */}
-              </div>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20 sm:pb-8">
+          {/* Desktop Tabs */}
+          <div className="hidden md:block mb-8">
+            <div className="border-b border-amber-200">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+                  { id: 'operators', label: 'Operators', icon: Users },
+                  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+                  { id: 'settings', label: 'Settings', icon: SettingsIcon }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`
+                      group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm
+                      ${activeTab === tab.id
+                        ? 'border-amber-500 text-amber-600'
+                        : 'border-transparent text-amber-700 hover:text-amber-900 hover:border-amber-300'
+                      }
+                    `}
+                  >
+                    <tab.icon className="h-4 w-4 mr-2" />
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
             </div>
           </div>
 
-          {/* Responsive Content - Works for both desktop and mobile */}
+          {/* Content Area */}
           <div className="space-y-6">
             {/* Dashboard Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
-                {/* Date Range Picker */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border border-orange-200">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-lg font-semibold text-orange-800">Dashboard Dashboard</h3>
-                    <p className="text-sm text-orange-600">
-                      {dateRange 
-                        ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
-                        : 'Showing data till today'
-                      }
-                    </p>
-                  </div>
-                  <ResponsiveDateRangePicker 
-                    onDateRangeChange={safeSetDateRange}
-                    placeholder="Select date range (optional)"
-                    initialDateRange={dateRange}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }} 
-                  >
-                      <SpiritualCard
-                        variant="sacred"
-                        title="Total Active Ash Pots"
-                        showOm={true}
-                        className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
-                        onClick={() => handleCardClick('active')}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-3xl font-bold text-orange-800">{stats.totalEntries || 0}</div>
-                            <p className="text-sm text-orange-600 mt-1">
-                              Currently active entries
-                            </p>
-                          </div>
-                          <Package className="h-8 w-8 text-orange-600" />
-                        </div>
-                      </SpiritualCard>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <SpiritualCard
-                      variant="ritual"
-                      title="Pending Ash Pots"
-                      showOm={true}
-                      className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
-                      onClick={() => handleCardClick('pending')}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-3xl font-bold text-red-800">{stats.totalRenewals || 0}</div>
-                          <p className="text-sm text-red-600 mt-1">
-                            +8% from last month
-                          </p>
-                        </div>
-                        <RefreshCw className="h-8 w-8 text-red-600" />
-                      </div>
-                    </SpiritualCard>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <SpiritualCard
-                      variant="memorial"
-                      title="Dispatched Ash Pots"
-                      showOm={true}
-                      className="h-full cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[120px] sm:min-h-[140px]"
-                      onClick={() => handleCardClick('dispatched')}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-3xl font-bold text-amber-800">{stats.totalDeliveries || 0}</div>
-                          <p className="text-sm text-amber-600 mt-1">
-                            +5% from last month
-                          </p>
-                        </div>
-                        <Calendar className="h-8 w-8 text-amber-600" />
-                      </div>
-                    </SpiritualCard>
-                  </motion.div>
-
-                  {/* <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <SpiritualCard
-                      variant="sacred"
-                      title="Collection"
-                      showOm={true}
-                      className="h-full"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-3xl font-bold text-orange-800">₹{(stats.monthlyRevenue || 0).toLocaleString()}</div>
-                          <p className="text-sm text-orange-600 mt-1">
-                            {dateRange 
-                              ? `Revenue from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
-                              : showWithDispatch 
-                                ? 'Total collections (renewals + dispatch)' 
-                                : 'Collections from renewals only'
-                            }
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <DollarSign className="h-8 w-8 text-orange-600" />
-                          <div className="flex flex-col items-end gap-2">
-                            <div className="flex items-center space-x-2">
-                              <span className={`text-sm font-medium ${showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
-                                Without Dispatch
-                              </span>
-                              <Switch
-                                checked={showWithDispatch}
-                                onCheckedChange={setShowWithDispatch}
-                                className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300"
-                              />
-                              <span className={`text-sm font-medium ${showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
-                                With Dispatch
-                              </span>
-                            </div>
-                            <div className="text-xs text-orange-600">
-                              {showWithDispatch ? 'Including dispatch collections' : 'Renewals only'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {showWithDispatch && (
-                        <div className="mt-3 pt-3 border-t border-orange-200">
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1">
-                                <RefreshCw className="h-3 w-3 text-green-600" />
-                                Renewals:
-                              </span>
-                              <span className="font-semibold">₹{(stats.renewalCollections || 0).toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="flex items-center gap-1">
-                                <Package className="h-3 w-3 text-blue-600" />
-                                Dispatch:
-                              </span>
-                              <span className="font-semibold">₹{(stats.deliveryCollections || 0).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </SpiritualCard>
-                  </motion.div> */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <SpiritualCard
-                      variant="sacred"
-                      title="Collection"
-                      showOm={true}
-                      className="h-full"
-                    >
-                      {/* Header with switch in top right */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-                          <div className="hidden sm:block">
-                            {/* <div className="text-xs text-orange-600">
-                              {showWithDispatch ? 'Including dispatch collections' : 'Renewals only'}
-                            </div> */}
-                          </div>
-                        </div>
-                        
-                        {/* Switch moved to top right */}
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-xs sm:text-sm font-medium ${!showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
-                              Renewals
-                            </span>
-                            <Switch
-                              checked={showWithDispatch}
-                              onCheckedChange={setShowWithDispatch}
-                              className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300"
-                            />
-                            <span className={`text-xs sm:text-sm font-medium ${showWithDispatch ? 'text-orange-700' : 'text-gray-500'}`}>
-                              + Dispatch
-                            </span>
-                          </div>
-                          <div className="sm:hidden text-xs text-orange-600 text-right">
-                            {showWithDispatch ? 'Including dispatch' : 'Renewals only'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Main revenue display */}
-                      <div className="mb-3">
-                        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-orange-800 mb-2">
-                          ₹{(stats.monthlyRevenue || 0).toLocaleString()}
-                        </div>
-                        <p className="text-xs sm:text-sm text-orange-600 leading-relaxed">
-                          {dateRange 
-                            ? `Revenue from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
-                            : showWithDispatch 
-                              ? 'Total collections (renewals + dispatch)' 
-                              : 'Collections from renewals only'
-                          }
-                        </p>
-                      </div>
-
-                      {/* Breakdown section - only show when dispatch is included */}
-                      {showWithDispatch && (
-                        <div className="mt-4 pt-3 border-t border-orange-200">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                            <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
-                              <span className="flex items-center gap-2 text-green-700">
-                                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
-                                <span className="font-medium">Renewals</span>
-                              </span>
-                              <span className="font-bold text-green-800">
-                                ₹{(stats.renewalCollections || 0).toLocaleString()}
-                              </span>
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
-                              <span className="flex items-center gap-2 text-blue-700">
-                                <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-                                <span className="font-medium">Dispatch</span>
-                              </span>
-                              <span className="font-bold text-blue-800">
-                                ₹{(stats.deliveryCollections || 0).toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </SpiritualCard>
-                  </motion.div>
-                
-                </div>
-
-                {/* Integrated collection toggle is now part of the Collection card above */}
-
-                {/* Interactive Lists Section - Shows when cards are clicked */}
-                <div ref={expandedContentRef} className="scroll-mt-4">
-                  {expandedCard && (
-                    console.log('🚀 Rendering expanded content for:', expandedCard),
-                    <Card className="border-orange-200 bg-orange-50 shadow-md">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span className="flex items-center space-x-2">
-                          {expandedCard === 'active' && <Package className="h-5 w-5" />}
-                          {expandedCard === 'pending' && <RefreshCw className="h-5 w-5" />}
-                          {expandedCard === 'dispatched' && <Calendar className="h-5 w-5" />}
-                          <span>
-                            {expandedCard === 'active' && 'Active Ash Pots'}
-                            {expandedCard === 'pending' && 'Pending Ash Pots'}
-                            {expandedCard === 'dispatched' && 'Dispatched Ash Pots'}
-                          </span>
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpandedCard(null)}
-                          className="text-orange-600 hover:text-orange-800"
-                        >
-                          Close
-                        </Button>
-                      </CardTitle>
-                      <CardDescription>
-                        {expandedCard === 'active' && 'Currently active ash pot entries'}
-                        {expandedCard === 'pending' && 'Entries pending renewal or processing'}
-                        {expandedCard === 'dispatched' && 'Dispatched ash pot entries'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <InteractiveEntriesList 
-                        type={expandedCard}
-                        locationId={selectedLocation === 'all' ? undefined : selectedLocation}
-                        dateRange={dateRange}
-                        onDataChanged={handleEntriesDataChanged}
+                {/* Filters Section */}
+                <div className="bg-white rounded-lg border-amber-200 p-6 shadow-sm">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="text-lg font-semibold text-amber-900">Dashboard Overview</h3>
+                      <p className="text-sm text-amber-700">
+                        {dateRange 
+                          ? `Showing data from ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+                          : 'Showing data till today'
+                        }
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <ResponsiveDateRangePicker 
+                        onDateRangeChange={safeSetDateRange}
+                        placeholder="Select date range"
+                        initialDateRange={dateRange}
                       />
-                    </CardContent>
-                  </Card>
-                )}
+                      <Button 
+                        variant="outline" 
+                        onClick={() => fetchDashboardData()}
+                        className="flex items-center gap-2 border-amber-200 text-amber-700"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Refresh
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Debug Test Button */}
-                {/* <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h3 className="text-lg font-semibold text-blue-800 mb-2">Debug Test</h3>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={() => {
-                        console.log('🔵 Test button clicked - active');
-                        setExpandedCard('active');
-                      }}
-                      className="bg-blue-500 hover:bg-blue-600"
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    {
+                      title: 'Total Active Entries',
+                      value: stats.totalEntries,
+                      icon: Package,
+                      color: 'amber',
+                      change: '+12%'
+                    },
+                    {
+                      title: 'Pending Renewals',
+                      value: stats.totalRenewals,
+                      icon: RefreshCw,
+                      color: 'orange',
+                      change: '+5%'
+                    },
+                    {
+                      title: 'Total Deliveries',
+                      value: stats.totalDeliveries,
+                      icon: Truck,
+                      color: 'amber',
+                      change: '+8%'
+                    },
+                    {
+                      title: 'Monthly Revenue',
+                      value: `₹${stats.monthlyRevenue.toLocaleString()}`,
+                      icon: DollarSign,
+                      color: 'orange',
+                      change: '+15%'
+                    }
+                  ].map((stat, index) => (
+                    <motion.div
+                      key={stat.title}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="group"
                     >
-                      Test Active Card
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        console.log('🔵 Test button clicked - pending');
-                        setExpandedCard('pending');
-                      }}
-                      className="bg-red-500 hover:bg-red-600"
-                    >
-                      Test Pending Card
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        console.log('🔵 Test button clicked - dispatched');
-                        setExpandedCard('dispatched');
-                      }}
-                      className="bg-amber-500 hover:bg-amber-600"
-                    >
-                      Test Dispatched Card
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        console.log('🔵 Test button clicked - close');
-                        setExpandedCard(null);
-                      }}
-                      variant="outline"
-                    >
-                      Close All
-                    </Button>
-                  </div>
-                  <div className="mt-2 text-sm text-blue-600">
-                    Current expandedCard: <strong>{expandedCard || 'none'}</strong>
-                  </div>
-                </div> */}
+                      <Card className="h-full hover:shadow-md transition-all duration-200 border-amber-200">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium text-amber-700">
+                            {stat.title}
+                          </CardTitle>
+                          <div className={`p-2 rounded-lg bg-${stat.color}-50`}>
+                            <stat.icon className={`h-4 w-4 text-${stat.color}-600`} />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-amber-900">
+                            {stat.value}
+                          </div>
+                          <p className="text-xs text-amber-600">
+                            <span className="text-green-600 font-medium">{stat.change}</span> from last month
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
 
-                {/* Spiritual Quote */}
-                {/* <SpiritualCard
-                  variant="ritual"
-                  title="Daily Wisdom"
-                  mantra="The soul is unborn, eternal, ever-existing, undying and primeval. - Bhagavad Gita 2.20"
-                  showOm={true}
-                  className="text-center"
-                >
-                  <div className="text-orange-700 italic">
-                    "Perform your duty equipoised, O Arjuna, abandoning all attachment to success or failure."
-                  </div>
-                  <div className="text-sm text-orange-600 mt-2">
-                    - Bhagavad Gita 2.38
-                  </div>
-                </SpiritualCard> */}
-
-                {/* Quick Actions */}
-                {/* <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>
-                      Common tasks you can perform
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <Button className="h-20 flex-col space-y-2" onClick={() => {
-                        handleTabChange('entries');
-                      }}>
-                        <Plus className="h-6 w-6" />
-                        <span>New Entry</span>
-                      </Button>
-                      <Button variant="outline" className="h-20 flex-col space-y-2" onClick={() => {
-                        handleTabChange('renewals');
-                      }}>
-                        <RefreshCw className="h-6 w-6" />
-                        <span>Renewal</span>
-                      </Button>
-                      <Button variant="outline" className="h-20 flex-col space-y-2" onClick={() => {
-                        handleTabChange('deliveries');
-                      }}>
-                        <Calendar className="h-6 w-6" />
-                        <span>Dispatch</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card> */}
-
-                {/* Expiring Soon */}
-                <Card className="border-orange-200 bg-orange-50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-orange-800">
-                      <AlertTriangle className="h-5 w-5" />
-                      <span>Expiring Soon ({expiringEntries.length})</span>
-                    </CardTitle>
-                    <CardDescription className="text-orange-700">
-                      Entries expiring in the next 7 days - ordered by urgency
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {expiringEntries.length > 0 ? (
-                        expiringEntries
-                          .sort((a, b) => {
-                            const dateA = a.expiryDate?.toDate ? a.expiryDate.toDate() : null;
-                            const dateB = b.expiryDate?.toDate ? b.expiryDate.toDate() : null;
-                            if (!dateA || !dateB) return 0;
-                            return dateA.getTime() - dateB.getTime(); // Sort by earliest first
-                          })
-                          .slice(0, 5) // Show top 5 expiring entries
-                          .map((entry) => {
-                            const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
-                            const daysUntilExpiry = expiryDate ? 
-                              Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
-                            
-                            return (
-                              <div key={entry.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                    <Package className="h-4 w-4 text-orange-600" />
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium text-sm">{entry.customerName}</h4>
-                                    <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                      <div className="flex items-center space-x-1">
-                                        <Phone className="h-3 w-3" />
-                                        <span>{entry.customerMobile}</span>
-                                      </div>
-                                      <div className="flex items-center space-x-1">
-                                        <Package className="h-3 w-3" />
-                                        <span>{entry.numberOfPots} pot(s)</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <Badge 
-                                    variant={daysUntilExpiry <= 3 ? "destructive" : "secondary"}
-                                    className="mb-1"
-                                  >
-                                    {daysUntilExpiry <= 0 ? 'Expired' : `${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`}
-                                  </Badge>
-                                  <div className="text-xs text-gray-500">
-                                    {formatFirestoreDate(expiryDate)}
-                                  </div>
-                                </div>
+                {/* Recent Activity */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="border-amber-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Recent Entries
+                      </CardTitle>
+                      <CardDescription>
+                        Latest customer entries in the system
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {recentEntries.slice(0, 5).map((entry) => (
+                          <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                                <User className="h-4 w-4 text-amber-600" />
                               </div>
-                            );
-                          })
-                      ) : (
-                        <div className="text-center py-8 text-orange-600">
-                          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-300" />
-                          <p>No entries expiring soon</p>
-                          <p className="text-xs text-orange-500 mt-1">All entries are in good standing</p>
-                        </div>
-                      )}
-                    </div>
-                    {expiringEntries.length > 5 && (
-                      <div className="mt-4 text-center">
-                        <Button variant="outline" className="text-orange-800 border-orange-300 hover:bg-orange-100">
-                          View All {expiringEntries.length} Expiring Entries
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Recent Entries */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Clock className="h-5 w-5" />
-                      <span>Recent Entries ({recentEntries.length})</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Latest customer entries across all locations
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {recentEntries.length > 0 ? (
-                        recentEntries.map((entry) => {
-                          const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : null;
-                          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : null;
-                          
-                          return (
-                            <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <User className="h-4 w-4 text-blue-600" />
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-sm">{entry.customerName}</h4>
-                                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                    <div className="flex items-center space-x-1">
-                                      <Phone className="h-3 w-3" />
-                                      <span>{entry.customerMobile}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <Package className="h-3 w-3" />
-                                      <span>{entry.numberOfPots} pot(s)</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <Badge variant={entry.status === 'active' ? 'default' : 'secondary'}>
-                                  {entry.status === 'active' ? 'Active' : entry.status}
-                                </Badge>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {formatFirestoreDate(entryDate)}
-                                </div>
-                                {expiryDate && (
-                                  <div className="text-xs text-gray-400">
-                                    Expires: {formatFirestoreDate(expiryDate)}
-                                  </div>
-                                )}
+                              <div>
+                                <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
+                                <p className="text-xs text-amber-600">{entry.customerPhone}</p>
                               </div>
                             </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p>No entries found</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                            <div className="text-right">
+                              <p className="text-xs text-amber-600">
+                                {entry.entryDate ? formatFirestoreDate(entry.entryDate) : 'N/A'}
+                              </p>
+                              <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
+                                {entry.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                        {recentEntries.length === 0 && (
+                          <p className="text-sm text-amber-600 text-center py-4">
+                            No recent entries found
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-amber-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-amber-600" />
+                        Expiring Soon
+                      </CardTitle>
+                      <CardDescription>
+                        Entries requiring attention
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {expiringEntries.slice(0, 5).map((entry) => (
+                          <div key={entry.id} className="flex items-center justify-between py-2 border-b border-amber-100 last:border-0">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm text-amber-900">{entry.customerName}</p>
+                                <p className="text-xs text-amber-600">Expires: {entry.expiryDate ? formatFirestoreDate(entry.expiryDate) : 'N/A'}</p>
+                              </div>
+                            </div>
+                            <Badge variant="destructive" className="text-xs">
+                              Urgent
+                            </Badge>
+                          </div>
+                        ))}
+                        {expiringEntries.length === 0 && (
+                          <p className="text-sm text-amber-600 text-center py-4">
+                            No entries expiring soon
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Locations Tab - Hidden but functional */}
-              {/* {activeTab === 'locations' && <LocationManagement onLocationsUpdated={fetchDashboardData} />} */}
-
-              {/* Operators Tab */}
-              {activeTab === 'operators' && <OperatorManagement />}
-
-              {/* Entries Tab - Hidden but functional */}
-              {/* {activeTab === 'entries' && <CustomerEntrySystem />} */}
-
-              {/* Renewals Tab - Hidden but functional */}
-              {/* {activeTab === 'renewals' && <RenewalSystem />} */}
-
-              {/* Deliveries Tab - Hidden but functional */}
-              {/* {activeTab === 'deliveries' && <DeliverySystem />} */}
-
-              {/* Analytics Tab */}
-              {activeTab === 'analytics' && <OperatorPerformance />}
-
-              {/* Settings Tab - Location management, SMS logs, and admin settings */}
-              {activeTab === 'settings' && (
-                <div className="space-y-6">
-                  {/* Admin Mobile Test Component (Temporary) */}
-                  <Card className="border-blue-200">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Phone className="h-5 w-5" />
-                        <span>Admin Mobile Test</span>
-                      </CardTitle>
-                      <CardDescription>
-                        Test the global admin mobile state (Temporary for debugging)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <AdminMobileTest />
-                    </CardContent>
-                  </Card>
-
-                  {/* Admin Settings */}
-                  <Card className="border-orange-200">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Phone className="h-5 w-5" />
-                        <span>Admin Settings</span>
-                      </CardTitle>
-                      <CardDescription>
-                        Configure admin mobile number for SMS notifications
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <AdminSettings />
-                    </CardContent>
-                  </Card>
-
-                  {/* Locations Management */}
-                  <Card className="border-orange-200">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <MapPin className="h-5 w-5" />
-                        <span>Location Management</span>
-                      </CardTitle>
-                      <CardDescription>
-                        Manage cremation venues and locations
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <LocationManagement onLocationsUpdated={fetchDashboardData} />
-                    </CardContent>
-                  </Card>
-
-                  {/* SMS Logs */}
-                  <SMSLogsTable />
-                </div>
-              )}
+            {/* Other Tabs */}
+            {activeTab === 'operators' && <OperatorManagement />}
+            {activeTab === 'analytics' && <OperatorPerformance />}
+            {activeTab === 'settings' && <AdminSettings />}
           </div>
-
         </main>
 
-      {/* Mobile Bottom Navigation */}
-        {user && user.role && (
-          <div>
-            {console.log('AdminDashboard: About to render MobileBottomNav', {
-              user: user.email,
-              userRole: user.role,
-              userName: user.name
-            })}
-            <ErrorBoundary fallback={
-              <div className="p-4 text-center text-orange-600">
-                <p>Navigation temporarily unavailable</p>
-                <p className="text-sm">Please use desktop navigation</p>
-              </div>
-            }>
-              <MobileBottomNav 
-                userRole={user.role || 'admin'} 
-                userName={user.name || 'User'} 
-                onLogout={safeLogout}
-              />
-            </ErrorBoundary>
-          </div>
-        )}
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav 
+          userRole="admin" 
+          userName={user?.name || 'Admin'} 
+          onLogout={handleLogout} 
+        />
       </div>
     </ProtectedRoute>
   );

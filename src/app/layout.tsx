@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import PageTransitionLoader from "@/components/ui/page-transition-loader";
-import Footer from "@/components/layout/Footer";
+import FooterWrapper from "@/components/layout/FooterWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -88,7 +88,7 @@ export default function RootLayout({
             <div className="flex-1">
               {children}
             </div>
-            <Footer />
+            <FooterWrapper />
             <Toaster />
             <PageTransitionLoader />
           </AuthProvider>

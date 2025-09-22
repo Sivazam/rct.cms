@@ -3,29 +3,28 @@
 import { Button } from '@/components/ui/button';
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 interface SpiritualButtonProps {
   children: ReactNode;
-  variant?: 'sacred' | 'ritual' | 'memorial' | 'default';
+  variant?: 'sacred' | 'ritual' | 'memorial' | 'default' | 'divine';
   size?: 'sm' | 'md' | 'lg';
-  mantra?: string;
-  showOm?: boolean;
   className?: string;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
+  loading?: boolean;
 }
 
 export default function SpiritualButton({
   children,
   variant = 'default',
   size = 'md',
-  mantra,
-  showOm = false,
   className = '',
   onClick,
   type = 'button',
-  disabled = false
+  disabled = false,
+  loading = false
 }: SpiritualButtonProps) {
   const getVariantStyles = () => {
     switch (variant) {
@@ -36,13 +35,18 @@ export default function SpiritualButton({
         };
       case 'ritual':
         return {
-          button: 'bg-stone-700 hover:bg-stone-800 text-white border-stone-700',
+          button: 'bg-orange-700 hover:bg-orange-800 text-white border-orange-700',
           hover: 'shadow-sm hover:shadow-md'
         };
       case 'memorial':
         return {
           button: 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600',
           hover: 'shadow-sm hover:shadow-md'
+        };
+      case 'divine':
+        return {
+          button: 'bg-orange-600 hover:bg-orange-700 text-white border-orange-600',
+          hover: 'shadow-sm hover:shadow-md hover:scale-[1.02]'
         };
       default:
         return {
@@ -68,28 +72,23 @@ export default function SpiritualButton({
       <Button
         type={type}
         onClick={onClick}
-        disabled={disabled}
+        disabled={disabled || loading}
         className={cn(
-          "relative border transition-all duration-200",
+          "relative border transition-all duration-200 font-medium",
           styles.button,
           styles.hover,
           sizeStyles,
-          disabled && 'opacity-50 cursor-not-allowed',
+          (disabled || loading) && 'opacity-50 cursor-not-allowed',
           className
         )}
       >
         <div className="flex items-center space-x-2">
-          {showOm && <span className="text-sm text-amber-200">ॐ</span>}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : null}
           <span>{children}</span>
         </div>
       </Button>
-
-      {/* Subtle mantra tooltip */}
-      {mantra && !disabled && (
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          {mantra}
-        </div>
-      )}
     </div>
   );
 }

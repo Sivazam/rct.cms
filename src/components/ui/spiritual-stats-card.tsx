@@ -12,7 +12,6 @@ interface SpiritualStatsCardProps {
   trendValue?: string;
   icon: 'package' | 'refresh' | 'calendar' | 'dollar' | 'trending' | 'alert';
   variant?: 'sacred' | 'ritual' | 'memorial';
-  mantra?: string;
 }
 
 export default function SpiritualStatsCard({
@@ -22,8 +21,7 @@ export default function SpiritualStatsCard({
   trend,
   trendValue,
   icon,
-  variant = 'sacred',
-  mantra
+  variant = 'sacred'
 }: SpiritualStatsCardProps) {
   const getIcon = () => {
     switch (icon) {
@@ -49,7 +47,6 @@ export default function SpiritualStatsCard({
   return (
     <SpiritualCard
       variant={variant}
-      mantra={mantra}
       showOm={false}
       className="hover:shadow-lg transition-shadow duration-300"
     >

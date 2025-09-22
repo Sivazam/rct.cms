@@ -8,46 +8,69 @@ interface NavigationLoadingProps {
 
 export default function NavigationLoading({ message = "Loading..." }: NavigationLoadingProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-orange-500">
-      <div className="flex flex-col items-center space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-amber-500 via-orange-500 to-red-500">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[url('/KB1.webp')] bg-cover bg-center mix-blend-overlay"></div>
+      </div>
+      
+      <div className="flex flex-col items-center space-y-6 relative z-10">
         {/* Logo Container */}
         <div className="relative">
-          {/* Optional: Add a subtle border/bounding effect */}
+          {/* Animated background circle */}
           <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
           
-          <Image
-            src="/logo-placeholder.png"
-            alt="Logo"
-            width={120}
-            height={120}
-            style={{"border-radius":"8px"}}
-            className="relative z-10 w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-lg"
-            priority
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = document.createElement('div');
-              fallback.className = 'relative z-10 w-20 h-20 md:w-24 md-h-24 bg-white rounded-full flex items-center justify-center text-orange-500 text-2xl font-bold drop-shadow-lg';
-              fallback.textContent = 'CMS';
-              target.parentNode?.appendChild(fallback);
-            }}
-          />
+          {/* Logo or Fallback */}
+          <div className="relative z-10 w-24 h-24 bg-white rounded-full flex items-center justify-center drop-shadow-lg">
+            <Image
+              src="/logo-placeholder.png"
+              alt="Logo"
+              width={80}
+              height={80}
+              className="object-contain"
+              priority
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.className = 'absolute inset-0 flex items-center justify-center text-orange-600 text-2xl font-bold';
+                fallback.textContent = 'CMS';
+                target.parentNode?.appendChild(fallback);
+              }}
+            />
+          </div>
         </div>
 
         {/* Loading Message */}
         <div className="text-center">
-          <p className="text-white/90 text-sm font-medium">
+          <p className="text-white/95 text-lg font-medium mb-3">
             {message}
           </p>
           
-          {/* Simple loading dots */}
-          <div className="flex justify-center space-x-1 mt-2">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          {/* Animated loading bar */}
+          <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
+            <div className="h-full bg-white rounded-full animate-pulse" style={{ 
+              width: '60%',
+              animation: 'loading 1.5s ease-in-out infinite'
+            }}></div>
+          </div>
+          
+          {/* Loading dots */}
+          <div className="flex justify-center space-x-2 mt-4">
+            <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
           </div>
         </div>
       </div>
+      
+      {/* Add custom animation keyframes */}
+      <style jsx>{`
+        @keyframes loading {
+          0%, 100% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }

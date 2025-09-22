@@ -177,9 +177,9 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
 
   return (
     <>
-      {/* Mobile Bottom Navigation - Professional Style */}
+      {/* Mobile Bottom Navigation - Spiritual Style */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
-        <div className="bg-white border-t border-orange-200 shadow-lg">
+        <div className="bg-white border-t border-amber-200 shadow-lg">
           <nav className="flex justify-around items-center py-2" aria-label="Mobile navigation">
             {/* All 4 navigation items */}
             {safeNavItems.map((item) => {
@@ -193,15 +193,15 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
                     flex flex-col items-center justify-center px-4 py-2 min-w-[60px] max-w-[80px]
                     transition-all duration-200 rounded-lg
                     ${isActive 
-                      ? 'text-orange-600 bg-orange-50' 
-                      : 'text-gray-500 hover:text-orange-700 hover:bg-orange-50'
+                      ? 'text-amber-600 bg-amber-50' 
+                      : 'text-slate-500 hover:text-amber-700 hover:bg-amber-50'
                     }
                   `}
                 >
                   <div className="relative flex-shrink-0">
                     <div className={`
                       h-5 w-5 mb-1
-                      ${isActive ? 'text-orange-600' : 'text-gray-400'}
+                      ${isActive ? 'text-amber-600' : 'text-slate-400'}
                       transition-colors duration-200
                     `}>
                       {item.icon}
@@ -217,7 +217,7 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
                   </div>
                   <span className={`
                     text-xs font-medium text-center leading-tight w-full
-                    ${isActive ? 'text-orange-600' : 'text-gray-600'}
+                    ${isActive ? 'text-amber-600' : 'text-slate-600'}
                     transition-colors duration-200
                   `}>
                     {item.label}

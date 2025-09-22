@@ -9,9 +9,7 @@ interface SpiritualCardProps {
   description?: string;
   children: ReactNode;
   className?: string;
-  variant?: 'default' | 'sacred' | 'ritual' | 'memorial';
-  mantra?: string;
-  showOm?: boolean;
+  variant?: 'default' | 'sacred' | 'ritual' | 'memorial' | 'professional' | 'warning' | 'success' | 'divine';
   footer?: ReactNode;
   onClick?: () => void;
 }
@@ -22,8 +20,6 @@ export default function SpiritualCard({
   children,
   className = '',
   variant = 'default',
-  mantra,
-  showOm = false,
   footer,
   onClick
 }: SpiritualCardProps) {
@@ -31,29 +27,57 @@ export default function SpiritualCard({
     switch (variant) {
       case 'sacred':
         return {
-          card: 'bg-white border-amber-100 shadow-sm',
+          card: 'bg-white border-amber-100 shadow-sm hover:shadow-md transition-shadow',
           header: 'border-amber-50 bg-amber-50/20',
           title: 'text-amber-900',
           description: 'text-amber-700'
         };
       case 'ritual':
         return {
-          card: 'bg-white border-stone-200 shadow-sm',
-          header: 'border-stone-100 bg-stone-50/20',
-          title: 'text-stone-800',
-          description: 'text-stone-600'
+          card: 'bg-white border-orange-100 shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-orange-50 bg-orange-50/20',
+          title: 'text-orange-900',
+          description: 'text-orange-700'
         };
       case 'memorial':
         return {
-          card: 'bg-white border-amber-50 shadow-sm',
+          card: 'bg-white border-amber-50 shadow-sm hover:shadow-md transition-shadow',
           header: 'border-amber-50 bg-amber-50/20',
           title: 'text-amber-800',
           description: 'text-amber-600'
         };
+      case 'professional':
+        return {
+          card: 'bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-slate-100 bg-slate-50/50',
+          title: 'text-slate-900',
+          description: 'text-slate-600'
+        };
+      case 'warning':
+        return {
+          card: 'bg-white border-amber-100 shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-amber-50 bg-amber-50/20',
+          title: 'text-amber-900',
+          description: 'text-amber-700'
+        };
+      case 'success':
+        return {
+          card: 'bg-white border-green-100 shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-green-50 bg-green-50/20',
+          title: 'text-green-900',
+          description: 'text-green-700'
+        };
+      case 'divine':
+        return {
+          card: 'bg-white border-orange-100 shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-orange-50 bg-orange-50/30',
+          title: 'text-orange-900',
+          description: 'text-orange-700'
+        };
       default:
         return {
-          card: 'bg-white border-amber-100 shadow-sm',
-          header: 'border-amber-50',
+          card: 'bg-white border-amber-100 shadow-sm hover:shadow-md transition-shadow',
+          header: 'border-amber-100',
           title: 'text-amber-900',
           description: 'text-amber-700'
         };
@@ -67,13 +91,6 @@ export default function SpiritualCard({
       className={`relative overflow-hidden ${styles.card} ${className}`}
       onClick={onClick}
     >
-      {/* Subtle background element */}
-      {showOm && (
-        <div className="absolute top-3 right-3 text-amber-200 text-lg opacity-20 pointer-events-none">
-          ॐ
-        </div>
-      )}
-
       {(title || description) && (
         <CardHeader className={`${styles.header} relative z-10`}>
           <div className="flex items-center justify-between">
@@ -90,14 +107,6 @@ export default function SpiritualCard({
               )}
             </div>
           </div>
-          
-          {mantra && (
-            <div className="mt-3 p-2 bg-amber-50 rounded-md">
-              <div className="text-sm text-amber-700 italic">
-                {mantra}
-              </div>
-            </div>
-          )}
         </CardHeader>
       )}
 
