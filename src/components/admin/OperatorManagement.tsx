@@ -10,9 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Check, X, MapPin, Phone, Mail, Calendar } from 'lucide-react';
+import { Users, Check, X, MapPin, Phone, Mail, Calendar, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getUsers, updateUser, getLocations, getPendingOperators, getActiveOperators, approveOperator, rejectOperator } from '@/lib/firestore';
+import { getUsers, updateUser, getLocations, getPendingOperators, getActiveOperators, getRejectedOperators, approveOperator, rejectOperator } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +41,7 @@ export default function OperatorManagement() {
   const [pendingOperators, setPendingOperators] = useState<Operator[]>([]);
   const [activeOperators, setActiveOperators] = useState<Operator[]>([]);
   const [inactiveOperators, setInactiveOperators] = useState<Operator[]>([]);
+  const [rejectedOperators, setRejectedOperators] = useState<Operator[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -57,22 +58,34 @@ export default function OperatorManagement() {
       setLoading(true);
       console.log('Fetching operator data...');
       
-      const [pendingOps, activeOps, inactiveOps, locs] = await Promise.all([
+      const [pendingOps, activeOps, rejectedOps, locs] = await Promise.all([
         getPendingOperators(),
         getActiveOperators(),
-        getUsers().then(users => users.filter(user => user.role === 'operator' && !user.isActive && !user.isRejected)),
+        getRejectedOperators(),
         getLocations()
       ]);
       
       console.log('Data fetched successfully:', {
         pendingOperators: pendingOps.length,
         activeOperators: activeOps.length,
-        inactiveOperators: inactiveOps.length,
+        rejectedOperators: rejectedOps.length,
         locations: locs.length
       });
       
       setPendingOperators(pendingOps);
       setActiveOperators(activeOps);
+      setRejectedOperators(rejectedOps);
+      
+      // For inactive operators, we want operators who are not active, not pending, and not rejected
+      // These would be operators who were once active but then deactivated
+      const allUsers = await getUsers();
+      const inactiveOps = allUsers.filter(user => 
+        user.role === 'operator' && 
+        !user.isActive && 
+        !user.isRejected &&
+        !pendingOps.some(pending => pending.id === user.id) // Not in pending list
+      );
+      
       setInactiveOperators(inactiveOps);
       setLocations(locs.filter(loc => loc.isActive));
     } catch (error) {
@@ -143,7 +156,7 @@ export default function OperatorManagement() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to reject ${operator.name}? This will deactivate their account.`)) {
+    if (!confirm(`Are you sure you want to reject ${operator.name}? This action cannot be undone.`)) {
       return;
     }
 
@@ -157,7 +170,7 @@ export default function OperatorManagement() {
       // Show success toast
       toast({
         title: "Operator Rejected",
-        description: `${operator.name} has been rejected and their account has been deactivated.`,
+        description: `${operator.name} has been permanently rejected and cannot be restored.`,
       });
       
       fetchData();
@@ -512,6 +525,71 @@ export default function OperatorManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Rejected Operators */}
+      {rejectedOperators.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-red-500" />
+              <span>Rejected Operators</span>
+            </CardTitle>
+            <CardDescription>
+              Operators who have been rejected and cannot be activated
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {rejectedOperators.map((operator, index) => (
+                <motion.div
+                  key={operator.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4 bg-red-50"
+                >
+                  <div className="flex items-start space-x-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Users className="h-6 w-6 text-red-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium truncate">{operator.name}</h4>
+                        <Badge variant="destructive">Rejected</Badge>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{operator.mobile}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span>Applied: {formatFirestoreDate(operator.createdAt)}</span>
+                      </div>
+                      {operator.rejectionReason && (
+                        <div className="flex items-center space-x-1 text-xs text-red-600 mt-1">
+                          <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                          <span>Reason: {operator.rejectionReason}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex space-x-2 flex-shrink-0">
+                    <Badge variant="outline" className="text-red-600 border-red-200">
+                      Cannot be restored
+                    </Badge>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Approve Dialog */}
       <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>

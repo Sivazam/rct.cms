@@ -118,7 +118,8 @@ export const getPendingOperators = async () => {
     const q = query(
       collection(db, 'users'), 
       where('role', '==', 'operator'),
-      where('isActive', '==', false)
+      where('isActive', '==', false),
+      where('isRejected', '==', false) // Only get operators who are not rejected
     );
     
     const querySnapshot = await getDocs(q);
@@ -165,6 +166,34 @@ export const getActiveOperators = async () => {
     return operators;
   } catch (error) {
     console.error('Error getting active operators:', error);
+    throw error;
+  }
+};
+
+export const getRejectedOperators = async () => {
+  try {
+    const q = query(
+      collection(db, 'users'), 
+      where('role', '==', 'operator'),
+      where('isRejected', '==', true)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const operators = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Sort manually to avoid orderBy index requirements
+    operators.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(0);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
+    
+    return operators;
+  } catch (error) {
+    console.error('Error getting rejected operators:', error);
     throw error;
   }
 };
