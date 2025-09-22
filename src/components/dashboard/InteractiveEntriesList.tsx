@@ -68,6 +68,7 @@ interface Location {
 interface InteractiveEntriesListProps {
   type: 'active' | 'pending' | 'dispatched';
   locationId?: string;
+  navbarLocation?: string;
   dateRange?: { from: Date; to: Date };
   onDataChanged?: () => void;
 }
@@ -135,7 +136,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
   );
 }
 
-export default function InteractiveEntriesList({ type, locationId, dateRange, onDataChanged }: InteractiveEntriesListProps) {
+export default function InteractiveEntriesList({ type, locationId, navbarLocation, dateRange, onDataChanged }: InteractiveEntriesListProps) {
   const { user } = useAuth();
   const adminMobile = useAdminMobile();
   const { toast } = useToast();
@@ -143,7 +144,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState(locationId || 'all');
+  const [locationFilter, setLocationFilter] = useState(navbarLocation || locationId || 'all');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [showRenewal, setShowRenewal] = useState(false);
@@ -174,7 +175,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
 
   useEffect(() => {
     fetchData();
-  }, [type, locationId, dateRange]);
+  }, [type, locationId, navbarLocation, dateRange]);
 
   const fetchData = async () => {
     try {
@@ -200,7 +201,7 @@ export default function InteractiveEntriesList({ type, locationId, dateRange, on
 
       const [entriesData, locationsData, usersData] = await Promise.all([
         getEntries({
-          locationId: locationId === 'all' ? undefined : locationId,
+          locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
           status: statusFilter
         }),
         getLocations(),

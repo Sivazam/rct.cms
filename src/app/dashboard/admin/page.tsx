@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavbarLocation } from '@/contexts/NavbarLocationContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -50,6 +51,7 @@ import {
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
+  const { navbarLocation, setNavbarLocation } = useNavbarLocation();
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [showWithDispatch, setShowWithDispatch] = useState(true);
@@ -70,6 +72,12 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
+
+  // Handle navbar location change
+  const handleNavbarLocationChange = (location: string) => {
+    setNavbarLocation(location);
+    setSelectedLocation(location);
+  };
 
   const handleCardClick = (cardType: string) => {
     console.log('Card clicked:', cardType);
@@ -247,7 +255,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex items-center gap-4">
                 <ThemeToggle />
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <Select value={selectedLocation} onValueChange={handleNavbarLocationChange}>
                   <SelectTrigger className="w-56">
                     <SelectValue placeholder="Select Location" />
                   </SelectTrigger>
@@ -282,7 +290,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <Select value={selectedLocation} onValueChange={handleNavbarLocationChange}>
                   <SelectTrigger className="w-32 h-8 text-xs">
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
@@ -461,7 +469,7 @@ export default function AdminDashboard() {
                           Close
                         </Button>
                       </div>
-                      <InteractiveEntriesList type="active" onDataChanged={handleEntriesDataChanged} />
+                      <InteractiveEntriesList type="active" navbarLocation={navbarLocation} onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
 
@@ -484,7 +492,7 @@ export default function AdminDashboard() {
                           Close
                         </Button>
                       </div>
-                      <InteractiveEntriesList type="pending" onDataChanged={handleEntriesDataChanged} />
+                      <InteractiveEntriesList type="pending" navbarLocation={navbarLocation} onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
 
@@ -507,7 +515,7 @@ export default function AdminDashboard() {
                           Close
                         </Button>
                       </div>
-                      <InteractiveEntriesList type="dispatched" onDataChanged={handleEntriesDataChanged} />
+                      <InteractiveEntriesList type="dispatched" navbarLocation={navbarLocation} onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
                   )}
 
@@ -642,7 +650,7 @@ export default function AdminDashboard() {
 
                 {/* Recent Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <RecentActivity locationId={selectedLocation === 'all' ? undefined : selectedLocation} dateRange={dateRange} />
+                  <RecentActivity locationId={navbarLocation === 'all' ? undefined : navbarLocation} dateRange={dateRange} />
                   
                   <Card className="border">
                     <CardHeader>

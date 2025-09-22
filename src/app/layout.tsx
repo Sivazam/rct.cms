@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import { NavbarLocationProvider } from "@/contexts/NavbarLocationContext";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import PageTransitionLoader from "@/components/ui/page-transition-loader";
 import FooterWrapper from "@/components/layout/FooterWrapper";
@@ -92,12 +93,14 @@ export default function RootLayout({
         >
           <LoadingProvider>
             <AuthProvider>
-              <div className="flex-1">
-                {children}
-              </div>
-              <FooterWrapper />
-              <Toaster />
-              <PageTransitionLoader />
+              <NavbarLocationProvider>
+                <div className="flex-1">
+                  {children}
+                </div>
+                <FooterWrapper />
+                <Toaster />
+                <PageTransitionLoader />
+              </NavbarLocationProvider>
             </AuthProvider>
           </LoadingProvider>
         </ThemeProvider>
