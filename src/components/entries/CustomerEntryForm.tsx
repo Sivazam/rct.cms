@@ -285,17 +285,17 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
             </div>
 
             {/* Payment Summary */}
-            <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="bg-muted p-4 rounded-lg border border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="h-5 w-5 text-blue-600" />
+                  <DollarSign className="h-5 w-5 text-primary" />
                   <span className="font-medium">Payment Summary</span>
                 </div>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                   ₹500
                 </Badge>
               </div>
-              <div className="mt-2 text-sm text-blue-800">
+              <div className="mt-2 text-sm text-foreground">
                 <p>Entry Fee: ₹500 (flat rate)</p>
                 <p>Number of Pots: {formData.numberOfPots}</p>
                 <p>Storage Period: 30 days</p>

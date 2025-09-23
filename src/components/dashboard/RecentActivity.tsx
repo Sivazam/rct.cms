@@ -169,11 +169,11 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
       case 'entry':
         return 'bg-accent text-primary border-accent';
       case 'renewal':
-        return 'bg-green-100 text-green-600 border-green-200';
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
       case 'delivery':
-        return 'bg-blue-100 text-blue-600 border-blue-200';
+        return 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
       default:
-        return 'bg-gray-100 text-gray-600 border-gray-200';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -203,7 +203,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-muted rounded"></div>
               </div>
             ))}
           </div>
@@ -227,8 +227,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         <div className="space-y-3">
           {activities.length === 0 ? (
             <div className="text-center py-8">
-              <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-500">No recent activity found</p>
+              <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No recent activity found</p>
             </div>
           ) : (
             activities.map((activity, index) => (
@@ -237,7 +237,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-start space-x-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
                   {getActivityIcon(activity.type)}
@@ -245,7 +245,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium text-sm text-gray-900">
+                    <h4 className="font-medium text-sm text-foreground">
                       {activity.title}
                     </h4>
                     <Badge variant={getActivityBadgeVariant(activity.type)} className="text-xs">
@@ -253,11 +253,11 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
                     </Badge>
                   </div>
                   
-                  <p className="text-xs text-gray-600 mb-2">
+                  <p className="text-xs text-muted-foreground mb-2">
                     {activity.description}
                   </p>
                   
-                  <div className="flex flex-col space-y-1 text-xs text-gray-500">
+                  <div className="flex flex-col space-y-1 text-xs text-muted-foreground">
                     <div className="flex items-center space-x-2">
                       <User className="h-3 w-3" />
                       <span>{activity.customerName}</span>
@@ -270,7 +270,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
                       <span>{activity.locationName}</span>
                       {activity.operatorName && (
                         <>
-                          <span className="text-gray-400">•</span>
+                          <span className="text-muted-foreground">•</span>
                           <span>by {activity.operatorName}</span>
                         </>
                       )}
@@ -285,7 +285,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
                       </div>
                       
                       {activity.amount && (
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-green-600 dark:text-green-400">
                           ₹{activity.amount.toLocaleString()}
                         </span>
                       )}

@@ -140,7 +140,7 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
 
         {/* Customer Found Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-background border-border">
             <DialogHeader>
               <DialogTitle>Customer Found</DialogTitle>
               <DialogDescription>
@@ -150,34 +150,34 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
             
             {customer && (
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-muted p-4 rounded-lg border border-border">
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                       <User className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
                       <h4 className="font-medium text-lg">{customer.name}</h4>
-                      <p className="text-sm text-gray-600">Existing Customer</p>
+                      <p className="text-sm text-muted-foreground">Existing Customer</p>
                     </div>
                   </div>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
+                      <Phone className="h-4 w-4 text-muted-foreground" />
                       <span>{customer.mobile}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span>{customer.city}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span>
                         Customer since: {formatFirestoreDate(customer.createdAt)}
                       </span>
                     </div>
                     {customer.additionalDetails && (
-                      <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                      <div className="mt-2 p-2 bg-muted rounded text-xs">
                         {customer.additionalDetails}
                       </div>
                     )}

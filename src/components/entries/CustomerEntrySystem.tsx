@@ -204,7 +204,7 @@ export default function CustomerEntrySystem() {
   };
 
   return (
-    <div className="min-h-screen  p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -213,8 +213,8 @@ export default function CustomerEntrySystem() {
               <Package className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Customer Entry System</h1>
-              <p className="text-gray-600">Register new customers and create ash pot entries</p>
+              <h1 className="text-2xl font-bold text-foreground">Customer Entry System</h1>
+              <p className="text-muted-foreground">Register new customers and create ash pot entries</p>
             </div>
           </div>
 
@@ -267,7 +267,7 @@ export default function CustomerEntrySystem() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-card rounded-lg shadow-sm p-6 border border-border">
           {renderStep()}
         </div>
 
@@ -285,10 +285,10 @@ export default function CustomerEntrySystem() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Today's Entries</p>
-                    <p className="text-2xl font-bold text-blue-600">{stats.todayEntries}</p>
+                    <p className="text-sm text-muted-foreground">Today's Entries</p>
+                    <p className="text-2xl font-bold text-primary">{stats.todayEntries}</p>
                   </div>
-                  <Package className="h-8 w-8 text-blue-200" />
+                  <Package className="h-8 w-8 text-primary/20" />
                 </div>
               </CardContent>
             </Card>
@@ -296,7 +296,7 @@ export default function CustomerEntrySystem() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Active Customers</p>
+                    <p className="text-sm text-muted-foreground">Active Customers</p>
                     <p className="text-2xl font-bold text-green-600">{stats.activeCustomers}</p>
                   </div>
                   <Users className="h-8 w-8 text-green-200" />
@@ -307,7 +307,7 @@ export default function CustomerEntrySystem() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Monthly Revenue</p>
+                    <p className="text-sm text-muted-foreground">Monthly Revenue</p>
                     <p className="text-2xl font-bold text-purple-600">₹{stats.monthlyRevenue.toLocaleString()}</p>
                   </div>
                   <Package className="h-8 w-8 text-purple-200" />

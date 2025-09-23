@@ -828,8 +828,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         };
       default:
         return {
-          icon: <Package className="h-4 w-4 text-gray-600" />,
-          statusColor: 'text-gray-600',
+          icon: <Package className="h-4 w-4 text-muted-foreground" />,
+          statusColor: 'text-muted-foreground',
           badgeVariant: 'outline' as const
         };
     }
@@ -967,7 +967,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         <div className="flex-1">
           <div className="relative">
             <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors ${
-              isSearchFocused ? 'text-background0' : 'text-gray-400'
+              isSearchFocused ? 'text-background0' : 'text-muted-foreground'
             }`} />
             <Input
               placeholder="Search by name, mobile, or city..."
@@ -1000,7 +1000,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
 
       {/* Results Summary */}
       {!loading && (
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredEntries.length} of {entries.length} entries
           {searchTerm && ` for "${searchTerm}"`}
           {locationFilter !== 'all' && ` in ${locations.find(l => l.id === locationFilter)?.venueName || 'selected location'}`}
@@ -1041,8 +1041,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                       <Package className="h-8 w-8 text-background0" />
                     </div>
                     <div>
-                      <p className="text-gray-700 font-medium">No {type} entries found</p>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-foreground font-medium">No {type} entries found</p>
+                      <p className="text-sm text-muted-foreground mt-1">
                         {searchTerm || locationFilter !== 'all' 
                           ? 'Try adjusting your filters or search terms'
                           : 'There are no entries matching your criteria'
@@ -1075,7 +1075,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`hover:bg-gray-50 ${expiryColorClass} border-l-4`}
+                    className={`hover:bg-muted/50 ${expiryColorClass} border-l-4`}
                   >
                     {type === 'pending' && (
                       <TableCell>
@@ -1134,37 +1134,37 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         {typeInfo.icon}
                         <div>
                           <div className="font-medium">{entry.customerName}</div>
-                          <div className="text-sm text-gray-500">{entry.customerCity}</div>
+                          <div className="text-sm text-muted-foreground">{entry.customerCity}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Phone className="h-4 w-4 text-gray-400" />
+                        <Phone className="h-4 w-4 text-muted-foreground" />
                         <span>{entry.customerMobile}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
                         <span>{entry.locationName}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-gray-400" />
+                        <Users className="h-4 w-4 text-muted-foreground" />
                         <span>{entry.operatorName}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Package className="h-4 w-4 text-gray-400" />
+                        <Package className="h-4 w-4 text-muted-foreground" />
                         <span>{entry.numberOfPots}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>{formatDate(entry.entryDate)}</span>
                       </div>
                     </TableCell>
@@ -1179,7 +1179,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     {type === 'dispatched' && (
                       <TableCell>
                         <div className="max-w-xs">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted-foreground">
                             {getDispatchReason(entry) || 'N/A'}
                           </span>
                         </div>
@@ -1188,7 +1188,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     {type !== 'dispatched' && (
                       <TableCell>
                         <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate, entry.status) ? 'text-red-600 font-medium' : ''}`}>
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span>{formatDate(entry.expiryDate)}</span>
                           {isExpiringSoon(entry.expiryDate, entry.status) && (
                             <Badge variant="destructive" className="ml-2 text-xs">
@@ -1208,10 +1208,10 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         {entry.payments && entry.payments.length > 0 ? (
                           <div>
                             <div className="font-medium">₹{entry.payments.reduce((sum, p) => sum + p.amount, 0)}</div>
-                            <div className="text-gray-500">{entry.payments.length} payment(s)</div>
+                            <div className="text-muted-foreground">{entry.payments.length} payment(s)</div>
                           </div>
                         ) : (
-                          <span className="text-gray-500">No payments</span>
+                          <span className="text-muted-foreground">No payments</span>
                         )}
                       </div>
                     </TableCell>
@@ -1230,8 +1230,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Package className="h-8 w-8 text-background0" />
             </div>
-            <p className="text-gray-700 font-medium">No {type} entries found</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-foreground font-medium">No {type} entries found</p>
+            <p className="text-sm text-muted-foreground mt-1">
               {searchTerm || locationFilter !== 'all' 
                 ? 'Try adjusting your filters or search terms'
                 : 'There are no entries matching your criteria'
@@ -1255,7 +1255,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     {typeInfo.icon}
                     <div>
                       <h4 className="font-medium">{entry.customerName}</h4>
-                      <p className="text-sm text-gray-500">{entry.customerCity}</p>
+                      <p className="text-sm text-muted-foreground">{entry.customerCity}</p>
                     </div>
                   </div>
                   <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
@@ -1265,15 +1265,15 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                 
                 <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                   <div className="flex items-center space-x-1">
-                    <Phone className="h-3 w-3 text-gray-400" />
+                    <Phone className="h-3 w-3 text-muted-foreground" />
                     <span className="truncate">{entry.customerMobile}</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Package className="h-3 w-3 text-gray-400" />
+                    <Package className="h-3 w-3 text-muted-foreground" />
                     <span>{entry.numberOfPots} pot(s)</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
                     <span className="text-xs">{formatDate(entry.entryDate)}</span>
                   </div>
                   {type === 'dispatched' && (
@@ -1284,16 +1284,16 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                   )}
                   {type !== 'dispatched' && (
                     <div className={`flex items-center space-x-1 ${isExpiringSoon(entry.expiryDate, entry.status) ? 'text-red-600' : ''}`}>
-                      <Calendar className="h-3 w-3 text-gray-400" />
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
                       <span className="text-xs">{formatDate(entry.expiryDate)}</span>
                     </div>
                   )}
                 </div>
 
                 {type === 'dispatched' && getDispatchReason(entry) && (
-                  <div className="mb-3 p-2 bg-gray-50 rounded text-xs">
-                    <div className="font-medium text-gray-700 mb-1">Reason:</div>
-                    <div className="text-gray-600">{getDispatchReason(entry)}</div>
+                  <div className="mb-3 p-2 bg-muted rounded text-xs">
+                    <div className="font-medium text-foreground mb-1">Reason:</div>
+                    <div className="text-muted-foreground">{getDispatchReason(entry)}</div>
                   </div>
                 )}
 
@@ -1353,10 +1353,10 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
 
       {/* Mobile Number Dialog for New Entry */}
       <Dialog open={showMobileDialog} onOpenChange={setShowMobileDialog}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+        <DialogContent className="sm:max-w-md bg-background border-border">
           <DialogHeader>
-            <DialogTitle className='text-gray-900 dark:text-gray-100'>Enter Mobile Number</DialogTitle>
-            <DialogDescription className='text-gray-600 dark:text-gray-400'>
+            <DialogTitle>Enter Mobile Number</DialogTitle>
+            <DialogDescription>
               Search for existing customer or register new customer
             </DialogDescription>
           </DialogHeader>
@@ -1407,34 +1407,34 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           
           {foundCustomer && (
             <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-muted p-4 rounded-lg border border-border">
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                     <User className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
                     <h4 className="font-medium text-lg">{foundCustomer.name}</h4>
-                    <p className="text-sm text-gray-600">Existing Customer</p>
+                    <p className="text-sm text-muted-foreground">Existing Customer</p>
                   </div>
                 </div>
                 
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center space-x-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
+                    <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{foundCustomer.mobile}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>{foundCustomer.city}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
                       Customer since: {formatFirestoreDate(foundCustomer.createdAt)}
                     </span>
                   </div>
                   {foundCustomer.additionalDetails && (
-                    <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                    <div className="mt-2 p-2 bg-muted rounded text-xs">
                       {foundCustomer.additionalDetails}
                     </div>
                   )}
@@ -1468,36 +1468,36 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           {selectedEntryForRenewal && (
             <div className="space-y-6">
               {/* Current Entry Status */}
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-muted p-4 rounded-lg border border-border">
                 <h4 className="font-medium mb-3">Current Entry Status</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Customer:</span>
+                      <span className="text-sm text-muted-foreground">Customer:</span>
                       <span className="text-sm font-medium">{selectedEntryForRenewal.customerName}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Mobile:</span>
+                      <span className="text-sm text-muted-foreground">Mobile:</span>
                       <span className="text-sm font-medium">{selectedEntryForRenewal.customerMobile}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Ash Pots:</span>
+                      <span className="text-sm text-muted-foreground">Ash Pots:</span>
                       <span className="text-sm font-medium">{selectedEntryForRenewal.numberOfPots}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Current Expiry:</span>
+                      <span className="text-sm text-muted-foreground">Current Expiry:</span>
                       <span className="text-sm font-medium">
                         {formatDate(new Date(selectedEntryForRenewal.expiryDate?.toDate?.() || selectedEntryForRenewal.expiryDate))}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Rate per Month:</span>
+                      <span className="text-sm text-muted-foreground">Rate per Month:</span>
                       <span className="text-sm font-medium">₹{RENEWAL_RATE_PER_MONTH} per pot</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Months:</span>
+                      <span className="text-sm text-muted-foreground">Total Months:</span>
                       <span className="text-sm font-medium">
                         {selectedEntryForRenewal.payments.reduce((sum, payment) => sum + payment.months, 0)} months
                       </span>
@@ -1625,7 +1625,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto w-full mx-0 sm:mx-4 p-4 sm:p-6">
           <DialogHeader className="space-y-2 sm:space-y-3">
             <DialogTitle className="text-lg sm:text-xl font-bold">Dispatch Ash Pot</DialogTitle>
-            <DialogDescription className="text-sm sm:text-base text-gray-600">
+            <DialogDescription>
               Process dispatch for {selectedEntryForDispatch?.customerName}
             </DialogDescription>
           </DialogHeader>
@@ -1633,36 +1633,36 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           {selectedEntryForDispatch && (
             <div className="space-y-6">
               {/* Current Entry Status */}
-              <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+              <div className="bg-muted p-3 sm:p-4 rounded-lg border border-border">
                 <h4 className="font-medium mb-2 sm:mb-3 text-sm sm:text-base">Current Entry Status</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1 sm:space-y-2">
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-gray-600">Customer:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Customer:</span>
                       <span className="text-xs sm:text-sm font-medium text-right max-w-[60%]">{selectedEntryForDispatch.customerName}</span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-gray-600">Mobile:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Mobile:</span>
                       <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.customerMobile}</span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-gray-600">Ash Pots:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Ash Pots:</span>
                       <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.numberOfPots}</span>
                     </div>
                   </div>
                   <div className="space-y-1 sm:space-y-2">
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-gray-600">Location:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Location:</span>
                       <span className="text-xs sm:text-sm font-medium text-right max-w-[60%]">{selectedEntryForDispatch.locationName}</span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-gray-600">Entry Date:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Entry Date:</span>
                       <span className="text-xs sm:text-sm font-medium text-right">
                         {formatDate(new Date(selectedEntryForDispatch.entryDate?.toDate?.() || selectedEntryForDispatch.entryDate))}
                       </span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-gray-600">Status:</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Status:</span>
                       <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
                         {selectedEntryForDispatch.status}
                       </Badge>
@@ -1746,7 +1746,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         step="1"
                         className="h-9 sm:h-10 text-sm sm:text-base"
                       />
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         Service-based collection - enter any amount
                       </p>
                     </div>
@@ -1802,7 +1802,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         className="h-9 sm:h-10 text-sm sm:text-base"
                         required
                       />
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-muted-foreground">
                         Format: 10-digit mobile number without country code
                       </p>
                     </div>
@@ -1820,7 +1820,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     className="w-full p-3 border border-gray-300 rounded-md resize-none"
                     rows={3}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Required if collecting less than standard amount
                   </p>
                 </div>

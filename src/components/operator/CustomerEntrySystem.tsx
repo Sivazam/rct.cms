@@ -60,15 +60,22 @@ export default function CustomerEntrySystem() {
 
   useEffect(() => {
     fetchLocations();
-  }, []);
+  }, [user]);
 
   const fetchLocations = async () => {
     try {
       const locationData = await getLocations();
-      const activeLocations = locationData.filter(loc => loc.isActive);
-      setLocations(activeLocations);
-      if (activeLocations.length > 0) {
-        setSelectedLocation(activeLocations[0].id);
+      const operatorLocations = user?.locationIds || [];
+      console.log('Operator locations:', operatorLocations);
+      
+      const assignedLocations = locationData.filter(loc => 
+        operatorLocations.includes(loc.id) && loc.isActive
+      );
+      
+      console.log('Assigned locations:', assignedLocations);
+      setLocations(assignedLocations);
+      if (assignedLocations.length > 0) {
+        setSelectedLocation(assignedLocations[0].id);
       }
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -129,6 +136,14 @@ export default function CustomerEntrySystem() {
 
     if (!user || !selectedLocation) {
       setError('User or location not selected');
+      setLoading(false);
+      return;
+    }
+
+    // Verify the selected location is assigned to this operator
+    const operatorLocations = user?.locationIds || [];
+    if (!operatorLocations.includes(selectedLocation)) {
+      setError('You do not have permission to create entries at this location');
       setLoading(false);
       return;
     }
@@ -243,9 +258,9 @@ export default function CustomerEntrySystem() {
           transition={{ duration: 0.3 }}
         >
           {searchResult ? (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-green-800">
+                <CardTitle className="flex items-center space-x-2 text-green-800 dark:text-green-200">
                   <Users className="h-5 w-5" />
                   <span>Customer Found</span>
                 </CardTitle>
@@ -253,25 +268,25 @@ export default function CustomerEntrySystem() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Name</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Name</Label>
                     <p className="font-medium">{searchResult.name}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Mobile</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Mobile</Label>
                     <p className="font-medium flex items-center">
                       <Phone className="h-4 w-4 mr-1" />
                       {searchResult.mobile}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">City</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">City</Label>
                     <p className="font-medium flex items-center">
                       <MapPin className="h-4 w-4 mr-1" />
                       {searchResult.city}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">Customer Since</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">Customer Since</Label>
                     <p className="font-medium flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />
                       {searchResult.createdAt?.toDate ? searchResult.createdAt.toDate().toLocaleDateString() : 'Unknown'}
@@ -280,8 +295,8 @@ export default function CustomerEntrySystem() {
                 </div>
                 {searchResult.additionalDetails && (
                   <div className="mb-4">
-                    <Label className="text-sm font-medium text-gray-600">Additional Details</Label>
-                    <p className="text-sm text-gray-700">{searchResult.additionalDetails}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">Additional Details</Label>
+                    <p className="text-sm text-muted-foreground">{searchResult.additionalDetails}</p>
                   </div>
                 )}
                 <div className="flex space-x-2">
@@ -293,15 +308,15 @@ export default function CustomerEntrySystem() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-blue-200 bg-blue-50">
+            <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-blue-800">
+                <CardTitle className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
                   <AlertCircle className="h-5 w-5" />
                   <span>Customer Not Found</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-blue-700 mb-4">
+                <p className="text-blue-700 dark:text-blue-300 mb-4">
                   No customer found with this mobile number. Would you like to create a new entry?
                 </p>
                 <Button onClick={handleNewEntry}>
@@ -316,7 +331,7 @@ export default function CustomerEntrySystem() {
 
       {/* Entry Dialog */}
       <Dialog open={isEntryDialogOpen} onOpenChange={setIsEntryDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg bg-background border-border">
           <DialogHeader>
             <DialogTitle>
               {searchResult ? 'Create New Entry' : 'Create Customer & Entry'}
@@ -425,9 +440,9 @@ export default function CustomerEntrySystem() {
               </RadioGroup>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Entry Summary</h4>
-              <div className="space-y-1 text-sm">
+            <div className="bg-muted p-4 rounded-lg border border-border">
+              <h4 className="font-medium mb-2 text-foreground">Entry Summary</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
                 <p><strong>Customer:</strong> {formData.customerName}</p>
                 <p><strong>Mobile:</strong> {formData.customerMobile}</p>
                 <p><strong>Pots:</strong> {formData.numberOfPots}</p>
