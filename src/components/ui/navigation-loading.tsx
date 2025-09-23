@@ -8,62 +8,78 @@ interface NavigationLoadingProps {
 
 export default function NavigationLoading({ message = "Loading..." }: NavigationLoadingProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-primary via-primary/80 to-destructive">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[url('/KB1.webp')] bg-cover bg-center mix-blend-overlay"></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Background carousel - full screen */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[url('/KB1.webp')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-destructive"></div>
       </div>
       
-      <div className="flex flex-col items-center space-y-6 relative z-10">
-        {/* Logo Container */}
-        <div className="relative">
-          {/* Animated background circle */}
-          <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
-          
-          {/* Logo or Fallback */}
-          <div className="relative z-10 w-24 h-24 bg-white rounded-full flex items-center justify-center drop-shadow-lg">
-            <div className="w-20 h-20 transition-transform duration-100 ease-linear animate-spin" style={{
-              animation: 'spin 8s linear infinite' // Changed from default to 8s for slower rotation
-            }}>
-              <Image
-                src="/logo.webp"
-                alt="Logo"
-                width={80}
-                height={80}
-                className="w-full h-full object-contain"
-                priority
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const fallback = document.createElement('div');
-                  fallback.className = 'absolute inset-0 flex items-center justify-center text-orange-600 text-2xl font-bold';
-                  fallback.textContent = 'CMS';
-                  target.parentNode?.appendChild(fallback);
-                }}
-              />
+      {/* Content area including status */}
+      <div className="relative z-10 w-full h-full flex flex-col">
+        {/* Main content */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-6">
+            {/* Logo Container */}
+            <div className="relative">
+              {/* Animated background circle */}
+              <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+              
+              {/* Logo or Fallback */}
+              <div className="relative z-10 w-24 h-24 bg-white rounded-full flex items-center justify-center drop-shadow-lg">
+                <div className="w-20 h-20 transition-transform duration-100 ease-linear animate-spin" style={{
+                  animation: 'spin 8s linear infinite' // Changed from default to 8s for slower rotation
+                }}>
+                  <Image
+                    src="/logo.webp"
+                    alt="Logo"
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-contain"
+                    priority
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = document.createElement('div');
+                      fallback.className = 'absolute inset-0 flex items-center justify-center text-orange-600 text-2xl font-bold';
+                      fallback.textContent = 'CMS';
+                      target.parentNode?.appendChild(fallback);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Loading Message */}
+            <div className="text-center">
+              <p className="text-white/95 text-lg font-medium mb-3">
+                {message}
+              </p>
+              
+              {/* Animated loading bar */}
+              <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-white rounded-full animate-pulse" style={{ 
+                  width: '60%',
+                  animation: 'loading 1.5s ease-in-out infinite'
+                }}></div>
+              </div>
+              
+              {/* Loading dots */}
+              <div className="flex justify-center space-x-2 mt-4">
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Loading Message */}
-        <div className="text-center">
-          <p className="text-white/95 text-lg font-medium mb-3">
-            {message}
-          </p>
-          
-          {/* Animated loading bar */}
-          <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
-            <div className="h-full bg-white rounded-full animate-pulse" style={{ 
-              width: '60%',
-              animation: 'loading 1.5s ease-in-out infinite'
-            }}></div>
-          </div>
-          
-          {/* Loading dots */}
-          <div className="flex justify-center space-x-2 mt-4">
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+        
+        {/* Status area - extends carousel background */}
+        <div className="p-4 bg-gradient-to-t from-black/40 to-transparent">
+          <div className="text-center">
+            <p className="text-white/80 text-sm">
+              Build with ❤️ by HarTe Labs
+            </p>
           </div>
         </div>
       </div>

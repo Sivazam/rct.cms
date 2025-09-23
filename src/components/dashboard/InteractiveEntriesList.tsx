@@ -1353,10 +1353,10 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
 
       {/* Mobile Number Dialog for New Entry */}
       <Dialog open={showMobileDialog} onOpenChange={setShowMobileDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
           <DialogHeader>
-            <DialogTitle>Enter Mobile Number</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className='text-gray-900 dark:text-gray-100'>Enter Mobile Number</DialogTitle>
+            <DialogDescription className='text-gray-600 dark:text-gray-400'>
               Search for existing customer or register new customer
             </DialogDescription>
           </DialogHeader>

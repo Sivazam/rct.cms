@@ -288,12 +288,10 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="relative w-full h-full">
-        {/* White background base */}
-        <div className="absolute inset-0 bg-white z-0" />
-        
-        {/* Background carousel */}
+      <div className="relative w-full h-full flex flex-col">
+        {/* Background carousel - full screen */}
         <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-white z-0" />
           <AnimatePresence>
             <motion.div
               key={currentImageIndex}
@@ -301,20 +299,20 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1.2, ease: 'easeInOut' }}
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat z-10"
               style={{
                 backgroundImage: `url(${currentSrc})`,
                 backgroundColor: 'transparent', // let the white base show through
               }}
             />
           </AnimatePresence>
+          
+          {/* Black tint overlay */}
+          <div className="absolute inset-0 bg-black/60 z-20" />
         </div>
 
-        {/* Black tint overlay */}
-        <div className="absolute inset-0 bg-black/60 z-10" />
-
-        {/* Content overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+        {/* Main content area */}
+        <div className="flex-1 flex items-center justify-center relative z-30">
           <div className="flex flex-col items-center space-y-8">
             {/* Logo */}
             <div className="relative">
@@ -353,6 +351,15 @@ export default function SplashScreen({ onSplashComplete }: SplashScreenProps) {
                 {Math.round(progress)}%
               </div>
             </div>
+          </div>
+        </div>
+        
+        {/* Status area - extends carousel background */}
+        <div className="relative z-30 p-4 bg-gradient-to-t from-black/40 to-transparent">
+          <div className="text-center">
+            <p className="text-white/80 text-sm">
+              Build with ❤️ by HarTe Labs
+            </p>
           </div>
         </div>
       </div>

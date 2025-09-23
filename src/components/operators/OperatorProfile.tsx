@@ -138,12 +138,12 @@ export default function OperatorProfile() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
           </div>
         </CardContent>
       </Card>
@@ -152,9 +152,9 @@ export default function OperatorProfile() {
 
   if (!operatorData) {
     return (
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
         <CardContent className="p-6">
-          <p className="text-center text-gray-500">Unable to load profile data</p>
+          <p className="text-center text-gray-500 dark:text-gray-400">Unable to load profile data</p>
         </CardContent>
       </Card>
     );
@@ -163,20 +163,20 @@ export default function OperatorProfile() {
   return (
     <div className="space-y-6">
       {/* Profile Header */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-muted-foreground" />
+              <div className="w-16 h-16 bg-accent dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <User className="h-8 w-8 text-muted-foreground dark:text-gray-300" />
               </div>
               <div>
-                <CardTitle className="text-xl">Operator Profile</CardTitle>
-                <CardDescription>Your personal information and account details</CardDescription>
+                <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Operator Profile</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">Your personal information and account details</CardDescription>
               </div>
             </div>
             {!editing && (
-              <Button variant="outline" onClick={handleEdit}>
+              <Button variant="outline" onClick={handleEdit} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Profile
               </Button>
@@ -185,8 +185,16 @@ export default function OperatorProfile() {
         </CardHeader>
         <CardContent>
           {message && (
-            <Alert className={`mb-4 ${message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
-              <AlertDescription className={message.type === 'error' ? 'text-red-800' : 'text-green-800'}>
+            <Alert className={`mb-4 ${
+              message.type === 'error' 
+                ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' 
+                : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
+            }`}>
+              <AlertDescription className={
+                message.type === 'error' 
+                  ? 'text-red-800 dark:text-red-200' 
+                  : 'text-green-800 dark:text-green-200'
+              }>
                 {message.text}
               </AlertDescription>
             </Alert>
@@ -195,57 +203,59 @@ export default function OperatorProfile() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Personal Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Personal Information</h3>
               
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <User className="h-4 w-4 text-gray-400" />
+                  <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <div className="flex-1">
                     {editing ? (
                       <div className="space-y-1">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Full Name</Label>
                         <Input
                           id="name"
                           value={editForm.name}
                           onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                           disabled={saving}
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                         />
                       </div>
                     ) : (
                       <div>
-                        <p className="text-sm text-gray-500">Full Name</p>
-                        <p className="font-medium">{operatorData.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Full Name</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{operatorData.name}</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-4 w-4 text-gray-400" />
+                  <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500">Email Address</p>
-                    <p className="font-medium">{operatorData.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Email Address</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{operatorData.email}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <Phone className="h-4 w-4 text-gray-400" />
+                  <Phone className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <div className="flex-1">
                     {editing ? (
                       <div className="space-y-1">
-                        <Label htmlFor="phone">Phone Number</Label>
+                        <Label htmlFor="phone" className="text-gray-700 dark:text-gray-300">Phone Number</Label>
                         <Input
                           id="phone"
                           value={editForm.phone}
                           onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
                           disabled={saving}
                           placeholder="Enter phone number"
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                         />
                       </div>
                     ) : (
                       <div>
-                        <p className="text-sm text-gray-500">Phone Number</p>
-                        <p className="font-medium">{operatorData.phone || 'Not provided'}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Phone Number</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{operatorData.phone || 'Not provided'}</p>
                       </div>
                     )}
                   </div>
@@ -255,24 +265,28 @@ export default function OperatorProfile() {
 
             {/* Account Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Account Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">Account Information</h3>
               
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <Building2 className="h-4 w-4 text-gray-400" />
+                  <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500">Account Status</p>
-                    <Badge variant={operatorData.isActive ? 'default' : 'secondary'}>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
+                    <Badge variant={operatorData.isActive ? 'default' : 'secondary'} className={
+                      operatorData.isActive 
+                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                    }>
                       {operatorData.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500">Account Created</p>
-                    <p className="font-medium">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Account Created</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
                       {operatorData.createdAt ? formatFirestoreDate(operatorData.createdAt) : 'N/A'}
                     </p>
                   </div>
@@ -280,10 +294,10 @@ export default function OperatorProfile() {
 
                 {operatorData.lastLogin && (
                   <div className="flex items-center space-x-3">
-                    <Clock className="h-4 w-4 text-gray-400" />
+                    <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     <div className="flex-1">
-                      <p className="text-sm text-gray-500">Last Login</p>
-                      <p className="font-medium">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Last Login</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
                         {formatFirestoreDate(operatorData.lastLogin)}
                       </p>
                     </div>
@@ -295,7 +309,7 @@ export default function OperatorProfile() {
 
           {/* Assigned Locations */}
           <div className="mt-6">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Assigned Locations</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">Assigned Locations</h3>
             {locations.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {locations.map((location) => (
@@ -303,15 +317,15 @@ export default function OperatorProfile() {
                     key={location.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
                   >
                     <div className="flex items-start space-x-3">
-                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <MapPin className="h-5 w-5 text-muted-foreground dark:text-gray-400 mt-0.5" />
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{location.venueName}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{location.address}</p>
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100">{location.venueName}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{location.address}</p>
                         {location.contactNumber && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                             Contact: {location.contactNumber}
                           </p>
                         )}
@@ -322,21 +336,21 @@ export default function OperatorProfile() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500">No locations assigned</p>
-                <p className="text-sm text-gray-400 mt-1">Contact your administrator to get location access</p>
+                <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                <p className="text-gray-500 dark:text-gray-400">No locations assigned</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Contact your administrator to get location access</p>
               </div>
             )}
           </div>
 
           {/* Edit Actions */}
           {editing && (
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-              <Button variant="outline" onClick={handleCancel} disabled={saving}>
+            <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button variant="outline" onClick={handleCancel} disabled={saving} className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700">
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? 'Saving...' : 'Save Changes'}
               </Button>

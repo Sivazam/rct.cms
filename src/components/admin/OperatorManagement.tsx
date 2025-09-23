@@ -325,7 +325,7 @@ export default function OperatorManagement() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium truncate">{operator.name}</h4>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 dark:text-gray-300">
                         <div className="flex items-center space-x-1">
                           <Mail className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{operator.email}</span>
@@ -335,7 +335,7 @@ export default function OperatorManagement() {
                           <span className="truncate">{operator.mobile}</span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <Calendar className="h-3 w-3 flex-shrink-0" />
                         <span>Applied: {formatFirestoreDate(operator.createdAt)}</span>
                       </div>
@@ -354,7 +354,7 @@ export default function OperatorManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleReject(operator.id)}
-                      className="text-red-600 hover:text-red-700 whitespace-nowrap"
+                      className="text-red-600 dark:text-red-300 hover:text-red-700 whitespace-nowrap"
                     >
                       <X className="h-4 w-4 mr-1" />
                       Reject
@@ -382,7 +382,7 @@ export default function OperatorManagement() {
           {activeOperators.length === 0 ? (
             <div className="text-center py-8">
               <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-500">No active operators found</p>
+              <p className="text-gray-500 dark:text-gray-400">No active operators found</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -403,7 +403,7 @@ export default function OperatorManagement() {
                         <h4 className="font-medium truncate">{operator.name}</h4>
                         <Badge variant="default">Active</Badge>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 dark:text-gray-300">
                         <div className="flex items-center space-x-1">
                           <Mail className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{operator.email}</span>
@@ -413,7 +413,7 @@ export default function OperatorManagement() {
                           <span className="truncate">{operator.mobile}</span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span>
                           {operator.locationIds?.length || 0} location(s) assigned
@@ -434,7 +434,7 @@ export default function OperatorManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeactivate(operator.id)}
-                      className="text-red-600 hover:text-red-700 whitespace-nowrap"
+                      className="text-red-600 dark:text-red-300 hover:text-red-700 whitespace-nowrap"
                     >
                       Deactivate
                     </Button>
@@ -450,7 +450,7 @@ export default function OperatorManagement() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Users className="h-5 w-5 text-gray-500" />
+            <Users className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <span>Inactive Operators</span>
           </CardTitle>
           <CardDescription>
@@ -461,7 +461,7 @@ export default function OperatorManagement() {
           {inactiveOperators.length === 0 ? (
             <div className="text-center py-8">
               <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-500">No inactive operators found</p>
+              <p className="text-gray-500  dark:text-gray-400">No inactive operators found</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -471,18 +471,18 @@ export default function OperatorManagement() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4 bg-gray-50"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4 bg-gray-50 dark:bg-gray-900"
                 >
                   <div className="flex items-start space-x-4 flex-1 min-w-0">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Users className="h-6 w-6 text-gray-500" />
+                      <Users className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
                         <h4 className="font-medium truncate">{operator.name}</h4>
                         <Badge variant="secondary">Inactive</Badge>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 dark:text-gray-300">
                         <div className="flex items-center space-x-1">
                           <Mail className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{operator.email}</span>
@@ -492,7 +492,7 @@ export default function OperatorManagement() {
                           <span className="truncate">{operator.mobile}</span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span>
                           {operator.locationIds?.length || 0} location(s) assigned
@@ -546,7 +546,7 @@ export default function OperatorManagement() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4 bg-red-50"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4 bg-red-50  dark:bg-red-900"
                 >
                   <div className="flex items-start space-x-4 flex-1 min-w-0">
                     <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -557,7 +557,7 @@ export default function OperatorManagement() {
                         <h4 className="font-medium truncate">{operator.name}</h4>
                         <Badge variant="destructive">Rejected</Badge>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 dark:text-gray-300">
                         <div className="flex items-center space-x-1">
                           <Mail className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{operator.email}</span>
@@ -567,12 +567,12 @@ export default function OperatorManagement() {
                           <span className="truncate">{operator.mobile}</span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <Calendar className="h-3 w-3 flex-shrink-0" />
                         <span>Applied: {formatFirestoreDate(operator.createdAt)}</span>
                       </div>
                       {operator.rejectionReason && (
-                        <div className="flex items-center space-x-1 text-xs text-red-600 mt-1">
+                        <div className="flex items-center space-x-1 text-xs text-red-600 dark:text-red-300 mt-1">
                           <AlertTriangle className="h-3 w-3 flex-shrink-0" />
                           <span>Reason: {operator.rejectionReason}</span>
                         </div>
@@ -580,7 +580,7 @@ export default function OperatorManagement() {
                     </div>
                   </div>
                   <div className="flex space-x-2 flex-shrink-0">
-                    <Badge variant="outline" className="text-red-600 border-red-200">
+                    <Badge variant="outline" className="text-red-600 dark:text-red-300 border-red-200">
                       Cannot be restored
                     </Badge>
                   </div>
@@ -608,7 +608,7 @@ export default function OperatorManagement() {
           
           {selectedOperator && (
             <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Operator Details</h4>
                 <div className="space-y-1 text-sm">
                   <p><strong>Name:</strong> {selectedOperator.name}</p>
@@ -631,7 +631,7 @@ export default function OperatorManagement() {
                       />
                       <Label htmlFor={location.id} className="flex-1 cursor-pointer">
                         <div className="font-medium">{location.venueName}</div>
-                        <div className="text-sm text-gray-600">{location.address}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">{location.address}</div>
                       </Label>
                     </div>
                   ))}

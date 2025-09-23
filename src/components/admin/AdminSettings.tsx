@@ -84,9 +84,9 @@ export default function AdminSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Current Configuration */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900  rounded-lg">
             <div>
-              <Label className="text-sm font-medium text-gray-600">Current Admin Mobile</Label>
+              <Label className="text-sm font-medium text-gray-600 dark:text-gray-300">Current Admin Mobile</Label>
               <div className="flex items-center space-x-2 mt-1">
                 <span className="text-lg font-semibold">{formatMobileDisplay(adminMobile)}</span>
                 <Badge variant="secondary" className="text-xs">
@@ -105,7 +105,7 @@ export default function AdminSettings() {
 
           {/* Edit Form */}
           {isEditing && (
-            <div className="p-4 border rounded-lg bg-blue-50 space-y-4">
+            <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/30 space-y-4">
               <div>
                 <Label htmlFor="adminMobile" className="text-sm font-medium">
                   New Admin Mobile Number
@@ -118,7 +118,7 @@ export default function AdminSettings() {
                   placeholder="+919014882779"
                   className="mt-1"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Enter the full mobile number with country code (e.g., +919014882779)
                 </p>
               </div>
@@ -142,15 +142,15 @@ export default function AdminSettings() {
 
           {/* Status Message */}
           {message && (
-            <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-              <AlertDescription className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
+            <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/30' : 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/30'}>
+              <AlertDescription className={message.type === 'success' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
                 {message.text}
               </AlertDescription>
             </Alert>
           )}
 
           {/* Information */}
-          <div className="p-4 bg-blue-50 rounded-lg">
+          {/* <div className="p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">How this works:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• The admin mobile number is stored in global state</li>
@@ -158,7 +158,7 @@ export default function AdminSettings() {
               <li>• Changes take effect immediately across all components</li>
               <li>• The backend continues to use Firebase config as before</li>
             </ul>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
       </div>

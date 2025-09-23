@@ -99,7 +99,7 @@ export default function Footer() {
             <h4 className="text-lg font-semibold text-primary-foreground mb-4">Contact Information</h4>
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
-                <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <Phone className="h-5 w-5 text-primary-foreground mt-0.5 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-primary-foreground/80 text-sm font-medium">Phone</p>
                   <a 
@@ -112,7 +112,7 @@ export default function Footer() {
               </div>
               
               <div className="flex items-start space-x-3">
-                <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <Mail className="h-5 w-5 text-primary-foreground mt-0.5 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-primary-foreground/80 text-sm font-medium">Email</p>
                   <a 
@@ -125,15 +125,13 @@ export default function Footer() {
               </div>
               
               <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <MapPin className="h-5 w-5 text-primary-foreground mt-0.5 flex-shrink-0"/>
                 <div className="min-w-0 flex-1">
                   <p className="text-primary-foreground/80 text-sm font-medium">Locations</p>
-                  <p className="text-primary-foreground text-sm">
-                    Multiple locations across the city
-                  </p>
-                  <p className="text-primary-foreground/80 text-xs mt-1">
-                    Visit any of our service centers
-                  </p>
+                  <ul className="text-primary-foreground text-sm space-y-1">
+                    <li>ఇన్నీసుపేట – కైలాసభూమి</li>
+                    <li>కోటిలింగాలు – కైలాసభూమి</li>
+                  </ul>
                 </div>
               </div>
             </div>

@@ -413,6 +413,43 @@
   color: white !important;
 }
 
+/* Make operators and settings tabs have black background in dark mode */
+.dark .nav-tabs,
+.dark .tab-navigation,
+.dark .tab-container,
+.dark [class*="tab"],
+.dark .operator-tabs,
+.dark .settings-tabs,
+.dark .dashboard-tabs {
+  background-color: oklch(0.05 0.01 20) !important;
+  background: oklch(0.05 0.01 20) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .nav-tabs .tab-button,
+.dark .tab-navigation .tab-button,
+.dark .tab-container .tab-button,
+.dark [class*="tab"] .tab-button,
+.dark .operator-tabs .tab-button,
+.dark .settings-tabs .tab-button,
+.dark .dashboard-tabs .tab-button {
+  background-color: transparent !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .nav-tabs .tab-button.active,
+.dark .tab-navigation .tab-button.active,
+.dark .tab-container .tab-button.active,
+.dark [class*="tab"] .tab-button.active,
+.dark .operator-tabs .tab-button.active,
+.dark .settings-tabs .tab-button.active,
+.dark .dashboard-tabs .tab-button.active {
+  background-color: var(--primary) !important;
+  color: oklch(0.15 0.015 25) !important;
+  border-color: var(--primary) !important;
+}
+
 /* Professional accent elements */
 .accent-border {
   border-color: var(--saffron);
@@ -433,4 +470,66 @@
 
 .card-subtle-shadow {
   box-shadow: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
+}
+
+/* Increase footer text font weight for better readability */
+footer,
+.footer,
+[class*="footer"] {
+  font-weight: 600 !important;
+}
+
+footer p,
+.footer p,
+[class*="footer"] p,
+footer span,
+.footer span,
+[class*="footer"] span,
+footer a,
+.footer a,
+[class*="footer"] a {
+  font-weight: 600 !important;
+}
+
+/* Make status bars black in dark mode */
+.dark .status-bar,
+.dark .status-indicator,
+.dark .status-badge,
+.dark [class*="status"],
+.dark .badge,
+.dark [class*="badge"],
+.dark .progress,
+.dark [class*="progress"],
+.dark .alert,
+.dark [class*="alert"] {
+  background-color: oklch(0.05 0.01 20) !important;
+  background: oklch(0.05 0.01 20) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.dark .status-bar .text-foreground,
+.dark .status-indicator .text-foreground,
+.dark .status-badge .text-foreground,
+.dark [class*="status"] .text-foreground,
+.dark .badge .text-foreground,
+.dark [class*="badge"] .text-foreground,
+.dark .progress .text-foreground,
+.dark [class*="progress"] .text-foreground,
+.dark .alert .text-foreground,
+.dark [class*="alert"] .text-foreground {
+  color: white !important;
+}
+
+.dark .status-bar .text-muted-foreground,
+.dark .status-indicator .text-muted-foreground,
+.dark .status-badge .text-muted-foreground,
+.dark [class*="status"] .text-muted-foreground,
+.dark .badge .text-muted-foreground,
+.dark [class*="badge"] .text-muted-foreground,
+.dark .progress .text-muted-foreground,
+.dark [class*="progress"] .text-muted-foreground,
+.dark .alert .text-muted-foreground,
+.dark [class*="alert"] .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
