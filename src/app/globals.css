@@ -293,6 +293,89 @@
   color: white !important;
 }
 
+/* Make all cards completely transparent in dark mode */
+.dark .card,
+.dark [class*="Card"],
+.dark .bg-card,
+.dark .bg-white,
+.dark .bg-background,
+.dark .bg-popover,
+.dark .bg-muted,
+.dark .bg-accent,
+.dark .bg-secondary {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Make all table elements transparent in dark mode */
+.dark table,
+.dark .table,
+.dark [class*="table"],
+.dark tbody,
+.dark thead,
+.dark tr,
+.dark th,
+.dark td {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.dark th,
+.dark td {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark tr:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Make all section backgrounds transparent in dark mode */
+.dark section,
+.dark .section,
+.dark [class*="section"],
+.dark .panel,
+.dark [class*="panel"],
+.dark .container,
+.dark [class*="container"] {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Make all div backgrounds transparent in dark mode */
+.dark div.bg-white,
+.dark div.bg-background,
+.dark div.bg-card,
+.dark div.bg-muted,
+.dark div.bg-accent,
+.dark div.bg-secondary {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Make sure all text is visible on transparent backgrounds */
+.dark .card .text-foreground,
+.dark .card .text-muted-foreground,
+.dark .card .text-secondary-foreground,
+.dark .card .text-accent-foreground,
+.dark .card .text-card-foreground,
+.dark .card .text-popover-foreground,
+.dark .card .text-sidebar-foreground {
+  color: white !important;
+}
+
+/* Make sure all button text is visible */
+.dark .card button,
+.dark .card .btn,
+.dark .card [class*="btn"] {
+  color: white !important;
+}
+
+.dark .card .bg-primary button,
+.dark .card .bg-primary .btn,
+.dark .card .bg-primary [class*="btn"] {
+  color: oklch(0.15 0.015 25) !important;
+}
+
 /* Professional accent elements */
 .accent-border {
   border-color: var(--saffron);
