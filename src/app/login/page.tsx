@@ -183,6 +183,13 @@ export default function LoginPage() {
                   </p>
                 </div>
               </div>
+              
+              {/* Branding */}
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">
+                  Built with ❤️ by <span className="font-semibold text-foreground">HarTe Labs</span>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

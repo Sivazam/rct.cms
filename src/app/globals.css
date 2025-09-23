@@ -376,6 +376,43 @@
   color: oklch(0.15 0.015 25) !important;
 }
 
+/* Make bottom navbar have black background in dark mode */
+.dark .mobile-bottom-nav,
+.dark [class*="bottom-nav"],
+.dark .fixed.bottom-0,
+.dark .bottom-0.fixed {
+  background-color: oklch(0.05 0.01 20) !important;
+  background: oklch(0.05 0.01 20) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Make dropdown have black background in dark mode */
+.dark .select-content,
+.dark [data-slot="select-content"],
+.dark .dropdown-content,
+.dark [class*="dropdown"] {
+  background-color: oklch(0.05 0.01 20) !important;
+  background: oklch(0.05 0.01 20) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Make sure dropdown items are visible on black background */
+.dark .select-item,
+.dark [data-slot="select-item"],
+.dark .dropdown-item,
+.dark [class*="dropdown-item"] {
+  background-color: transparent !important;
+  color: white !important;
+}
+
+.dark .select-item:hover,
+.dark [data-slot="select-item"]:hover,
+.dark .dropdown-item:hover,
+.dark [class*="dropdown-item"]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
 /* Professional accent elements */
 .accent-border {
   border-color: var(--saffron);

@@ -172,6 +172,13 @@ export default function ForgotPasswordPage() {
                     </Link>
                   </p>
                 </div>
+                
+                {/* Branding */}
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Built with ❤️ by <span className="font-semibold text-foreground">HarTe Labs</span>
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

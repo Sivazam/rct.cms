@@ -204,6 +204,11 @@ export default function SignupPage() {
                 Login here
               </Link>
             </p>
+            
+            {/* Branding */}
+            <p className="text-xs text-muted-foreground">
+              Built with ❤️ by <span className="font-semibold text-foreground">HarTe Labs</span>
+            </p>
           </div>
         </SpiritualCard>
       </motion.div>

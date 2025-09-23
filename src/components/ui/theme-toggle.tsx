@@ -19,7 +19,10 @@ export function ThemeToggle() {
   }
 
   const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    // Mark that user manually changed the theme
+    localStorage.setItem('manual-theme', 'true');
   };
 
   return (
