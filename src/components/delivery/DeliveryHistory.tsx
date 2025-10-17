@@ -45,6 +45,11 @@ interface DispatchRecord {
   locationName: string;
   locationId: string;
   pots: number;
+  totalPots?: number;
+  potsDelivered?: number;
+  potsToDeliver?: number;
+  remainingPotsAfterDelivery?: number;
+  status?: 'partial' | 'completed';
   otpVerified: boolean;
   smsSent: boolean;
   entryDate: string;
@@ -53,6 +58,8 @@ interface DispatchRecord {
   amount?: number;
   reason?: string;
   paymentMethod?: string;
+  handoverPersonName?: string;
+  handoverPersonMobile?: string;
 }
 
 interface DeliveryHistoryProps {
@@ -116,6 +123,11 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           locationName: delivery.locationName,
           locationId: delivery.locationId,
           pots: delivery.pots || 0,
+          totalPots: delivery.totalPots || 0,
+          potsDelivered: delivery.potsDelivered || 0,
+          potsToDeliver: delivery.potsToDeliver || 0,
+          remainingPotsAfterDelivery: delivery.remainingPotsAfterDelivery || 0,
+          status: delivery.status || 'completed',
           otpVerified: delivery.otpVerified || false,
           smsSent: delivery.smsSent || false,
           entryDate: delivery.entryDate,
@@ -123,7 +135,9 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
           renewalCount: delivery.renewalCount || 0,
           amount: delivery.amount || 0,
           reason: delivery.reason || '',
-          paymentMethod: delivery.paymentMethod || 'cash'
+          paymentMethod: delivery.paymentMethod || 'cash',
+          handoverPersonName: delivery.handoverPersonName || '',
+          handoverPersonMobile: delivery.handoverPersonMobile || ''
         }));
         
         setDispatches(transformedDispatches);
@@ -358,9 +372,23 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                     </TableCell>
                     <TableCell>{dispatch.locationName}</TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-1">
-                        <Package className="h-4 w-4 text-gray-400" />
-                        <span>{dispatch.pots}</span>
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center space-x-1">
+                          <Package className="h-4 w-4 text-gray-400" />
+                          <span>
+                            {dispatch.potsToDeliver} pot{dispatch.potsToDeliver !== 1 ? 's' : ''} delivered
+                          </span>
+                        </div>
+                        {dispatch.remainingPotsAfterDelivery !== undefined && dispatch.remainingPotsAfterDelivery > 0 && (
+                          <div className="text-xs text-gray-500">
+                            {dispatch.remainingPotsAfterDelivery} remaining
+                          </div>
+                        )}
+                        {dispatch.totalPots && dispatch.potsDelivered !== undefined && (
+                          <div className="text-xs text-gray-500">
+                            Total: {dispatch.potsDelivered}/{dispatch.totalPots}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -379,9 +407,9 @@ export default function DeliveryHistory({ onClose, loading = false }: DeliveryHi
                     <TableCell>{dispatch.operatorName}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                        <Badge className={`${dispatch.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-blue-100 text-blue-800 border-blue-200'}`}>
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          Dispatched
+                          {dispatch.status === 'completed' ? 'Completed' : 'Partial'}
                         </Badge>
                         <div className="flex space-x-1">
                           {dispatch.otpVerified && (

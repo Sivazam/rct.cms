@@ -322,6 +322,9 @@ export const addEntry = async (entryData: {
       entryDate: entryDate,
       expiryDate: expiryDate,
       status: 'active',
+      totalPots: entryData.numberOfPots, // Total pots registered
+      potsDelivered: 0, // Track delivered pots (starts at 0)
+      deliveryHistory: [], // Track each delivery transaction
       payments: [{
         amount: 500, // Fixed amount regardless of number of pots
         date: entryDate,
@@ -450,6 +453,12 @@ export const getEntryById = async (entryId: string) => {
         ...renewal,
         date: renewal.date?.toDate(),
         newExpiryDate: renewal.newExpiryDate?.toDate()
+      })) || [],
+      // Convert delivery history timestamps if they exist
+      deliveryHistory: entryData.deliveryHistory?.map((delivery: any) => ({
+        ...delivery,
+        deliveryDate: delivery.deliveryDate?.toDate(),
+        createdAt: delivery.createdAt?.toDate()
       })) || []
     };
   } catch (error) {
@@ -536,35 +545,48 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     let totalDeliveryCollections = 0;
     let totalRenewals = 0;
     let totalDeliveries = 0;
-    let totalActiveEntries = 0;
+    let totalActivePots = 0; // Changed from totalActiveEntries to track pots
     let expiringIn7Days = 0;
+    let totalPotsRegistered = 0; // Total pots registered
+    let totalPotsDelivered = 0; // Total pots delivered
     
     const now = new Date();
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     
     entries.forEach(entry => {
-      // Count active entries (ash pots) - only count if within date range or no date range specified
+      // Get pot counts
+      const totalPots = entry.totalPots || entry.numberOfPots || entry.pots || 0;
+      const potsDelivered = entry.potsDelivered || 0;
+      const remainingPots = totalPots - potsDelivered;
+      
+      // Count total pots registered
       const entryDate = entry.entryDate?.toDate?.() || entry.createdAt?.toDate?.();
       const isEntryInRange = !dateRange || (entryDate && entryDate >= dateRange.from && entryDate <= dateRange.to);
       
+      if (isEntryInRange) {
+        totalPotsRegistered += totalPots;
+        totalPotsDelivered += potsDelivered;
+      }
+      
+      // Count active pots (remaining pots in active entries) - only count if within date range or no date range specified
       if (entry.status === 'active' && isEntryInRange) {
-        totalActiveEntries += 1;
+        totalActivePots += remainingPots; // Count remaining pots as active
       }
       
       // Count pending renewals (expired but still active entries)
       if (entry.status === 'active') {
         const expiryDate = entry.expiryDate?.toDate?.() || new Date(entry.expiryDate);
         if (expiryDate <= now && isEntryInRange) {
-          totalRenewals += 1; // Count as pending renewal
+          totalRenewals += 1; // Count as pending renewal (still count by entry, not by pots)
         }
         
-        // Count expiring entries
+        // Count expiring entries (still count by entry, not by pots)
         if (expiryDate >= now && expiryDate <= sevenDaysFromNow) {
           expiringIn7Days += 1;
         }
       }
       
-      // Count dispatched entries (both 'delivered' and 'dispatched' status)
+      // Count dispatched entries (both 'delivered' and 'dispatched' status) - count by entry
       if ((entry.status === 'delivered' || entry.status === 'dispatched') && isEntryInRange) {
         totalDeliveries += 1; // Count as dispatched
       }
@@ -590,11 +612,13 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     });
     
     const stats = {
-      totalEntries: totalActiveEntries, // This now represents active entries within date range
+      totalEntries: entries.filter(e => e.status === 'active').length, // Total active entries (for backward compatibility)
       totalRenewals: totalRenewals,
       totalDeliveries: totalDeliveries,
-      currentActive: entries.filter(e => e.status === 'active').length, // Total active regardless of date range
+      currentActive: totalActivePots, // Now tracks active pots instead of entries
       expiringIn7Days: expiringIn7Days,
+      totalPotsRegistered: totalPotsRegistered, // Total pots registered
+      totalPotsDelivered: totalPotsDelivered, // Total pots delivered
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
       renewalCollections: totalRenewalCollections,
       deliveryCollections: totalDeliveryCollections,

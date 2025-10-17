@@ -229,7 +229,11 @@ export default function OperatorDashboard() {
           monthlyRevenue: operatorMonthlyRevenue,
           renewalCollections: operatorRenewalCollections,
           deliveryCollections: operatorDeliveryCollections,
-          currentActive: operatorActiveEntries.length
+          currentActive: operatorActiveEntries.reduce((sum, entry) => {
+            const totalPots = entry.totalPots || entry.numberOfPots || entry.pots || 0;
+            const potsDelivered = entry.potsDelivered || 0;
+            return sum + (totalPots - potsDelivered);
+          }, 0)
         });
         
         setExpiringEntries(operatorExpiring);
@@ -436,11 +440,19 @@ export default function OperatorDashboard() {
                   </div>
 
                   {/* Stats Grid - Matching Admin Dashboard */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                     {[
                       {
+                        title: 'Active Lockers',
+                        value: stats.totalEntries, // Total active entries (customers)
+                        icon: Users,
+                        color: 'slate',
+                        change: '+10%',
+                        type: 'lockers'
+                      },
+                      {
                         title: 'Total Active Ash Pots',
-                        value: stats.totalEntries,
+                        value: stats.currentActive, // Now tracks active pots
                         icon: Package,
                         color: 'amber',
                         change: '+12%',

@@ -5,14 +5,22 @@ import { formatDate } from '@/lib/date-utils';
 
 export async function POST(request: NextRequest) {
   try {
-    const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason, handoverPersonName, handoverPersonMobile } = await request.json();
+    const { entryId, operatorId, operatorName, otp, amountPaid, dueAmount, reason, handoverPersonName, handoverPersonMobile, potsToDeliver } = await request.json();
 
-    console.log('Dispatch request received:', { entryId, operatorId, operatorName, amountPaid, dueAmount, reason, handoverPersonName, handoverPersonMobile });
+    console.log('Dispatch request received:', { entryId, operatorId, operatorName, amountPaid, dueAmount, reason, handoverPersonName, handoverPersonMobile, potsToDeliver });
 
     if (!entryId || !operatorId || !operatorName) {
       console.log('Missing required fields:', { entryId, operatorId, operatorName });
       return NextResponse.json(
         { error: 'Entry ID, Operator ID, and Operator Name are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate pots to deliver
+    if (!potsToDeliver || potsToDeliver < 1) {
+      return NextResponse.json(
+        { error: 'Number of pots to deliver must be at least 1' },
         { status: 400 }
       );
     }
@@ -53,14 +61,29 @@ export async function POST(request: NextRequest) {
     }
 
     const entryData = entryDoc.data();
+    const totalPots = entryData.totalPots || entryData.numberOfPots || entryData.pots || 0;
+    const potsDelivered = entryData.potsDelivered || 0;
+    const remainingPots = totalPots - potsDelivered;
+    
     console.log('Entry found:', { 
       id: entryDoc.id, 
       status: entryData.status,
       customerName: entryData.customerName,
       hasCustomerId: !!entryData.customerId,
       hasLocationName: !!entryData.locationName,
-      pots: entryData.numberOfPots || entryData.pots
+      totalPots: totalPots,
+      potsDelivered: potsDelivered,
+      remainingPots: remainingPots,
+      potsToDeliver: potsToDeliver
     });
+
+    // Validate that we have enough remaining pots
+    if (potsToDeliver > remainingPots) {
+      return NextResponse.json(
+        { error: `Cannot deliver ${potsToDeliver} pots. Only ${remainingPots} pots remaining.` },
+        { status: 400 }
+      );
+    }
 
     if (entryData.status !== 'active') {
       console.log('Entry not active:', entryData.status);
@@ -83,13 +106,16 @@ export async function POST(request: NextRequest) {
       operatorName,
       locationId: entryData.locationId || '',
       locationName: entryData.locationName || '',
-      pots: entryData.numberOfPots || entryData.pots || 1, // Handle both field names
+      totalPots: totalPots,
+      potsDelivered: potsDelivered,
+      potsToDeliver: potsToDeliver, // Number of pots in this delivery
+      remainingPotsAfterDelivery: remainingPots - potsToDeliver,
       otpVerified: false, // No OTP verification needed
       smsSent: false, // Will be updated after sending SMS
       entryDate: entryData.entryDate,
       expiryDate: entryData.expiryDate,
       renewalCount: entryData.renewalCount || 0,
-      status: 'dispatched', // Changed from 'delivered' to 'dispatched'
+      status: remainingPots - potsToDeliver === 0 ? 'completed' : 'partial', // Track if this was final delivery
       // Payment information
       dueAmount: dueAmount || 0,
       amountPaid: amountPaid || 0,
@@ -116,19 +142,41 @@ export async function POST(request: NextRequest) {
       operatorName: operatorName
     };
 
-    // Update entry status to dispatched and add payment
-    await updateDoc(doc(db, 'entries', entryId), {
-      status: 'dispatched', // Changed from 'delivered' to 'dispatched'
-      deliveryDate: deliveryDate,
-      deliveredBy: operatorId,
-      deliveredAt: serverTimestamp(),
-      dispatchReason: reason || null, // Store the reason in the entry
-      // Add handover person information to entry
-      handoverPersonName: handoverPersonName.trim(),
-      handoverPersonMobile: handoverPersonMobile.trim(),
-      payments: [...existingPayments, newPayment],
-      lastModifiedAt: serverTimestamp()
-    });
+    // Calculate new delivery counts
+  const newPotsDelivered = potsDelivered + potsToDeliver;
+  const newRemainingPots = totalPots - newPotsDelivered;
+  const isFinalDelivery = newRemainingPots === 0;
+
+  // Add delivery transaction to entry's delivery history
+  const existingDeliveryHistory = entryData.deliveryHistory || [];
+  const newDeliveryTransaction = {
+    deliveryId: deliveryDocRef.id,
+    potsDelivered: potsToDeliver,
+    deliveryDate: deliveryDate,
+    operatorId: operatorId,
+    operatorName: operatorName,
+    handoverPersonName: handoverPersonName.trim(),
+    handoverPersonMobile: handoverPersonMobile.trim(),
+    amountPaid: amountPaid || 0,
+    dueAmount: dueAmount || 0,
+    reason: reason || null,
+    createdAt: serverTimestamp()
+  };
+
+  // Update entry with partial delivery information
+  await updateDoc(doc(db, 'entries', entryId), {
+    potsDelivered: newPotsDelivered,
+    deliveryHistory: [...existingDeliveryHistory, newDeliveryTransaction],
+    status: isFinalDelivery ? 'dispatched' : 'active', // Keep active if pots remain
+    lastDeliveryDate: deliveryDate,
+    lastDeliveryBy: operatorId,
+    lastDeliveryAt: serverTimestamp(),
+    // Add handover person information to entry (for most recent delivery)
+    handoverPersonName: handoverPersonName.trim(),
+    handoverPersonMobile: handoverPersonMobile.trim(),
+    payments: [...existingPayments, newPayment],
+    lastModifiedAt: serverTimestamp()
+  });
 
     // SMS notifications are now handled by the frontend components using SMSService
     // The frontend will send SMS to both admin and customer via Firebase Functions
@@ -144,9 +192,12 @@ export async function POST(request: NextRequest) {
     await addDoc(collection(db, 'deliveryLogs'), {
       entryId,
       operatorId,
-      action: 'dispatch_completed', // Changed from 'delivery_completed'
+      action: isFinalDelivery ? 'final_delivery_completed' : 'partial_delivery_completed',
       deliveryId: deliveryDocRef.id,
       customerMobile: entryData.customerMobile,
+      potsDelivered: potsToDeliver,
+      totalPotsDelivered: newPotsDelivered,
+      remainingPots: newRemainingPots,
       amountPaid: amountPaid || 0,
       dueAmount: dueAmount || 0,
       reason: reason || null,
@@ -156,12 +207,16 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Dispatch processed successfully',
+      message: isFinalDelivery ? 'Final delivery completed successfully' : 'Partial delivery completed successfully',
       deliveryId: deliveryDocRef.id,
       deliveryDate,
       entryId: entryId.slice(-6), // Return only last 6 digits for security
       customerName: entryData.customerName,
       customerMobile: entryData.customerMobile.slice(0, -4) + 'XXXX', // Mask mobile number
+      potsDelivered: potsToDeliver,
+      totalPotsDelivered: newPotsDelivered,
+      remainingPots: newRemainingPots,
+      isFinalDelivery: isFinalDelivery,
       amountPaid: amountPaid || 0,
       dueAmount: dueAmount || 0,
       smsSent: true // SMS is handled by frontend

@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
-import { Calculator, AlertTriangle, ArrowLeft, IndianRupee, Clock, User } from 'lucide-react';
+import { Calculator, AlertTriangle, ArrowLeft, IndianRupee, Clock, User, Package } from 'lucide-react';
 import SMSService from '@/lib/sms-service';
 const smsService = new SMSService();
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +29,8 @@ interface Entry {
   entryDate: string;
   expiryDate: string;
   pots: number;
+  totalPots?: number;
+  potsDelivered?: number;
   status: 'active' | 'expired' | 'delivered';
   locationId: string;
   locationName: string;
@@ -41,6 +43,7 @@ interface DeliveryPaymentProps {
     amountPaid: number;
     dueAmount: number;
     reason?: string;
+    potsToDeliver: number;
   }) => void;
   onBack: () => void;
   loading?: boolean;
@@ -59,6 +62,7 @@ export default function DeliveryPayment({
   const [handoverPersonName, setHandoverPersonName] = useState('');
   const [handoverPersonMobile, setHandoverPersonMobile] = useState('');
   const [overdueMonths, setOverdueMonths] = useState(0);
+  const [potsToDeliver, setPotsToDeliver] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
@@ -91,6 +95,16 @@ export default function DeliveryPayment({
 
     calculateDueAmount();
   }, [entry.entryDate]);
+
+  // Initialize pots to deliver based on remaining pots
+  useEffect(() => {
+    const totalPots = entry.totalPots || entry.pots || 1;
+    const potsDelivered = entry.potsDelivered || 0;
+    const remainingPots = totalPots - potsDelivered;
+    
+    // Set default to deliver all remaining pots, but at least 1
+    setPotsToDeliver(Math.max(1, remainingPots));
+  }, [entry.totalPots, entry.pots, entry.potsDelivered]);
 
   const handleAmountChange = (value: string) => {
     const amount = parseInt(value) || 0;
@@ -143,6 +157,7 @@ export default function DeliveryPayment({
         amountPaid,
         dueAmount,
         reason: amountPaid < dueAmount ? reason.trim() : undefined,
+        potsToDeliver: potsToDeliver,
         handoverPersonName: handoverPersonName.trim(),
         handoverPersonMobile: handoverPersonMobile.trim()
       };
@@ -242,12 +257,48 @@ export default function DeliveryPayment({
                 <p><strong>Location:</strong> {entry.locationName}</p>
               </div>
               <div>
-                <p><strong>Pots:</strong> {entry.pots}</p>
+                <p><strong>Total Pots:</strong> {entry.totalPots || entry.pots}</p>
+                <p><strong>Delivered:</strong> {entry.potsDelivered || 0}</p>
+                <p><strong>Remaining:</strong> {(entry.totalPots || entry.pots) - (entry.potsDelivered || 0)}</p>
                 <p><strong>Entry Date:</strong> {new Date(entry.entryDate).toLocaleDateString()}</p>
                 <p><strong>Status:</strong> {entry.status}</p>
               </div>
             </div>
           </div>
+
+          {/* Pot Selection */}
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2 text-blue-800">
+                <Package className="h-5 w-5" />
+                <span>Select Pots to Deliver</span>
+              </CardTitle>
+              <CardDescription className="text-blue-600">
+                Choose how many pots to deliver in this transaction
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="potsToDeliver">Number of Pots to Deliver *</Label>
+                <select
+                  id="potsToDeliver"
+                  value={potsToDeliver}
+                  onChange={(e) => setPotsToDeliver(parseInt(e.target.value))}
+                  disabled={isProcessing || loading}
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {Array.from({ length: (entry.totalPots || entry.pots) - (entry.potsDelivered || 0) }, (_, i) => i + 1).map((num) => (
+                    <option key={num} value={num}>
+                      {num} pot{num > 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gray-600 mt-1">
+                  Customer has {(entry.totalPots || entry.pots) - (entry.potsDelivered || 0)} pot{((entry.totalPots || entry.pots) - (entry.potsDelivered || 0)) > 1 ? 's' : ''} remaining
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Due Amount Calculation */}
           <Card className="border-orange-200 bg-background">

@@ -24,6 +24,8 @@ interface Entry {
   entryDate: string;
   expiryDate: string;
   pots: number;
+  totalPots?: number;
+  potsDelivered?: number;
   status: 'active' | 'expired' | 'delivered';
   locationId: string;
   locationName: string;
@@ -39,6 +41,10 @@ interface DeliveryConfirmationProps {
     amountPaid: number;
     dueAmount: number;
     reason?: string;
+    potsToDeliver?: number;
+    totalPotsDelivered?: number;
+    remainingPots?: number;
+    isFinalDelivery?: boolean;
     handoverPersonName?: string;
     handoverPersonMobile?: string;
   };
@@ -99,8 +105,17 @@ export default function DeliveryConfirmation({
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="h-12 w-12 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-green-800 mb-2">Dispatch Successful!</h2>
-        <p className="text-gray-600">Ash pots have been successfully delivered to the customer</p>
+        <h2 className="text-2xl font-bold text-green-800 mb-2">
+          {deliveryData.isFinalDelivery ? 'Final Dispatch Successful!' : 'Partial Dispatch Successful!'}
+        </h2>
+        <p className="text-gray-600">
+          {deliveryData.potsToDeliver} pot{deliveryData.potsToDeliver !== 1 ? 's' : ''} {deliveryData.isFinalDelivery ? 'have been' : 'has been'} successfully delivered to the customer
+          {deliveryData.remainingPots !== undefined && deliveryData.remainingPots > 0 && (
+            <span className="block mt-1 text-sm text-gray-500">
+              {deliveryData.remainingPots} pot{deliveryData.remainingPots !== 1 ? 's' : ''} remaining for future delivery
+            </span>
+          )}
+        </p>
       </motion.div>
 
       {/* Progress */}
@@ -168,8 +183,23 @@ export default function DeliveryConfirmation({
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Package className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{entry.pots} pot(s) Dispatched</span>
+                  <span className="text-sm">
+                    {deliveryData.potsToDeliver} pot{deliveryData.potsToDeliver !== 1 ? 's' : ''} Dispatched 
+                    {deliveryData.remainingPots !== undefined && deliveryData.remainingPots > 0 && (
+                      <span className="text-gray-600">
+                        ({deliveryData.remainingPots} pot{deliveryData.remainingPots !== 1 ? 's' : ''} remaining)
+                      </span>
+                    )}
+                  </span>
                 </div>
+                {deliveryData.totalPotsDelivered !== undefined && (
+                  <div className="flex items-center space-x-2">
+                    <Package className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">
+                      Total Delivered: {deliveryData.totalPotsDelivered} of {entry.totalPots || entry.pots} pots
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">Dispatch on: {formatDate(deliveryData.deliveryDate)}</span>
@@ -268,9 +298,9 @@ export default function DeliveryConfirmation({
 
           {/* Status Badge */}
           <div className="flex items-center justify-center">
-            <Badge className="bg-green-100 text-green-800 text-lg px-4 py-2">
+            <Badge className={`${deliveryData.isFinalDelivery ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'} text-lg px-4 py-2`}>
               <CheckCircle className="h-4 w-4 mr-2" />
-              Successfully Dispatched
+              {deliveryData.isFinalDelivery ? 'All Pots Delivered' : 'Partial Delivery Complete'}
             </Badge>
           </div>
         </CardContent>

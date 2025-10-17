@@ -59,7 +59,9 @@ export default function DeliverySystem() {
     reason?: string;
     handoverPersonName?: string;
     handoverPersonMobile?: string;
+    potsToDeliver?: number;
   } | null>(null);
+  const [deliveryResponse, setDeliveryResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const steps = [
@@ -93,6 +95,7 @@ export default function DeliverySystem() {
     setSelectedEntry(null);
     setDispatchData(null);
     setPaymentData(null);
+    setDeliveryResponse(null);
     setCurrentStep('search');
   };
 
@@ -131,6 +134,7 @@ export default function DeliverySystem() {
             amountPaid: payment.amountPaid,
             dueAmount: payment.dueAmount,
             reason: payment.reason,
+            potsToDeliver: payment.potsToDeliver,
             handoverPersonName: payment.handoverPersonName,
             handoverPersonMobile: payment.handoverPersonMobile
           }),
@@ -144,6 +148,7 @@ export default function DeliverySystem() {
 
         // Dispatch processed successfully
         console.log('Dispatch processed successfully:', data);
+        setDeliveryResponse(data); // Store the API response
       } catch (error: any) {
         console.error('Error processing dispatch:', error);
         // Even if there's an error, we'll proceed to confirmation for demo purposes
@@ -189,7 +194,7 @@ export default function DeliverySystem() {
         ) : null;
       
       case 'confirmation':
-        return selectedEntry && dispatchData && paymentData ? (
+        return selectedEntry && dispatchData && paymentData && deliveryResponse ? (
           <DeliveryConfirmation
             entry={selectedEntry}
             deliveryData={{
@@ -197,6 +202,10 @@ export default function DeliverySystem() {
               amountPaid: paymentData.amountPaid,
               dueAmount: paymentData.dueAmount,
               reason: paymentData.reason,
+              potsToDeliver: deliveryResponse.potsDelivered,
+              totalPotsDelivered: deliveryResponse.totalPotsDelivered,
+              remainingPots: deliveryResponse.remainingPots,
+              isFinalDelivery: deliveryResponse.isFinalDelivery,
               handoverPersonName: paymentData.handoverPersonName,
               handoverPersonMobile: paymentData.handoverPersonMobile
             }}

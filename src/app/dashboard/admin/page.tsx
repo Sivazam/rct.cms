@@ -378,11 +378,19 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                   {[
                     {
+                      title: 'Active Lockers',
+                      value: stats.totalEntries, // Total active entries (customers)
+                      icon: Users,
+                      color: 'slate',
+                      change: '+10%',
+                      type: 'lockers'
+                    },
+                    {
                       title: 'Total Active Ash Pots',
-                      value: stats.totalEntries,
+                      value: stats.currentActive, // Now tracks active pots
                       icon: Package,
                       color: 'amber',
                       change: '+12%',

@@ -18,6 +18,8 @@ interface Entry {
   customerMobile: string;
   customerCity: string;
   numberOfPots: number;
+  totalPots?: number;
+  potsDelivered?: number;
   entryDate: any;
   expiryDate: any;
   status: 'active' | 'expired' | 'delivered' | 'disposed';
@@ -272,7 +274,12 @@ export default function EntriesList() {
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Package className="h-4 w-4 text-gray-400" />
-                        <span>{entry.numberOfPots}</span>
+                        <span>
+                          {entry.potsDelivered !== undefined && entry.potsDelivered > 0 
+                            ? `${entry.potsDelivered}/${entry.totalPots || entry.numberOfPots}`
+                            : entry.totalPots || entry.numberOfPots
+                          }
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -344,7 +351,12 @@ export default function EntriesList() {
                   <div className="text-right">
                     <div className="flex items-center space-x-1 text-sm font-medium text-green-600">
                       <Package className="h-3 w-3" />
-                      <span>{entry.numberOfPots}</span>
+                      <span>
+                        {entry.potsDelivered !== undefined && entry.potsDelivered > 0 
+                          ? `${entry.potsDelivered}/${entry.totalPots || entry.numberOfPots}`
+                          : entry.totalPots || entry.numberOfPots
+                        }
+                      </span>
                     </div>
                   </div>
                 </div>
