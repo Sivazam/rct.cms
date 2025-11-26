@@ -439,7 +439,7 @@ export default function OperatorDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                       {
-                        title: 'Total Active Ash Pots',
+                        title: 'Total Active Lockers',
                         value: stats.totalEntries,
                         icon: Package,
                         color: 'amber',
@@ -447,7 +447,7 @@ export default function OperatorDashboard() {
                         type: 'active'
                       },
                       {
-                        title: 'Pending Ash Pots',
+                        title: 'Pending Lockers',
                         value: stats.totalRenewals,
                         icon: RefreshCw,
                         color: 'orange',
@@ -455,7 +455,7 @@ export default function OperatorDashboard() {
                         type: 'pending'
                       },
                       {
-                        title: 'Dispatched Ash Pots',
+                        title: 'Dispatched Lockers',
                         value: stats.totalDeliveries,
                         icon: Truck,
                         color: 'amber',
@@ -508,7 +508,7 @@ export default function OperatorDashboard() {
 
                   {/* Expandable Content Sections */}
                   <div ref={expandedContentRef} className="space-y-6">
-                    {/* Active Ash Pots Details */}
+                    {/* Active Lockers Details */}
                     {expandedCard === 'active' && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
@@ -517,7 +517,7 @@ export default function OperatorDashboard() {
                         className="bg-white rounded-lg border p-6 shadow-sm"
                       >
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold text-foreground">Active Ash Pots Details</h3>
+                          <h3 className="text-lg font-semibold text-foreground">Active Lockers Details</h3>
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -531,7 +531,7 @@ export default function OperatorDashboard() {
                       </motion.div>
                     )}
 
-                    {/* Pending Ash Pots Details */}
+                    {/* Pending Lockers Details */}
                     {expandedCard === 'pending' && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
@@ -540,7 +540,7 @@ export default function OperatorDashboard() {
                         className="bg-white rounded-lg border p-6 shadow-sm"
                       >
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold text-foreground">Pending Ash Pots Details</h3>
+                          <h3 className="text-lg font-semibold text-foreground">Pending Lockers Details</h3>
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -554,7 +554,7 @@ export default function OperatorDashboard() {
                       </motion.div>
                     )}
 
-                    {/* Dispatched Ash Pots Details */}
+                    {/* Dispatched Lockers Details */}
                     {expandedCard === 'dispatched' && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
@@ -563,7 +563,7 @@ export default function OperatorDashboard() {
                         className="bg-white rounded-lg border p-6 shadow-sm"
                       >
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-semibold text-foreground">Dispatched Ash Pots Details</h3>
+                          <h3 className="text-lg font-semibold text-foreground">Dispatched Lockers Details</h3>
                           <Button 
                             variant="outline" 
                             size="sm" 

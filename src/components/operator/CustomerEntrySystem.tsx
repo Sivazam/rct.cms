@@ -53,7 +53,9 @@ export default function CustomerEntrySystem() {
     customerName: '',
     customerMobile: '',
     city: '',
-    numberOfPots: 1,
+    deceasedPersonName: '', // New field
+    numberOfLockers: 1, // Changed from numberOfPots
+    potsPerLocker: 1, // New field
     additionalDetails: '',
     paymentMethod: 'cash' as 'cash' | 'upi'
   });
@@ -107,7 +109,8 @@ export default function CustomerEntrySystem() {
       customerName: '',
       customerMobile: searchMobile,
       city: '',
-      numberOfPots: 1,
+      numberOfLockers: 1,
+      potsPerLocker: 1,
       additionalDetails: '',
       paymentMethod: 'cash'
     });
@@ -120,7 +123,8 @@ export default function CustomerEntrySystem() {
         customerName: '',  // Don't prefill name - it can be different for different entries
         customerMobile: searchResult.mobile,
         city: searchResult.city,
-        numberOfPots: 1,
+        numberOfLockers: 1,
+        potsPerLocker: 1,
         additionalDetails: searchResult.additionalDetails || '',
         paymentMethod: 'cash'
       });
@@ -173,7 +177,9 @@ export default function CustomerEntrySystem() {
         customerId,
         customerName: formData.customerName,
         customerMobile: formData.customerMobile,
-        numberOfPots: formData.numberOfPots,
+        deceasedPersonName: formData.deceasedPersonName,
+        numberOfLockers: formData.numberOfLockers,
+        potsPerLocker: formData.potsPerLocker,
         locationId: selectedLocation,
         operatorId: user.uid,
         paymentMethod: formData.paymentMethod
@@ -191,7 +197,8 @@ export default function CustomerEntrySystem() {
         customerName: '',
         customerMobile: '',
         city: '',
-        numberOfPots: 1,
+        numberOfLockers: 1,
+        potsPerLocker: 1,
         additionalDetails: '',
         paymentMethod: 'cash'
       });
@@ -383,15 +390,40 @@ export default function CustomerEntrySystem() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="numberOfPots">Number of Ash Pots *</Label>
+              <Label htmlFor="numberOfLockers">Number of Lockers (1-10) *</Label>
               <Input
-                id="numberOfPots"
+                id="numberOfLockers"
                 type="number"
                 min="1"
-                value={formData.numberOfPots}
-                onChange={(e) => setFormData(prev => ({ ...prev, numberOfPots: parseInt(e.target.value) || 1 }))}
+                max="10"
+                value={formData.numberOfLockers}
+                onChange={(e) => setFormData(prev => ({ ...prev, numberOfLockers: parseInt(e.target.value) || 1 }))}
                 required
-                placeholder="Enter number of pots"
+                placeholder="Enter number of lockers"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="potsPerLocker">Pots per Locker (1-7) *</Label>
+              <Input
+                id="potsPerLocker"
+                type="number"
+                min="1"
+                max="7"
+                value={formData.potsPerLocker}
+                onChange={(e) => setFormData(prev => ({ ...prev, potsPerLocker: parseInt(e.target.value) || 1 }))}
+                required
+                placeholder="Enter pots per locker"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deceasedPersonName">Deceased Person Name</Label>
+              <Input
+                id="deceasedPersonName"
+                value={formData.deceasedPersonName}
+                onChange={(e) => setFormData(prev => ({ ...prev, deceasedPersonName: e.target.value }))}
+                placeholder="Enter deceased person name (optional)"
               />
             </div>
 

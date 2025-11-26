@@ -1,14 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getUsers } from '@/lib/firestore';
 
 export async function POST(request: NextRequest) {
   try {
     const { entryId, otp, operatorId } = await request.json();
 
-    if (!entryId || !otp || !operatorId) {
+    if (!entryId || !operatorId) {
       return NextResponse.json(
-        { error: 'Entry ID, OTP, and Operator ID are required' },
+        { error: 'Entry ID and Operator ID are required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if operator is admin - admins don't need OTP verification
+    const users = await getUsers();
+    const adminUser = users.find(user => user.id === operatorId && user.role === 'admin');
+    
+    if (adminUser) {
+      // Admin user - bypass OTP verification
+      await addDoc(collection(db, 'deliveryLogs'), {
+        entryId,
+        operatorId,
+        action: 'otp_bypassed_admin',
+        timestamp: serverTimestamp()
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Admin user - OTP verification bypassed',
+        verifiedAt: new Date().toISOString(),
+        bypassed: true
+      });
+    }
+
+    // Non-admin user - require OTP verification
+    if (!otp) {
+      return NextResponse.json(
+        { error: 'OTP is required for non-admin users' },
         { status: 400 }
       );
     }

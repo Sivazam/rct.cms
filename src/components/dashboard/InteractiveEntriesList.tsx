@@ -24,6 +24,7 @@ import SendSMSButton from '@/components/admin/SendSMSButton';
 import SMSService from '@/lib/sms-service';
 import { useAdminMobile } from '@/stores/adminConfigStore';
 import { useToast } from '@/hooks/use-toast';
+import PartialDispatchDialog from '@/components/dispatch/PartialDispatchDialog';
 
 interface Entry {
   id: string;
@@ -31,7 +32,11 @@ interface Entry {
   customerMobile: string;
   customerCity: string;
   customerId: string; // Added customerId
-  numberOfPots: number;
+  deceasedPersonName?: string; // New field for deceased person
+  numberOfLockers?: number; // New field
+  potsPerLocker?: number; // New field
+  totalPots?: number; // New field
+  numberOfPots?: number; // Keep for backward compatibility
   entryDate: any;
   expiryDate: any;
   status: 'active' | 'expired' | 'dispatched' | 'disposed';
@@ -41,6 +46,12 @@ interface Entry {
   operatorName?: string;
   deliveryDate?: any; // Added for dispatched entries
   dispatchReason?: string; // Added for dispatched entries
+  lockerDetails?: Array<{
+    lockerNumber: number;
+    totalPots: number;
+    remainingPots: number;
+    dispatchedPots: string[];
+  }>; // New field for partial dispatches
   payments: Array<{
     amount: number;
     date: any;
@@ -167,6 +178,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
   const [handoverPersonName, setHandoverPersonName] = useState('');
   const [handoverPersonMobile, setHandoverPersonMobile] = useState('');
   const [isProcessing, setIsProcessing] = useState(false); // New loading state for dispatch/renewal
+  const [showPartialDispatchDialog, setShowPartialDispatchDialog] = useState(false);
+  const [selectedEntryForPartialDispatch, setSelectedEntryForPartialDispatch] = useState<Entry | null>(null);
   const RENEWAL_RATE_PER_MONTH = 300;
 
   // Determine if location filter should be shown
@@ -645,6 +658,36 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
     }
   };
 
+  const handlePartialDispatchClick = (entry: Entry) => {
+    console.log('🔍 [DEBUG] Partial Dispatch Click - Entry data:', entry);
+    console.log('🔍 [DEBUG] Entry properties:', {
+      id: entry?.id,
+      customerName: entry?.customerName,
+      numberOfPots: entry?.numberOfPots,
+      totalPots: entry?.totalPots,
+      numberOfLockers: entry?.numberOfLockers,
+      lockerDetails: entry?.lockerDetails
+    });
+    
+    if (!entry) {
+      console.error('🔍 [ERROR] Entry is undefined in handlePartialDispatchClick');
+      return;
+    }
+    
+    setSelectedEntryForPartialDispatch(entry);
+    setShowPartialDispatchDialog(true);
+  };
+
+  const handlePartialDispatchSuccess = (result: any) => {
+    toast({
+      title: "Partial Dispatch Successful",
+      description: `${result.totalRemainingPots} pots remaining in lockers.`,
+    });
+    setShowPartialDispatchDialog(false);
+    setSelectedEntryForPartialDispatch(null);
+    fetchData(); // Refresh the data
+  };
+
   const handleBackToList = () => {
     setShowNewEntry(false);
     setShowRenewal(false);
@@ -654,6 +697,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
     setShowRenewalDetailsDialog(false);
     setShowDispatchDialog(false);
     setSelectedEntryForDispatch(null);
+    setShowPartialDispatchDialog(false);
+    setSelectedEntryForPartialDispatch(null);
     setFoundCustomer(null);
     setMobileNumber('');
     setCustomerError('');
@@ -836,7 +881,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
   };
 
   const calculateRenewalAmount = (months: number) => {
-    return months * RENEWAL_RATE_PER_MONTH; // Fixed rate per month, not per pot
+    const numberOfLockers = selectedEntryForRenewal?.numberOfLockers || selectedEntryForRenewal?.numberOfPots || 1;
+    return months * RENEWAL_RATE_PER_MONTH * numberOfLockers; // Rate per month per locker
   };
 
   const getNewExpiryDate = (entry: Entry, months: number) => {
@@ -936,8 +982,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       {type === 'active' && (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-orange-800">Active Ash Pots</h3>
-            <p className="text-sm text-orange-600">Currently active ash pot entries</p>
+            <h3 className="text-lg font-semibold text-orange-800">Active Lockers</h3>
+            <p className="text-sm text-orange-600">Currently active locker entries</p>
           </div>
           <Button onClick={handleNewEntryClick} className="bg-orange-600 hover:bg-orange-700">
             <Plus className="h-4 w-4 mr-2" />
@@ -949,7 +995,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       {/* Header for Pending type */}
       {type === 'pending' && (
         <div>
-          <h3 className="text-lg font-semibold text-red-800">Pending Ash Pots</h3>
+          <h3 className="text-lg font-semibold text-red-800">Pending Lockers</h3>
           <p className="text-sm text-red-600">Entries pending renewal or processing</p>
         </div>
       )}
@@ -957,8 +1003,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       {/* Header for Dispatched type */}
       {type === 'dispatched' && (
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Dispatched Ash Pots</h3>
-          <p className="text-sm text-primary">Dispatched ash pot entries</p>
+          <h3 className="text-lg font-semibold text-foreground">Dispatched Lockers</h3>
+          <p className="text-sm text-primary">Dispatched locker entries</p>
         </div>
       )}
 
@@ -1120,11 +1166,19 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         <div className="flex space-x-1">
                           <Button 
                             size="sm" 
+                            onClick={() => handlePartialDispatchClick(entry)}
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                          >
+                            <Package className="h-3 w-3 mr-1" />
+                            Partial
+                          </Button>
+                          <Button 
+                            size="sm" 
                             onClick={() => handleDispatchClick(entry)}
                             className="bg-blue-600 hover:bg-blue-700 text-white"
                           >
                             <Truck className="h-3 w-3 mr-1" />
-                            Dispatch
+                            Full
                           </Button>
                         </div>
                       </TableCell>
@@ -1159,7 +1213,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Package className="h-4 w-4 text-muted-foreground" />
-                        <span>{entry.numberOfPots}</span>
+                        <span>{entry.totalPots || entry.numberOfPots}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1310,11 +1364,19 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     <div className="flex space-x-2">
                       <Button 
                         size="sm" 
+                        onClick={() => handlePartialDispatchClick(entry)}
+                        className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                      >
+                        <Package className="h-3 w-3 mr-1" />
+                        Partial
+                      </Button>
+                      <Button 
+                        size="sm" 
                         onClick={() => handleDispatchClick(entry)}
                         className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         <Truck className="h-3 w-3 mr-1" />
-                        Dispatch
+                        Full
                       </Button>
                       {user?.role === 'admin' && (
                         <SendSMSButton 
@@ -1336,14 +1398,24 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                   </div>
                 )}
                 {type === 'active' && (
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleDispatchClick(entry)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Truck className="h-3 w-3 mr-1" />
-                    Dispatch Entry
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => handlePartialDispatchClick(entry)}
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      <Package className="h-3 w-3 mr-1" />
+                      Partial Dispatch
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleDispatchClick(entry)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Truck className="h-3 w-3 mr-1" />
+                      Full Dispatch
+                    </Button>
+                  </div>
                 )}
               </motion.div>
             );
@@ -1481,7 +1553,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                       <span className="text-sm font-medium">{selectedEntryForRenewal.customerMobile}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Ash Pots:</span>
+                      <span className="text-sm text-muted-foreground">Lockers:</span>
                       <span className="text-sm font-medium">{selectedEntryForRenewal.numberOfPots}</span>
                     </div>
                   </div>
@@ -1561,13 +1633,13 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     <div className="flex justify-between">
                       <span className="text-sm text-blue-800">Rate per Month:</span>
                       <span className="text-sm font-medium text-blue-800">
-                        {formatCurrency(RENEWAL_RATE_PER_MONTH)} per pot
+                        {formatCurrency(RENEWAL_RATE_PER_MONTH)} per locker
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-blue-800">Number of Pots:</span>
+                      <span className="text-sm text-blue-800">Number of Lockers:</span>
                       <span className="text-sm font-medium text-blue-800">
-                        {selectedEntryForRenewal.numberOfPots}
+                        {selectedEntryForRenewal.numberOfLockers || selectedEntryForRenewal.numberOfPots || 1}
                       </span>
                     </div>
                     <div className="border-t pt-2 mt-2">
@@ -1624,7 +1696,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       <Dialog open={showDispatchDialog} onOpenChange={setShowDispatchDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto w-full mx-0 sm:mx-4 p-4 sm:p-6">
           <DialogHeader className="space-y-2 sm:space-y-3">
-            <DialogTitle className="text-lg sm:text-xl font-bold">Dispatch Ash Pot</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl font-bold">Dispatch Locker</DialogTitle>
             <DialogDescription>
               Process dispatch for {selectedEntryForDispatch?.customerName}
             </DialogDescription>
@@ -1646,8 +1718,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                       <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.customerMobile}</span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-xs sm:text-sm text-muted-foreground">Ash Pots:</span>
-                      <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.numberOfPots}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Lockers:</span>
+                      <span className="text-xs sm:text-sm font-medium text-right">{entry.numberOfLockers || 1}</span>
                     </div>
                   </div>
                   <div className="space-y-1 sm:space-y-2">
@@ -1918,6 +1990,17 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Partial Dispatch Dialog */}
+      <PartialDispatchDialog
+        entry={selectedEntryForPartialDispatch}
+        isOpen={showPartialDispatchDialog}
+        onClose={() => {
+          setShowPartialDispatchDialog(false);
+          setSelectedEntryForPartialDispatch(null);
+        }}
+        onSuccess={handlePartialDispatchSuccess}
+      />
     </div>
   );
 }

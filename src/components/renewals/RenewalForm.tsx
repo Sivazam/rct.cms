@@ -258,7 +258,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
                 <span className="text-sm font-medium">{entry.customerMobile}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Ash Pots:</span>
+                <span className="text-sm text-gray-600">Lockers:</span>
                 <span className="text-sm font-medium">{entry.numberOfPots}</span>
               </div>
             </div>

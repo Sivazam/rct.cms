@@ -381,7 +381,7 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                     {
-                      title: 'Total Active Ash Pots',
+                      title: 'Total Active Lockers',
                       value: stats.totalEntries,
                       icon: Package,
                       color: 'amber',
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                       type: 'active'
                     },
                     {
-                      title: 'Pending Ash Pots',
+                      title: 'Pending Lockers',
                       value: stats.totalRenewals,
                       icon: RefreshCw,
                       color: 'orange',
@@ -397,7 +397,7 @@ export default function AdminDashboard() {
                       type: 'pending'
                     },
                     {
-                      title: 'Dispatched Ash Pots',
+                      title: 'Dispatched Lockers',
                       value: stats.totalDeliveries,
                       icon: Truck,
                       color: 'amber',

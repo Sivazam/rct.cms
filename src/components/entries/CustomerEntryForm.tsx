@@ -44,7 +44,9 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
     mobile: customer?.mobile || '',
     city: '',  // Don't prefill city for existing users
     additionalDetails: customer?.additionalDetails || '',
-    numberOfPots: 1,
+    deceasedPersonName: '', // New field for deceased person
+    numberOfLockers: 1, // Changed from numberOfPots to numberOfLockers
+    potsPerLocker: 1, // New field
     paymentMethod: 'cash' as 'cash' | 'upi',
     locationId: '',
     entryDate: new Date() // Default to today's date
@@ -102,12 +104,17 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         customerId: customerId!,
         customerName: formData.name,
         customerMobile: formData.mobile,
-        numberOfPots: formData.numberOfPots,
+        deceasedPersonName: formData.deceasedPersonName,
+        numberOfLockers: formData.numberOfLockers,
+        potsPerLocker: formData.potsPerLocker,
         locationId: formData.locationId,
         operatorId: user.uid,
         paymentMethod: formData.paymentMethod,
         entryDate: formData.entryDate
       });
+
+      // Get location name for response
+      const location = locations.find(loc => loc.id === formData.locationId);
 
       // Entry created successfully - no SMS sent for entry creation as per requirements
 
@@ -116,12 +123,15 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         customerName: formData.name,
         customerMobile: formData.mobile,
         customerCity: formData.city,
-        numberOfPots: formData.numberOfPots,
+        deceasedPersonName: formData.deceasedPersonName,
+        numberOfLockers: formData.numberOfLockers,
+        potsPerLocker: formData.potsPerLocker,
+        totalPots: formData.numberOfLockers * formData.potsPerLocker,
         entryDate: new Date(),
         expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         locationName: location?.venueName || 'Unknown Location',
         paymentMethod: formData.paymentMethod,
-        amount: 500
+        amount: formData.numberOfLockers * 500
       });
     } catch (error: any) {
       setError(error.message || 'Failed to create entry');
@@ -147,7 +157,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         </CardTitle>
         <CardDescription>
           {isExistingCustomer 
-            ? 'Create a new ash pot entry for existing customer'
+            ? 'Create a new locker entry for existing customer'
             : 'Register new customer and create first entry'
           }
         </CardDescription>
@@ -204,6 +214,17 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="deceasedPersonName">Deceased Person Name</Label>
+              <Input
+                id="deceasedPersonName"
+                value={formData.deceasedPersonName}
+                onChange={(e) => handleChange('deceasedPersonName', e.target.value)}
+                disabled={submitting}
+                placeholder="Enter deceased person name (optional)"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="additionalDetails">Additional Details</Label>
               <Textarea
                 id="additionalDetails"
@@ -222,13 +243,28 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="numberOfPots">Number of Ash Pots *</Label>
+                <Label htmlFor="numberOfLockers">Number of Lockers (1-10) *</Label>
                 <Input
-                  id="numberOfPots"
+                  id="numberOfLockers"
                   type="number"
                   min="1"
-                  value={formData.numberOfPots}
-                  onChange={(e) => handleChange('numberOfPots', parseInt(e.target.value))}
+                  max="10"
+                  value={formData.numberOfLockers}
+                  onChange={(e) => handleChange('numberOfLockers', parseInt(e.target.value))}
+                  required
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="potsPerLocker">Pots per Locker (1-7) *</Label>
+                <Input
+                  id="potsPerLocker"
+                  type="number"
+                  min="1"
+                  max="7"
+                  value={formData.potsPerLocker}
+                  onChange={(e) => handleChange('potsPerLocker', parseInt(e.target.value))}
                   required
                   disabled={submitting}
                 />
@@ -292,14 +328,16 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                   <span className="font-medium">Payment Summary</span>
                 </div>
                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                  ₹500
+                  ₹{formData.numberOfLockers * 500}
                 </Badge>
               </div>
               <div className="mt-2 text-sm text-foreground">
-                <p>Entry Fee: ₹500 (flat rate)</p>
-                <p>Number of Pots: {formData.numberOfPots}</p>
+                <p>Entry Fee: ₹500 per locker</p>
+                <p>Number of Lockers: {formData.numberOfLockers}</p>
+                <p>Pots per Locker: {formData.potsPerLocker}</p>
+                <p>Total Pots: {formData.numberOfLockers * formData.potsPerLocker}</p>
                 <p>Storage Period: 30 days</p>
-                <p>Total Amount: ₹500</p>
+                <p className="font-semibold">Total Amount: ₹{formData.numberOfLockers * 500}</p>
               </div>
             </div>
           </div>

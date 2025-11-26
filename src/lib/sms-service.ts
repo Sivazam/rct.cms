@@ -586,6 +586,74 @@ class SMSService {
       operatorId
     });
   }
+
+  /**
+   * Send partial dispatch confirmation to customer
+   */
+  public async sendPartialDispatchConfirmationCustomer(
+    customerName: string,
+    customerMobile: string,
+    locationName: string,
+    lockerNumber: number,
+    potsDispatched: number,
+    remainingPots: number,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      var1: customerName,
+      var2: potsDispatched.toString(),
+      var3: lockerNumber.toString(),
+      var4: remainingPots.toString(),
+      var5: locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'partialDispatchCustomer',
+      recipient: customerMobile,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
+
+  /**
+   * Send partial dispatch notification to admin
+   */
+  public async sendPartialDispatchNotificationAdmin(
+    recipient: string,
+    customerName: string,
+    locationName: string,
+    lockerNumber: number,
+    potsDispatched: number,
+    remainingPots: number,
+    entryId?: string,
+    customerId?: string,
+    locationId?: string,
+    operatorId?: string
+  ): Promise<SMSServiceResult> {
+    const variables: TemplateVariables = {
+      var1: customerName,
+      var2: potsDispatched.toString(),
+      var3: lockerNumber.toString(),
+      var4: remainingPots.toString(),
+      var5: locationName
+    };
+
+    return await this.sendSMSWithRetry({
+      templateKey: 'partialDispatchAdmin',
+      recipient,
+      variables,
+      entryId,
+      customerId,
+      locationId,
+      operatorId
+    });
+  }
 }
 
 export default SMSService;

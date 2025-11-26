@@ -48,7 +48,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate amount and new expiry date
-    const renewalAmount = amount || (300 * months);
+    // Renewal fee is ₹300 per locker per month
+    const numberOfLockers = entry.numberOfLockers || 1; // Default to 1 for backward compatibility
+    const renewalAmount = amount || (300 * months * numberOfLockers);
     const newExpiryDate = new Date(Date.now() + (months * 30 * 24 * 60 * 60 * 1000));
 
     // Create renewal record

@@ -16,6 +16,8 @@ export const TEMPLATE_IDS = {
   deliveryConfirmAdmin: '198612',      // Fast2SMS Message ID
   finalDisposalReminder: '198613',      // Fast2SMS Message ID (Customer)
   finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
+  partialDispatchCustomer: '198615',    // Fast2SMS Message ID (NEW)
+  partialDispatchAdmin: '198616',       // Fast2SMS Message ID (NEW)
 } as const;
 
 // Template key to DLT Template ID mapping (for reference and admin purposes)
@@ -28,6 +30,8 @@ export const DLT_TEMPLATE_IDS = {
   deliveryConfirmAdmin: '1707175786441865610',  // DLT Template ID
   finalDisposalReminder: '1707175786481540000', // DLT Template ID (Customer)
   finalDisposalReminderAdmin: '1707175786495860000', // DLT Template ID (Admin)
+  partialDispatchCustomer: '1707175786500000001', // DLT Template ID (NEW)
+  partialDispatchAdmin: '1707175786510000002',    // DLT Template ID (NEW)
 } as const;
 
 // Template key to template name mapping for display purposes
@@ -40,6 +44,8 @@ export const TEMPLATE_NAMES = {
   deliveryConfirmAdmin: 'Delivery Confirmation (Admin)',
   finalDisposalReminder: 'Final Disposal Reminder (Customer)',
   finalDisposalReminderAdmin: 'Final Disposal Reminder (Admin)',
+  partialDispatchCustomer: 'Partial Dispatch Confirmation (Customer)',
+  partialDispatchAdmin: 'Partial Dispatch Notification (Admin)',
 } as const;
 
 // Template variable definitions with strict typing
@@ -472,6 +478,100 @@ export const FASTSMS_TEMPLATES: SMSTemplate[] = [
     variableCount: 2,
     isActive: true,
     category: 'disposal'
+  },
+  {
+    key: 'partialDispatchCustomer',
+    id: TEMPLATE_IDS.partialDispatchCustomer,
+    dltId: DLT_TEMPLATE_IDS.partialDispatchCustomer,
+    name: TEMPLATE_NAMES.partialDispatchCustomer,
+    description: 'Send partial dispatch confirmation to customer',
+    variables: [
+      {
+        name: 'var1',
+        description: 'Customer name',
+        example: 'రాముడు',
+        required: true,
+        position: 1
+      },
+      {
+        name: 'var2',
+        description: 'Number of pots dispatched',
+        example: '2',
+        required: true,
+        position: 2
+      },
+      {
+        name: 'var3',
+        description: 'Locker number',
+        example: '1',
+        required: true,
+        position: 3
+      },
+      {
+        name: 'var4',
+        description: 'Remaining pots',
+        example: '3',
+        required: true,
+        position: 4
+      },
+      {
+        name: 'var5',
+        description: 'Location name',
+        example: 'లాకర్-A',
+        required: true,
+        position: 5
+      }
+    ],
+    variableCount: 5,
+    isActive: true,
+    category: 'confirmation'
+  },
+  {
+    key: 'partialDispatchAdmin',
+    id: TEMPLATE_IDS.partialDispatchAdmin,
+    dltId: DLT_TEMPLATE_IDS.partialDispatchAdmin,
+    name: TEMPLATE_NAMES.partialDispatchAdmin,
+    description: 'Send partial dispatch notification to admin',
+    variables: [
+      {
+        name: 'var1',
+        description: 'Customer name',
+        example: 'రాముడు',
+        required: true,
+        position: 1
+      },
+      {
+        name: 'var2',
+        description: 'Number of pots dispatched',
+        example: '2',
+        required: true,
+        position: 2
+      },
+      {
+        name: 'var3',
+        description: 'Locker number',
+        example: '1',
+        required: true,
+        position: 3
+      },
+      {
+        name: 'var4',
+        description: 'Remaining pots',
+        example: '3',
+        required: true,
+        position: 4
+      },
+      {
+        name: 'var5',
+        description: 'Location name',
+        example: 'లాకర్-A',
+        required: true,
+        position: 5
+      }
+    ],
+    variableCount: 5,
+    isActive: true,
+    category: 'confirmation'
   }
 ];
 

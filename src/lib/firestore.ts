@@ -307,7 +307,9 @@ export const addEntry = async (entryData: {
   customerId: string;
   customerName: string;
   customerMobile: string;
-  numberOfPots: number;
+  deceasedPersonName?: string; // New field for deceased person details
+  numberOfLockers: number; // Changed from numberOfPots to numberOfLockers
+  potsPerLocker: number; // New field - number of pots in each locker
   locationId: string;
   operatorId: string;
   paymentMethod: 'cash' | 'upi';
@@ -317,19 +319,32 @@ export const addEntry = async (entryData: {
     const entryDate = entryData.entryDate || new Date();
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     
+    // Calculate total pots and payment based on number of lockers
+    const totalPots = entryData.numberOfLockers * entryData.potsPerLocker;
+    const entryFee = 500 * entryData.numberOfLockers; // ₹500 per locker
+    
     const docRef = await addDoc(collection(db, 'entries'), {
       ...entryData,
+      totalPots: totalPots,
       entryDate: entryDate,
       expiryDate: expiryDate,
       status: 'active',
       payments: [{
-        amount: 500, // Fixed amount regardless of number of pots
+        amount: entryFee, // Based on number of lockers
         date: entryDate,
         type: 'entry',
         method: entryData.paymentMethod,
-        months: 1
+        months: 1,
+        lockerCount: entryData.numberOfLockers
       }],
       renewals: [],
+      // Track pots per locker for partial dispatches
+      lockerDetails: Array.from({ length: entryData.numberOfLockers }, (_, index) => ({
+        lockerNumber: index + 1,
+        totalPots: entryData.potsPerLocker,
+        remainingPots: entryData.potsPerLocker, // Initially all pots are remaining
+        dispatchedPots: [] // Track which pots have been dispatched
+      })),
       createdAt: serverTimestamp()
     });
     return docRef.id;
@@ -454,6 +469,82 @@ export const getEntryById = async (entryId: string) => {
     };
   } catch (error) {
     console.error('Error getting entry by ID:', error);
+    throw error;
+  }
+};
+
+// Partial Dispatch Management
+export const partialDispatch = async (entryId: string, dispatchData: {
+  lockerNumber: number;
+  potsToDispatch: number;
+  dispatchReason?: string;
+  paymentMethod?: 'cash' | 'upi';
+  paymentAmount?: number;
+  dispatchedBy: string;
+}) => {
+  try {
+    const entry = await getEntryById(entryId);
+    if (!entry) {
+      throw new Error('Entry not found');
+    }
+
+    // Find the specified locker
+    const lockerDetail = entry.lockerDetails?.find((locker: any) => locker.lockerNumber === dispatchData.lockerNumber);
+    if (!lockerDetail) {
+      throw new Error(`Locker ${dispatchData.lockerNumber} not found`);
+    }
+
+    // Check if enough pots are available
+    if (lockerDetail.remainingPots < dispatchData.potsToDispatch) {
+      throw new Error(`Only ${lockerDetail.remainingPots} pots remaining in locker ${dispatchData.lockerNumber}`);
+    }
+
+    // Update locker details
+    const updatedLockerDetails = entry.lockerDetails?.map((locker: any) => {
+      if (locker.lockerNumber === dispatchData.lockerNumber) {
+        const dispatchedPotIds = Array.from({ length: dispatchData.potsToDispatch }, (_, i) => 
+          `pot-${locker.totalPots - locker.remainingPots + i + 1}`
+        );
+        
+        return {
+          ...locker,
+          remainingPots: locker.remainingPots - dispatchData.potsToDispatch,
+          dispatchedPots: [...locker.dispatchedPots, ...dispatchedPotIds]
+        };
+      }
+      return locker;
+    });
+
+    // Calculate total remaining pots across all lockers
+    const totalRemainingPots = updatedLockerDetails?.reduce((sum: number, locker: any) => sum + locker.remainingPots, 0) || 0;
+
+    // Create dispatch record
+    const dispatchRecord = {
+      lockerNumber: dispatchData.lockerNumber,
+      potsDispatched: dispatchData.potsToDispatch,
+      dispatchDate: new Date(),
+      dispatchReason: dispatchData.dispatchReason || 'Partial collection',
+      paymentMethod: dispatchData.paymentMethod,
+      paymentAmount: dispatchData.paymentAmount || 0,
+      dispatchedBy: dispatchData.dispatchedBy
+    };
+
+    // Update entry
+    await updateDoc(doc(db, 'entries', entryId), {
+      lockerDetails: updatedLockerDetails,
+      totalRemainingPots: totalRemainingPots,
+      status: totalRemainingPots === 0 ? 'dispatched' : 'active', // Mark as fully dispatched if no pots remain
+      dispatches: [...(entry.dispatches || []), dispatchRecord],
+      updatedAt: serverTimestamp()
+    });
+
+    return {
+      success: true,
+      totalRemainingPots,
+      lockerStatus: totalRemainingPots === 0 ? 'fully_dispatched' : 'partially_dispatched'
+    };
+  } catch (error) {
+    console.error('Error in partial dispatch:', error);
     throw error;
   }
 };
