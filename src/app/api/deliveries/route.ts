@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create delivery record with payment information
+      // Create delivery record with payment information
     const deliveryDate = new Date().toISOString();
     const deliveryRecord = {
       entryId,
@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
       reason: reason || null,
       paymentType: amountPaid > 0 ? (amountPaid < dueAmount ? 'partial' : 'full') : 'free',
       // Handover person information
-      handoverPersonName: handoverPersonName.trim(),
-      handoverPersonMobile: handoverPersonMobile.trim(),
+      handoverPersonName: handoverPersonName?.trim() || '',
+      handoverPersonMobile: handoverPersonMobile?.trim() || '',
       createdAt: serverTimestamp()
     };
 
@@ -124,9 +124,9 @@ export async function POST(request: NextRequest) {
       deliveredAt: serverTimestamp(),
       dispatchReason: reason || null, // Store the reason in the entry
       // Add handover person information to entry
-      handoverPersonName: handoverPersonName.trim(),
-      handoverPersonMobile: handoverPersonMobile.trim(),
-      payments: [...existingPayments, newPayment],
+      handoverPersonName: handoverPersonName?.trim() || '',
+      handoverPersonMobile: handoverPersonMobile?.trim() || '',
+      payments: [...(existingPayments || []), newPayment],
       lastModifiedAt: serverTimestamp()
     });
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       operatorId,
       action: 'dispatch_completed', // Changed from 'delivery_completed'
       deliveryId: deliveryDocRef.id,
-      customerMobile: entryData.customerMobile,
+      customerMobile: entryData.customerMobile || '',
       amountPaid: amountPaid || 0,
       dueAmount: dueAmount || 0,
       reason: reason || null,

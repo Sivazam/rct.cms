@@ -308,7 +308,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
                   <SelectItem value="12">12 Months</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">₹{RENEWAL_RATE_PER_MONTH} per month per pot</p>
+              <p className="text-xs text-gray-500">₹{RENEWAL_RATE_PER_MONTH} per month per locker</p>
             </div>
 
             <div className="space-y-2">
@@ -345,11 +345,11 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
               <div className="flex justify-between">
                 <span className="text-sm text-blue-800">Rate per Month:</span>
                 <span className="text-sm font-medium text-blue-800">
-                  {formatCurrency(RENEWAL_RATE_PER_MONTH)} per pot
+                  {formatCurrency(RENEWAL_RATE_PER_MONTH)} per locker
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-blue-800">Number of Pots:</span>
+                <span className="text-sm text-blue-800">Number of Lockers:</span>
                 <span className="text-sm font-medium text-blue-800">
                   {entry.numberOfPots}
                 </span>

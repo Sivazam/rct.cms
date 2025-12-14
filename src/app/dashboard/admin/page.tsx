@@ -459,7 +459,7 @@ export default function AdminDashboard() {
                       className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-foreground">Active Ash Pots Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Active Lockers Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
                       className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-foreground">Pending Ash Pots Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Pending Lockers Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -505,7 +505,7 @@ export default function AdminDashboard() {
                       className="bg-white rounded-lg border p-6 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-foreground">Dispatched Ash Pots Details</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Dispatched Lockers Details</h3>
                         <Button 
                           variant="outline" 
                           size="sm" 

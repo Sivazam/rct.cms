@@ -1719,7 +1719,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     </div>
                     <div className="flex justify-between items-start">
                       <span className="text-xs sm:text-sm text-muted-foreground">Lockers:</span>
-                      <span className="text-xs sm:text-sm font-medium text-right">{entry.numberOfLockers || 1}</span>
+                      <span className="text-xs sm:text-sm font-medium text-right">{selectedEntryForDispatch.numberOfLockers || 1}</span>
                     </div>
                   </div>
                   <div className="space-y-1 sm:space-y-2">

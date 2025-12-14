@@ -52,11 +52,8 @@ export default function PartialDispatchDialog({
   const smsService = new SMSService();
   const templatesService = SMSTemplatesService; // Use default export directly
   const [formData, setFormData] = useState({
-    lockerNumber: '',
     potsToDispatch: '',
-    dispatchReason: '',
-    paymentMethod: '' as 'cash' | 'upi' | '',
-    paymentAmount: ''
+    dispatchReason: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -65,11 +62,8 @@ export default function PartialDispatchDialog({
   useEffect(() => {
     if (entry && isOpen) {
       setFormData({
-        lockerNumber: '',
         potsToDispatch: '',
-        dispatchReason: '',
-        paymentMethod: '',
-        paymentAmount: ''
+        dispatchReason: ''
       });
       setError('');
     }
@@ -98,11 +92,9 @@ export default function PartialDispatchDialog({
         },
         body: JSON.stringify({
           entryId: entry.id,
-          lockerNumber: parseInt(formData.lockerNumber),
+          lockerNumber: getCurrentLocker().lockerNumber,
           potsToDispatch: parseInt(formData.potsToDispatch),
           dispatchReason: formData.dispatchReason || 'Partial collection',
-          paymentMethod: formData.paymentMethod || undefined,
-          paymentAmount: formData.paymentAmount ? parseFloat(formData.paymentAmount) : undefined,
           operatorId: user.uid
         }),
       });
@@ -164,79 +156,52 @@ export default function PartialDispatchDialog({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const getAvailableLockers = () => {
+  const getCurrentLocker = () => {
     if (!entry) {
-      console.log('🔍 [DEBUG] No entry provided');
-      return [];
-    }
-    
-    console.log('🔍 [DEBUG] Entry data:', {
-      id: entry.id,
-      customerName: entry.customerName,
-      totalPots: entry.totalPots,
-      numberOfPots: entry.numberOfPots,
-      numberOfLockers: entry.numberOfLockers,
-      potsPerLocker: entry.potsPerLocker,
-      lockerDetails: entry.lockerDetails
-    });
-    
-    // Check if entry has lockerDetails (new structure) or fallback to old structure
-    if (entry.lockerDetails && entry.lockerDetails.length > 0) {
-      console.log('🔍 [DEBUG] Using new lockerDetails structure');
-      return entry.lockerDetails;
-    } else {
-      // Fallback for old entries - create virtual lockers
-      console.log('🔍 [DEBUG] Using fallback structure for old entries');
-      const totalPots = entry.totalPots || entry.numberOfPots || 1;
-      const numberOfLockers = entry.numberOfLockers || 1;
-      const potsPerLocker = entry.potsPerLocker || Math.ceil(totalPots / numberOfLockers);
-      
-      const virtualLockers = Array.from({ length: numberOfLockers }, (_, index) => ({
-        lockerNumber: index + 1,
-        totalPots: potsPerLocker,
-        remainingPots: totalPots, // For old entries, assume all pots are available
-        dispatchedPots: []
-      }));
-      
-      console.log('🔍 [DEBUG] Created virtual lockers:', virtualLockers);
-      return virtualLockers;
-    }
-  };
-
-  const getSelectedLockerDetails = () => {
-    if (!entry || !formData.lockerNumber) {
-      console.log('🔍 [DEBUG] No entry or locker number selected');
       return null;
     }
     
-    console.log('🔍 [DEBUG] Looking for locker number:', formData.lockerNumber);
-    
     // Check if entry has lockerDetails (new structure) or fallback to old structure
     if (entry.lockerDetails && entry.lockerDetails.length > 0) {
-      console.log('🔍 [DEBUG] Using new lockerDetails structure');
-      const found = entry.lockerDetails.find(locker => locker.lockerNumber === parseInt(formData.lockerNumber));
-      console.log('🔍 [DEBUG] Found locker:', found);
-      return found;
+      return entry.lockerDetails[0]; // Return first locker for current entry
     } else {
       // Fallback for old entries - create virtual locker from old data
-      console.log('🔍 [DEBUG] Using fallback structure for old entries');
       const totalPots = entry.totalPots || entry.numberOfPots || 1;
       const numberOfLockers = entry.numberOfLockers || 1;
       const potsPerLocker = entry.potsPerLocker || Math.ceil(totalPots / numberOfLockers);
       
-      const virtualLocker = {
-        lockerNumber: parseInt(formData.lockerNumber),
+      return {
+        lockerNumber: 1,
         totalPots: potsPerLocker,
-        remainingPots: totalPots, // For old entries, assume all pots are available
+        remainingPots: totalPots,
         dispatchedPots: []
       };
-      
-      console.log('🔍 [DEBUG] Created virtual locker:', virtualLocker);
-      return virtualLocker;
     }
   };
 
-  const selectedLocker = getSelectedLockerDetails();
+  const calculatePendingAmount = () => {
+    if (!entry) return { monthsOverdue: 0, pendingAmount: 0 };
+    
+    const now = new Date();
+    const expiryDate = new Date(entry.expiryDate?.toDate?.() || entry.expiryDate);
+    
+    if (expiryDate > now) {
+      return { monthsOverdue: 0, pendingAmount: 0 };
+    }
+    
+    // Calculate months overdue (minimum 1 month if expired)
+    const daysOverdue = Math.ceil((now.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24));
+    const monthsOverdue = Math.max(1, Math.ceil(daysOverdue / 30));
+    
+    // Calculate pending amount: ₹300 per locker per month (after first free month)
+    const numberOfLockers = entry.numberOfLockers || 1;
+    const pendingAmount = monthsOverdue * 300 * numberOfLockers;
+    
+    return { monthsOverdue, pendingAmount };
+  };
+
+  const currentLocker = getCurrentLocker();
+  const pendingInfo = calculatePendingAmount();
 
   if (!entry) return null;
 
@@ -293,71 +258,85 @@ export default function PartialDispatchDialog({
             </CardContent>
           </Card>
 
-          {/* Locker Selection */}
+          {/* Current Locker Information */}
           <div className="space-y-4">
-            <Label htmlFor="lockerNumber">Select Locker *</Label>
-            <Select 
-              value={formData.lockerNumber} 
-              onValueChange={(value) => handleChange('lockerNumber', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select locker to dispatch from" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableLockers().length > 0 ? (
-                  getAvailableLockers().map((locker) => (
-                    <SelectItem key={locker.lockerNumber} value={locker.lockerNumber.toString()}>
-                      Locker {locker.lockerNumber} - {locker.remainingPots} pots remaining
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="" disabled>
-                    No lockers available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-
-            {selectedLocker && (
+            <Label>Current Locker Information</Label>
+            {currentLocker && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-muted p-4 rounded-lg"
+                className="bg-muted p-4 rounded-lg border"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Locker {selectedLocker.lockerNumber} Details</p>
+                    <p className="font-medium">Locker {currentLocker.lockerNumber}</p>
                     <p className="text-sm text-muted-foreground">
-                      Total Pots: {selectedLocker.totalPots} | 
-                      Remaining: {selectedLocker.remainingPots} | 
-                      Dispatched: {selectedLocker.dispatchedPots.length}
+                      Total Pots: {currentLocker.totalPots} | 
+                      Remaining: {currentLocker.remainingPots} | 
+                      Dispatched: {currentLocker.dispatchedPots.length}
                     </p>
                   </div>
-                  <Badge variant={selectedLocker.remainingPots > 0 ? "default" : "secondary"}>
-                    {selectedLocker.remainingPots > 0 ? 'Active' : 'Empty'}
+                  <Badge variant={currentLocker.remainingPots > 0 ? "default" : "secondary"}>
+                    {currentLocker.remainingPots > 0 ? 'Active' : 'Empty'}
                   </Badge>
                 </div>
               </motion.div>
             )}
           </div>
 
+          {/* Pending Amount Breakdown */}
+          {pendingInfo.pendingAmount > 0 && (
+            <div className="space-y-4">
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="space-y-2">
+                  <div className="font-semibold text-orange-800">Outstanding Amount Breakdown:</div>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span>Months Overdue:</span>
+                      <span className="font-medium">{pendingInfo.monthsOverdue} month(s)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Rate per Locker:</span>
+                      <span className="font-medium">₹300 per month</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Number of Lockers:</span>
+                      <span className="font-medium">{entry.numberOfLockers || 1}</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between font-bold text-orange-800">
+                        <span>Total Outstanding:</span>
+                        <span>₹{pendingInfo.pendingAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
           {/* Pots to Dispatch */}
           <div className="space-y-2">
             <Label htmlFor="potsToDispatch">Number of Pots to Dispatch *</Label>
-            <Input
-              id="potsToDispatch"
-              type="number"
-              min="1"
-              max={selectedLocker?.remainingPots || 1}
-              value={formData.potsToDispatch}
-              onChange={(e) => handleChange('potsToDispatch', e.target.value)}
-              required
-              placeholder="Enter number of pots to dispatch"
-              disabled={!selectedLocker || selectedLocker.remainingPots === 0}
-            />
-            {selectedLocker && (
+            <Select 
+              value={formData.potsToDispatch} 
+              onValueChange={(value) => handleChange('potsToDispatch', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select number of pots to dispatch" />
+              </SelectTrigger>
+              <SelectContent>
+                {currentLocker && Array.from({ length: currentLocker.remainingPots }, (_, i) => i + 1).map((num) => (
+                  <SelectItem key={num} value={num.toString()}>
+                    {num} pot{num > 1 ? 's' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {currentLocker && (
               <p className="text-sm text-muted-foreground">
-                Maximum {selectedLocker.remainingPots} pots can be dispatched from this locker
+                Maximum {currentLocker.remainingPots} pots can be dispatched from this locker
               </p>
             )}
           </div>
@@ -374,43 +353,6 @@ export default function PartialDispatchDialog({
             />
           </div>
 
-          {/* Payment Information */}
-          <div className="space-y-4">
-            <Label>Payment Information (Optional)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select 
-                  value={formData.paymentMethod} 
-                  onValueChange={(value) => handleChange('paymentMethod', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">No Payment</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paymentAmount">Payment Amount</Label>
-                <Input
-                  id="paymentAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.paymentAmount}
-                  onChange={(e) => handleChange('paymentAmount', e.target.value)}
-                  placeholder="Enter amount"
-                  disabled={!formData.paymentMethod}
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Action Buttons */}
           <DialogFooter>
             <Button 
@@ -423,7 +365,7 @@ export default function PartialDispatchDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={submitting || !formData.lockerNumber || !formData.potsToDispatch}
+              disabled={submitting || !formData.potsToDispatch || !currentLocker}
             >
               {submitting ? (
                 <>

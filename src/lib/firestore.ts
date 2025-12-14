@@ -502,14 +502,18 @@ export const partialDispatch = async (entryId: string, dispatchData: {
     // Update locker details
     const updatedLockerDetails = entry.lockerDetails?.map((locker: any) => {
       if (locker.lockerNumber === dispatchData.lockerNumber) {
+        const totalPots = locker.totalPots || 0;
+        const remainingPots = locker.remainingPots || 0;
+        const dispatchedPots = locker.dispatchedPots || [];
+        
         const dispatchedPotIds = Array.from({ length: dispatchData.potsToDispatch }, (_, i) => 
-          `pot-${locker.totalPots - locker.remainingPots + i + 1}`
+          `pot-${totalPots - remainingPots + i + 1}`
         );
         
         return {
           ...locker,
-          remainingPots: locker.remainingPots - dispatchData.potsToDispatch,
-          dispatchedPots: [...locker.dispatchedPots, ...dispatchedPotIds]
+          remainingPots: remainingPots - dispatchData.potsToDispatch,
+          dispatchedPots: [...dispatchedPots, ...dispatchedPotIds]
         };
       }
       return locker;
@@ -532,9 +536,9 @@ export const partialDispatch = async (entryId: string, dispatchData: {
     // Update entry
     await updateDoc(doc(db, 'entries', entryId), {
       lockerDetails: updatedLockerDetails,
-      totalRemainingPots: totalRemainingPots,
       status: totalRemainingPots === 0 ? 'dispatched' : 'active', // Mark as fully dispatched if no pots remain
-      dispatches: [...(entry.dispatches || []), dispatchRecord],
+      // Only update dispatches field if it exists in the document
+      ...(entry.dispatches && { dispatches: [...(entry.dispatches || []), dispatchRecord] }),
       updatedAt: serverTimestamp()
     });
 
