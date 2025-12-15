@@ -17,10 +17,40 @@ export default function AdminSettings() {
   const [inputMobile, setInputMobile] = useState(adminMobile);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Sync input with global state when adminMobile changes
+  useEffect(() => {
+    setInputMobile(adminMobile);
+  }, [adminMobile]);
+
+  // Real-time validation
+  const validateMobile = (mobile: string): string | null => {
+    if (!mobile) return null;
+    
+    // Remove formatting characters
+    const cleaned = mobile.replace(/[\s\-\(\)]/g, '');
+    const digitsOnly = cleaned.replace(/\D/g, '');
+    
+    if (digitsOnly.length < 10 || digitsOnly.length > 12) {
+      return 'Mobile number must be 10-12 digits';
+    }
+    
+    return null;
+  };
 
   const handleSave = () => {
+    // Validate before saving
+    const validationError = validateMobile(inputMobile);
+    if (validationError) {
+      setValidationError(validationError);
+      setMessage({ type: 'error', text: validationError });
+      return;
+    }
+    
     try {
       setAdminMobile(inputMobile);
+      setValidationError(null);
       setMessage({ type: 'success', text: 'Admin mobile number updated successfully!' });
       setIsEditing(false);
     } catch (error) {
@@ -28,7 +58,10 @@ export default function AdminSettings() {
     }
     
     // Clear message after 3 seconds
-    setTimeout(() => setMessage(null), 3000);
+    setTimeout(() => {
+      setMessage(null);
+      setValidationError(null);
+    }, 3000);
   };
 
   const handleReset = () => {
@@ -114,13 +147,23 @@ export default function AdminSettings() {
                   id="adminMobile"
                   type="tel"
                   value={inputMobile}
-                  onChange={(e) => setInputMobile(e.target.value)}
+                  onChange={(e) => {
+                    setInputMobile(e.target.value);
+                    setValidationError(validateMobile(e.target.value));
+                  }}
                   placeholder="+919014882779"
-                  className="mt-1"
+                  className={`mt-1 ${validationError ? 'border-red-500 focus:border-red-500' : ''}`}
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Enter the full mobile number with country code (e.g., +919014882779)
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Enter the full mobile number with country code (e.g., +919014882779)
+                  </p>
+                  {validationError && (
+                    <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                      {validationError}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex space-x-2">
@@ -141,10 +184,10 @@ export default function AdminSettings() {
           )}
 
           {/* Status Message */}
-          {message && (
-            <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/30' : 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/30'}>
-              <AlertDescription className={message.type === 'success' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                {message.text}
+          {(message || validationError) && (
+            <Alert className={message?.type === 'success' ? 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/30' : 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/30'}>
+              <AlertDescription className={message?.type === 'success' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
+                {validationError || message?.text}
               </AlertDescription>
             </Alert>
           )}

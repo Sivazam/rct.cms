@@ -9,6 +9,8 @@ export async function POST(request: NextRequest) {
       lockerNumber, 
       potsToDispatch,
       dispatchReason,
+      handoverPersonName,
+      handoverPersonMobile,
       paymentMethod,
       paymentAmount,
       operatorId 
@@ -68,6 +70,8 @@ export async function POST(request: NextRequest) {
       lockerNumber,
       potsToDispatch,
       dispatchReason,
+      handoverPersonName,
+      handoverPersonMobile,
       paymentMethod,
       paymentAmount,
       dispatchedBy: operatorId

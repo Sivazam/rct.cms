@@ -53,7 +53,9 @@ export default function PartialDispatchDialog({
   const templatesService = SMSTemplatesService; // Use default export directly
   const [formData, setFormData] = useState({
     potsToDispatch: '',
-    dispatchReason: ''
+    dispatchReason: '',
+    handoverPersonName: '',
+    handoverPersonMobile: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -63,7 +65,9 @@ export default function PartialDispatchDialog({
     if (entry && isOpen) {
       setFormData({
         potsToDispatch: '',
-        dispatchReason: ''
+        dispatchReason: '',
+        handoverPersonName: '',
+        handoverPersonMobile: ''
       });
       setError('');
     }
@@ -95,6 +99,8 @@ export default function PartialDispatchDialog({
           lockerNumber: getCurrentLocker().lockerNumber,
           potsToDispatch: parseInt(formData.potsToDispatch),
           dispatchReason: formData.dispatchReason || 'Partial collection',
+          handoverPersonName: formData.handoverPersonName,
+          handoverPersonMobile: formData.handoverPersonMobile,
           operatorId: user.uid
         }),
       });
@@ -315,6 +321,37 @@ export default function PartialDispatchDialog({
               </Alert>
             </div>
           )}
+
+          {/* Handover Person Information */}
+          <div className="space-y-4">
+            <Label>Handover Person Information</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="handoverPersonName">Handover Person Name</Label>
+                <Input
+                  id="handoverPersonName"
+                  value={formData.handoverPersonName}
+                  onChange={(e) => handleChange('handoverPersonName', e.target.value)}
+                  placeholder="Enter handover person name (optional)"
+                  disabled={submitting}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="handoverPersonMobile">Handover Person Mobile</Label>
+                <Input
+                  id="handoverPersonMobile"
+                  type="tel"
+                  value={formData.handoverPersonMobile}
+                  onChange={(e) => handleChange('handoverPersonMobile', e.target.value)}
+                  placeholder="Enter handover person mobile (optional)"
+                  disabled={submitting}
+                />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Optional: Enter details of person collecting the pots on behalf of customer
+            </p>
+          </div>
 
           {/* Pots to Dispatch */}
           <div className="space-y-2">

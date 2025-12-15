@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getEntries, getLocations, getUsers, getCustomerByMobile } from '@/lib/firestore';
+import { getEntries, getLocations, getUsers, getCustomerByMobile, getDispatchedLockers } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
@@ -212,16 +212,21 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           statusFilter = 'active';
       }
 
-      const [entriesData, locationsData, usersData] = await Promise.all([
-        getEntries({
-          locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
-          status: statusFilter
-        }),
+      const [entriesData, locationsData, usersData, dispatchedLockersData] = await Promise.all([
+        type === 'dispatched' 
+          ? getDispatchedLockers({
+              locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
+              dateRange: dateRange
+            })
+          : getEntries({
+              locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
+              status: statusFilter
+            }),
         getLocations(),
         getUsers()
       ]);
       
-      console.log(`${type} entries found:`, entriesData.length);
+      console.log(`${type} entries found:`, type === 'dispatched' ? dispatchedLockersData.length : entriesData.length);
       
       // Create location mapping
       const locationMap = new Map();
@@ -236,11 +241,42 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       });
       
       // Add location names and operator names to entries
-      let entriesWithDetails = entriesData.map(entry => ({
-        ...entry,
-        locationName: locationMap.get(entry.locationId) || 'Unknown Location',
-        operatorName: operatorMap.get(entry.operatorId) || 'Unknown Operator'
-      }));
+      let entriesWithDetails;
+      
+      if (type === 'dispatched') {
+        // For dispatched lockers, use the dispatchedLockers data structure
+        entriesWithDetails = dispatchedLockersData.map(dispatchedLocker => ({
+          ...dispatchedLocker.originalEntryData,
+          id: dispatchedLocker.id, // Use dispatched locker record ID
+          dispatchedInfo: dispatchedLocker.dispatchInfo,
+          // Map to expected fields for display
+          customerName: dispatchedLocker.originalEntryData.customerName,
+          customerMobile: dispatchedLocker.originalEntryData.customerMobile,
+          customerCity: dispatchedLocker.originalEntryData.customerCity,
+          locationName: dispatchedLocker.originalEntryData.locationName,
+          operatorName: dispatchedLocker.originalEntryData.operatorName,
+          // Use dispatch info for display
+          deliveryDate: dispatchedLocker.dispatchInfo.dispatchDate,
+          dispatchReason: dispatchedLocker.dispatchInfo.dispatchReason,
+          // For pots display, show dispatched info
+          totalPots: dispatchedLocker.originalEntryData.totalPots,
+          numberOfPots: dispatchedLocker.originalEntryData.totalPots,
+          // Show dispatched pots in display
+          lockerDetails: [{
+            lockerNumber: dispatchedLocker.dispatchInfo.lockerNumber,
+            totalPots: dispatchedLocker.originalEntryData.potsPerLocker || 0,
+            remainingPots: dispatchedLocker.dispatchInfo.remainingPotsInLocker,
+            dispatchedPots: Array.from({ length: dispatchedLocker.dispatchInfo.potsDispatched }, (_, i) => `pot-${i + 1}`)
+          }]
+        }));
+      } else {
+        // For active and pending entries, use original entries data
+        entriesWithDetails = entriesData.map(entry => ({
+          ...entry,
+          locationName: locationMap.get(entry.locationId) || 'Unknown Location',
+          operatorName: operatorMap.get(entry.operatorId) || 'Unknown Operator'
+        }));
+      }
 
       // Debug: Log dispatched entries to see their structure
       if (type === 'dispatched') {
@@ -1213,7 +1249,23 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Package className="h-4 w-4 text-muted-foreground" />
-                        <span>{entry.totalPots || entry.numberOfPots}</span>
+                        <span>
+                          {(() => {
+                            if (type === 'dispatched') {
+                              // For dispatched entries, show dispatched amount / total
+                              const dispatchedPots = entry.dispatchInfo?.potsDispatched || 0;
+                              const totalPots = entry.totalPots || entry.numberOfPots || 0;
+                              return `${dispatchedPots}/${totalPots}`;
+                            } else {
+                              // For active and pending entries, show remaining/total
+                              const remainingPots = entry.lockerDetails 
+                                ? entry.lockerDetails.reduce((sum, locker) => sum + (locker.remainingPots || 0), 0)
+                                : (entry.totalPots || entry.numberOfPots || 0);
+                              const totalPots = entry.totalPots || entry.numberOfPots || 0;
+                              return `${remainingPots}/${totalPots}`;
+                            }
+                          })()}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1324,7 +1376,23 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                   </div>
                   <div className="flex items-center space-x-1">
                     <Package className="h-3 w-3 text-muted-foreground" />
-                    <span>{entry.numberOfPots} pot(s)</span>
+                    <span>
+                      {(() => {
+                        if (type === 'dispatched') {
+                          // For dispatched entries, show dispatched amount / total
+                          const dispatchedPots = entry.dispatchInfo?.potsDispatched || 0;
+                          const totalPots = entry.totalPots || entry.numberOfPots || 0;
+                          return `${dispatchedPots}/${totalPots} pots`;
+                        } else {
+                          // For active and pending entries, show remaining/total
+                          const remainingPots = entry.lockerDetails 
+                            ? entry.lockerDetails.reduce((sum, locker) => sum + (locker.remainingPots || 0), 0)
+                            : (entry.totalPots || entry.numberOfPots || 0);
+                          const totalPots = entry.totalPots || entry.numberOfPots || 0;
+                          return `${remainingPots}/${totalPots} pots`;
+                        }
+                      })()}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-3 w-3 text-muted-foreground" />

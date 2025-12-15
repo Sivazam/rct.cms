@@ -70,7 +70,9 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
   }, [formData.renewalMonths, entry]);
 
   const calculateRenewalSummary = () => {
-    const amount = formData.renewalMonths * RENEWAL_RATE_PER_MONTH;
+    // Calculate based on number of lockers, not pots
+    const numberOfLockers = entry.numberOfLockers || 1;
+    const amount = formData.renewalMonths * RENEWAL_RATE_PER_MONTH * numberOfLockers;
     const currentExpiry = new Date(entry.expiryDate?.toDate?.() || entry.expiryDate);
     const newExpiryDate = new Date(currentExpiry.getTime() + (formData.renewalMonths * 30 * 24 * 60 * 60 * 1000));
     
@@ -259,7 +261,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Lockers:</span>
-                <span className="text-sm font-medium">{entry.numberOfPots}</span>
+                <span className="text-sm font-medium">{entry.numberOfLockers || 1}</span>
               </div>
             </div>
             <div className="space-y-2">
@@ -351,7 +353,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
               <div className="flex justify-between">
                 <span className="text-sm text-blue-800">Number of Lockers:</span>
                 <span className="text-sm font-medium text-blue-800">
-                  {entry.numberOfPots}
+                  {entry.numberOfLockers || 1}
                 </span>
               </div>
               <div className="border-t pt-2 mt-2">

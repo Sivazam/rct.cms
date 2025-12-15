@@ -478,6 +478,8 @@ export const partialDispatch = async (entryId: string, dispatchData: {
   lockerNumber: number;
   potsToDispatch: number;
   dispatchReason?: string;
+  handoverPersonName?: string;
+  handoverPersonMobile?: string;
   paymentMethod?: 'cash' | 'upi';
   paymentAmount?: number;
   dispatchedBy: string;
@@ -528,6 +530,8 @@ export const partialDispatch = async (entryId: string, dispatchData: {
       potsDispatched: dispatchData.potsToDispatch,
       dispatchDate: new Date(),
       dispatchReason: dispatchData.dispatchReason || 'Partial collection',
+      handoverPersonName: dispatchData.handoverPersonName,
+      handoverPersonMobile: dispatchData.handoverPersonMobile,
       paymentMethod: dispatchData.paymentMethod,
       paymentAmount: dispatchData.paymentAmount || 0,
       dispatchedBy: dispatchData.dispatchedBy
@@ -542,6 +546,41 @@ export const partialDispatch = async (entryId: string, dispatchData: {
       updatedAt: serverTimestamp()
     });
 
+    // Create a separate dispatch record for tracking in "dispatched lockers" section
+    const dispatchedLockerRecord = {
+      entryId: entryId,
+      originalEntryData: {
+        customerName: entry.customerName,
+        customerMobile: entry.customerMobile,
+        customerCity: entry.customerCity,
+        locationId: entry.locationId,
+        locationName: entry.locationName,
+        numberOfLockers: entry.numberOfLockers,
+        potsPerLocker: entry.potsPerLocker,
+        totalPots: entry.totalPots,
+        entryDate: entry.entryDate,
+        operatorId: entry.operatorId,
+        operatorName: entry.operatorName
+      },
+      dispatchInfo: {
+        lockerNumber: dispatchData.lockerNumber,
+        potsDispatched: dispatchData.potsToDispatch,
+        remainingPotsInLocker: updatedLockerDetails.find(ld => ld.lockerNumber === dispatchData.lockerNumber)?.remainingPots || 0,
+        totalRemainingPots: totalRemainingPots,
+        dispatchType: totalRemainingPots === 0 ? 'full' : 'partial',
+        dispatchDate: new Date(),
+        dispatchReason: dispatchData.dispatchReason || 'Partial collection',
+        handoverPersonName: dispatchData.handoverPersonName,
+        handoverPersonMobile: dispatchData.handoverPersonMobile,
+        paymentMethod: dispatchData.paymentMethod,
+        paymentAmount: dispatchData.paymentAmount || 0,
+        dispatchedBy: dispatchData.dispatchedBy
+      }
+    };
+
+    // Add to dispatchedLockers collection
+    await addDoc(collection(db, 'dispatchedLockers'), dispatchedLockerRecord);
+
     return {
       success: true,
       totalRemainingPots,
@@ -549,6 +588,51 @@ export const partialDispatch = async (entryId: string, dispatchData: {
     };
   } catch (error) {
     console.error('Error in partial dispatch:', error);
+    throw error;
+  }
+};
+
+// Get Dispatched Lockers Records
+export const getDispatchedLockers = async (filters?: {
+  locationId?: string;
+  dateRange?: { from: Date; to: Date };
+}) => {
+  try {
+    let q = query(collection(db, 'dispatchedLockers'));
+    
+    // Apply location filter if provided
+    if (filters?.locationId) {
+      q = query(
+        collection(db, 'dispatchedLockers'),
+        where('originalEntryData.locationId', '==', filters.locationId)
+      );
+    }
+    
+    const querySnapshot = await getDocs(q);
+    const dispatchedLockers = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Sort manually by dispatch date
+    dispatchedLockers.sort((a, b) => {
+      const aTime = a.dispatchInfo?.dispatchDate?.toDate?.() || new Date(a.dispatchInfo?.dispatchDate);
+      const bTime = b.dispatchInfo?.dispatchDate?.toDate?.() || new Date(b.dispatchInfo?.dispatchDate);
+      return bTime.getTime() - aTime.getTime(); // desc order
+    });
+    
+    // Apply date range filter if provided
+    let filteredLockers = dispatchedLockers;
+    if (filters?.dateRange) {
+      filteredLockers = dispatchedLockers.filter(locker => {
+        const dispatchDate = locker.dispatchInfo?.dispatchDate?.toDate?.() || new Date(locker.dispatchInfo?.dispatchDate);
+        return dispatchDate >= filters.dateRange.from && dispatchDate <= filters.dateRange.to;
+      });
+    }
+    
+    return filteredLockers;
+  } catch (error) {
+    console.error('Error getting dispatched lockers:', error);
     throw error;
   }
 };
