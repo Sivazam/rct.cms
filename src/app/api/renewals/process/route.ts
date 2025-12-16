@@ -50,7 +50,19 @@ export async function POST(request: NextRequest) {
     // Calculate amount and new expiry date
     // Renewal fee is ₹300 per month (fixed, not per locker)
     const renewalAmount = amount || (300 * months); // Fixed ₹300 per month
-    const newExpiryDate = new Date(Date.now() + (months * 30 * 24 * 60 * 60 * 1000));
+    
+    // Calculate new expiry date from existing expiry date, not from current date
+    const currentExpiryDate = new Date(entry.expiryDate?.toDate?.() || entry.expiryDate);
+    const newExpiryDate = new Date(currentExpiryDate.getTime() + (months * 30 * 24 * 60 * 60 * 1000));
+    
+    console.log('🔄 [RENEWAL] Renewal calculation:', {
+      entryId,
+      currentExpiryDate: currentExpiryDate.toISOString(),
+      requestedMonths: months,
+      renewalAmount,
+      newExpiryDate: newExpiryDate.toISOString(),
+      calculation: `Existing expiry + ${months} months`
+    });
 
     // Create renewal record
     const renewalRecord = {

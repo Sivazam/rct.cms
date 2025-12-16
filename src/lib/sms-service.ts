@@ -3,8 +3,8 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
 import SMSTemplatesService, { TemplateVariables, SMSRequest, TEMPLATE_IDS, MobileNumberUtils } from './sms-templates';
 
-// Create a single instance of SMSTemplatesService
-const smsTemplatesService = new SMSTemplatesService();
+// Create a single instance of SMSTemplatesService using the singleton pattern
+const smsTemplates = SMSTemplatesService.getInstance();
 
 // SMS Service Result interface
 export interface SMSServiceResult {
@@ -99,7 +99,7 @@ class SMSService {
       }
 
       // Validate request
-      const validation = smsTemplatesService.validateTemplateVariables(request.templateKey, request.variables);
+      const validation = smsTemplates.validateTemplateVariables(request.templateKey, request.variables);
       if (!validation.isValid) {
         console.error('❌ Template validation failed:', validation.errors);
         return {
@@ -126,10 +126,32 @@ class SMSService {
       // Call Firebase Functions securely
       const sendSMSFunction = httpsCallable(functions, 'sendSMSV2');
       
+      // Get the template to extract the actual Fast2SMS template ID
+      const template = smsTemplates.getTemplateByKey(request.templateKey);
+      if (!template) {
+        throw new Error(`Template ${request.templateKey} not found`);
+      }
+
+      // Convert variables object to pipe-separated string as expected by Fast2SMS
+      const variablesArray = [
+        request.variables.var1 || '',
+        request.variables.var2 || '',
+        request.variables.var3 || '',
+        request.variables.var4 || '',
+        request.variables.var5 || '',
+        request.variables.var6 || '',
+        request.variables.var7 || ''
+      ];
+      
+      // Only include non-empty variables
+      const variablesString = variablesArray
+        .filter(varValue => varValue.trim() !== '')
+        .join('|');
+
       const payload = {
-        templateKey: request.templateKey,
+        templateId: template.id, // Send actual Fast2SMS template ID
         recipient: cleanRecipient, // Use cleaned mobile number
-        variablesValues: request.variables, // Changed from 'variables' to 'variablesValues'
+        variablesValues: variablesString, // Send variables as pipe-separated string
         entryId: request.entryId,
         customerId: request.customerId,
         locationId: request.locationId,
@@ -137,11 +159,12 @@ class SMSService {
       };
       
       console.log('📤 Sending payload to Firebase Functions:', {
-        templateKey: payload.templateKey,
+        templateKey: request.templateKey,
+        templateId: payload.templateId,
         recipient: MobileNumberUtils.maskForDisplay(payload.recipient),
-        hasVariables: !!payload.variables && Object.keys(payload.variables).length > 0,
-        variablesCount: payload.variables ? Object.keys(payload.variables).length : 0,
-        variables: payload.variables,
+        hasVariables: !!variablesString && variablesString.length > 0,
+        variablesCount: variablesString ? variablesString.split('|').length : 0,
+        variables: variablesString,
         entryId: payload.entryId
       });
       
@@ -451,7 +474,7 @@ class SMSService {
   } {
     return {
       isInitialized: this.isInitialized,
-      templatesCount: smsTemplatesService.getAllTemplates().length,
+      templatesCount: smsTemplates.getAllTemplates().length,
       functionsAvailable: !!functions
     };
   }

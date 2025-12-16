@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                       type: 'active'
                     },
                     {
-                      title: 'Pending Lockers',
+                      title: 'Pending Renewals',
                       value: stats.totalRenewals,
                       icon: RefreshCw,
                       color: 'orange',
@@ -397,7 +397,7 @@ export default function AdminDashboard() {
                       type: 'pending'
                     },
                     {
-                      title: 'Dispatched Lockers',
+                      title: 'Total Dispatches',
                       value: stats.totalDeliveries,
                       icon: Truck,
                       color: 'amber',

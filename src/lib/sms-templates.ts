@@ -17,7 +17,6 @@ export const TEMPLATE_IDS = {
   finalDisposalReminder: '198613',      // Fast2SMS Message ID (Customer)
   finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
   partialDispatchCustomer: '198615',    // Fast2SMS Message ID (NEW)
-  partialDispatchAdmin: '198616',       // Fast2SMS Message ID (NEW)
 } as const;
 
 // Template key to DLT Template ID mapping (for reference and admin purposes)

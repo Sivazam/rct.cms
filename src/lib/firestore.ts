@@ -307,22 +307,28 @@ export const addEntry = async (entryData: {
   customerId: string;
   customerName: string;
   customerMobile: string;
-  customerCity?: string; // Add optional customerCity field
-  deceasedPersonName?: string; // New field for deceased person details
-  numberOfLockers: number; // Changed from numberOfPots to numberOfLockers
-  potsPerLocker: number; // New field - number of pots in each locker
+  customerCity?: string;
+  deceasedPersonName?: string;
+  totalPots?: number; // Direct total pots parameter for new system
+  numberOfLockers?: number; // Backward compatibility
+  potsPerLocker?: number; // Backward compatibility
   locationId: string;
   operatorId: string;
   paymentMethod: 'cash' | 'upi';
-  entryDate?: Date; // Optional entry date - defaults to now
+  entryDate?: Date;
 }) => {
   try {
     const entryDate = entryData.entryDate || new Date();
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     
     // Calculate total pots and payment - simplified to single locker per entry
-    const totalPots = entryData.numberOfPots || entryData.numberOfLockers * entryData.potsPerLocker; // Backward compatibility
+    const totalPots = entryData.totalPots || (entryData.numberOfLockers || 1) * (entryData.potsPerLocker || 1);
     const entryFee = 500; // Fixed ₹500 per entry, not per locker
+    
+    // Get location details for venue name
+    const locations = await getLocations();
+    const location = locations.find(loc => loc.id === entryData.locationId);
+    const locationName = location?.venueName || 'Unknown Location';
     
     const docRef = await addDoc(collection(db, 'entries'), {
       ...entryData,
@@ -340,13 +346,15 @@ export const addEntry = async (entryData: {
         description: `Entry fee for ${totalPots} pots`
       }],
       renewals: [],
-      // Track pots per locker for partial dispatches
-      lockerDetails: Array.from({ length: entryData.numberOfLockers }, (_, index) => ({
-        lockerNumber: index + 1,
-        totalPots: entryData.potsPerLocker,
-        remainingPots: entryData.potsPerLocker, // Initially all pots are remaining
+      // Track pots per locker for partial dispatches - single locker system
+      lockerDetails: [{
+        lockerNumber: 1, // Always locker 1
+        totalPots: totalPots,
+        remainingPots: totalPots, // Initially all pots are remaining
         dispatchedPots: [] // Track which pots have been dispatched
-      })),
+      }],
+      // Store location name for SMS notifications
+      locationName: locationName,
       createdAt: serverTimestamp()
     });
     return docRef.id;
@@ -712,6 +720,9 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     // Get all entries first
     let entries = await getEntries({ locationId });
     
+    // Get dispatched lockers from separate collection
+    const dispatchedLockers = await getDispatchedLockers({ locationId });
+    
     // Calculate statistics from actual entries
     let totalRenewalCollections = 0;
     let totalDeliveryCollections = 0;
@@ -745,11 +756,6 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
         }
       }
       
-      // Count dispatched entries (both 'delivered' and 'dispatched' status)
-      if ((entry.status === 'delivered' || entry.status === 'dispatched') && isEntryInRange) {
-        totalDeliveries += 1; // Count as dispatched
-      }
-      
       // Process payments for collections - include entry, renewal and delivery payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
@@ -770,10 +776,13 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       }
     });
     
+    // Count dispatched lockers from dispatchedLockers collection (more accurate)
+    totalDeliveries = dispatchedLockers.length;
+    
     const stats = {
       totalEntries: totalActiveEntries, // This now represents active entries within date range
       totalRenewals: totalRenewals,
-      totalDeliveries: totalDeliveries,
+      totalDeliveries: totalDeliveries, // Now from dispatchedLockers collection
       currentActive: entries.filter(e => e.status === 'active').length, // Total active regardless of date range
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections

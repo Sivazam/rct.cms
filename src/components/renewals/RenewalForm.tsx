@@ -50,7 +50,8 @@ interface RenewalFormProps {
 
 export default function RenewalForm({ entry, onSuccess, onCancel, loading = false }: RenewalFormProps) {
   const { user } = useAuth();
-  const adminMobile = useAdminMobile();
+  const adminMobileStore = useAdminMobile();
+  const adminMobile = adminMobileStore.adminMobile || '+919014882779'; // Extract just the mobile string
   const [formData, setFormData] = useState({
     renewalMonths: 1,
     paymentMethod: 'cash' as 'cash' | 'upi'

@@ -149,7 +149,8 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
 
 export default function InteractiveEntriesList({ type, locationId, navbarLocation, dateRange, onDataChanged }: InteractiveEntriesListProps) {
   const { user } = useAuth();
-  const adminMobile = useAdminMobile() || '+919014882779'; // Add fallback
+  const adminMobileStore = useAdminMobile();
+  const adminMobile = adminMobileStore.adminMobile || '+919014882779'; // Extract just the mobile string
   const { toast } = useToast();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -217,13 +218,25 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           ? getDispatchedLockers({
               locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
               dateRange: dateRange
+            }).catch(err => {
+              console.error('Error fetching dispatched lockers:', err);
+              return []; // Return empty array on error
             })
           : getEntries({
               locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
               status: statusFilter
+            }).catch(err => {
+              console.error('Error fetching entries:', err);
+              return []; // Return empty array on error
             }),
-        getLocations(),
-        getUsers()
+        getLocations().catch(err => {
+          console.error('Error fetching locations:', err);
+          return []; // Return empty array on error
+        }),
+        getUsers().catch(err => {
+          console.error('Error fetching users:', err);
+          return []; // Return empty array on error
+        })
       ]);
       
       console.log(`${type} entries found:`, type === 'dispatched' ? (dispatchedLockersData || []).length : (entriesData || []).length);
@@ -245,30 +258,38 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       
       if (type === 'dispatched') {
         // For dispatched lockers, use the dispatchedLockers data structure
-        entriesWithDetails = (dispatchedLockersData || []).map(dispatchedLocker => ({
-          ...dispatchedLocker.originalEntryData,
-          id: dispatchedLocker.id, // Use dispatched locker record ID
-          dispatchedInfo: dispatchedLocker.dispatchInfo,
-          // Map to expected fields for display
-          customerName: dispatchedLocker.originalEntryData?.customerName || 'Unknown',
-          customerMobile: dispatchedLocker.originalEntryData?.customerMobile || 'Unknown',
-          customerCity: dispatchedLocker.originalEntryData?.customerCity || 'Unknown',
-          locationName: dispatchedLocker.originalEntryData?.locationName || 'Unknown',
-          operatorName: dispatchedLocker.originalEntryData?.operatorName || 'Unknown',
-          // Use dispatch info for display
-          deliveryDate: dispatchedLocker.dispatchInfo?.dispatchDate,
-          dispatchReason: dispatchedLocker.dispatchInfo?.dispatchReason,
-          // For pots display, show dispatched info
-          totalPots: dispatchedLocker.originalEntryData.totalPots,
-          numberOfPots: dispatchedLocker.originalEntryData.totalPots,
-          // Show dispatched pots in display
-          lockerDetails: [{
-            lockerNumber: dispatchedLocker.dispatchInfo.lockerNumber,
-            totalPots: dispatchedLocker.originalEntryData.potsPerLocker || 0,
-            remainingPots: dispatchedLocker.dispatchInfo.remainingPotsInLocker,
-            dispatchedPots: Array.from({ length: dispatchedLocker.dispatchInfo.potsDispatched }, (_, i) => `pot-${i + 1}`)
-          }]
-        }));
+        console.log('Raw dispatchedLockersData:', dispatchedLockersData);
+        console.log('dispatchedLockersData type:', typeof dispatchedLockersData);
+        console.log('dispatchedLockersData is array:', Array.isArray(dispatchedLockersData));
+        
+        const dispatchedData = dispatchedLockersData || [];
+        entriesWithDetails = dispatchedData.map(dispatchedLocker => {
+          console.log('Processing dispatchedLocker:', dispatchedLocker);
+          return {
+            ...dispatchedLocker.originalEntryData,
+            id: dispatchedLocker.id, // Use dispatched locker record ID
+            dispatchedInfo: dispatchedLocker.dispatchInfo,
+            // Map to expected fields for display
+            customerName: dispatchedLocker.originalEntryData?.customerName || 'Unknown',
+            customerMobile: dispatchedLocker.originalEntryData?.customerMobile || 'Unknown',
+            customerCity: dispatchedLocker.originalEntryData?.customerCity || 'Unknown',
+            locationName: dispatchedLocker.originalEntryData?.locationName || 'Unknown',
+            operatorName: dispatchedLocker.originalEntryData?.operatorName || 'Unknown',
+            // Use dispatch info for display
+            deliveryDate: dispatchedLocker.dispatchInfo?.dispatchDate,
+            dispatchReason: dispatchedLocker.dispatchInfo?.dispatchReason,
+            // For pots display, show dispatched info
+            totalPots: dispatchedLocker.originalEntryData?.totalPots || 0,
+            numberOfPots: dispatchedLocker.originalEntryData?.totalPots || 0,
+            // Show dispatched pots in display
+            lockerDetails: [{
+              lockerNumber: dispatchedLocker.dispatchInfo?.lockerNumber || 1,
+              totalPots: dispatchedLocker.originalEntryData?.potsPerLocker || 0,
+              remainingPots: dispatchedLocker.dispatchInfo?.remainingPotsInLocker || 0,
+              dispatchedPots: Array.from({ length: dispatchedLocker.dispatchInfo?.potsDispatched || 0 }, (_, i) => `pot-${i + 1}`)
+            }]
+          };
+        });
       } else {
         // For active and pending entries, use original entries data
         entriesWithDetails = entriesData.map(entry => ({
@@ -601,7 +622,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         // Send SMS to customer
         const customerSMSResult = await smsService.sendDispatchConfirmationCustomer(
           selectedEntryForDispatch.customerMobile,
-          selectedEntryForDispatch.customerName,
+          selectedEntryForDispatch.deceasedPersonName || selectedEntryForDispatch.customerName, // Use deceased person name
           selectedEntryForDispatch.locationName || 'Unknown Location',
           formattedDate,
           handoverPersonName.trim(),

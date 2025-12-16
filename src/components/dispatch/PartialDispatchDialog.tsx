@@ -27,8 +27,7 @@ interface Entry {
   id: string;
   customerName: string;
   customerMobile: string;
-  numberOfLockers: number;
-  potsPerLocker: number;
+  deceasedPersonName?: string;
   totalPots: number;
   lockerDetails: LockerDetail[];
 }
@@ -55,7 +54,8 @@ export default function PartialDispatchDialog({
     potsToDispatch: '',
     dispatchReason: '',
     handoverPersonName: '',
-    handoverPersonMobile: ''
+    handoverPersonMobile: '',
+    paymentMethod: 'cash' as 'cash' | 'upi'
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -101,6 +101,7 @@ export default function PartialDispatchDialog({
           dispatchReason: formData.dispatchReason || 'Partial collection',
           handoverPersonName: formData.handoverPersonName,
           handoverPersonMobile: formData.handoverPersonMobile,
+          paymentMethod: formData.paymentMethod,
           operatorId: user.uid
         }),
       });
@@ -129,12 +130,10 @@ export default function PartialDispatchDialog({
       return null;
     }
     
-    // For new simplified system: 1 locker per entry
-    const totalPots = entry.totalPots || entry.numberOfPots || 1;
+    // Simplified system: 1 locker per customer with unlimited pots
+    const totalPots = entry.totalPots || 0;
     
     // Calculate remaining pots based on already dispatched pots
-    // IMPORTANT: We need to account for all dispatched pots, not just from lockerDetails
-    // since the UI might not have the latest lockerDetails after dispatch
     const dispatchedPots = entry.lockerDetails?.[0]?.dispatchedPots || [];
     const remainingPots = Math.max(0, totalPots - dispatchedPots.length);
     
@@ -167,9 +166,8 @@ export default function PartialDispatchDialog({
     const daysOverdue = Math.ceil((now.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24));
     const monthsOverdue = Math.max(1, Math.ceil(daysOverdue / 30));
     
-    // Calculate pending amount: ₹300 per locker per month (after first free month)
-    const numberOfLockers = entry.numberOfLockers || 1;
-    const pendingAmount = monthsOverdue * 300 * numberOfLockers;
+    // Fixed ₹300 per month per locker (1 locker per customer)
+    const pendingAmount = monthsOverdue * 300;
     
     return { monthsOverdue, pendingAmount };
   };
@@ -214,19 +212,19 @@ export default function PartialDispatchDialog({
                   <span className="font-medium">Mobile:</span> {entry.customerMobile}
                 </div>
                 <div>
-                  <span className="font-medium">Total Lockers:</span> {entry.numberOfLockers || 1}
+                  <span className="font-medium">Total Lockers:</span> 1
                 </div>
                 <div>
-                  <span className="font-medium">Pots per Locker:</span> {entry.potsPerLocker || Math.ceil(((entry.totalPots || entry.numberOfPots || 1) / (entry.numberOfLockers || 1)))}
+                  <span className="font-medium">Storage Type:</span> Single Locker (Unlimited Pots)
                 </div>
                 <div>
-                  <span className="font-medium">Total Pots:</span> {entry.totalPots || entry.numberOfPots}
+                  <span className="font-medium">Total Pots:</span> {entry.totalPots}
                 </div>
                 <div>
                   <span className="font-medium">Remaining Pots:</span> 
                   {entry.lockerDetails?.[0]?.remainingPots !== undefined 
                     ? entry.lockerDetails[0].remainingPots 
-                    : (entry.totalPots || entry.numberOfPots)}
+                    : entry.totalPots}
                 </div>
               </div>
             </CardContent>
@@ -276,7 +274,11 @@ export default function PartialDispatchDialog({
                     </div>
                     <div className="flex justify-between">
                       <span>Number of Lockers:</span>
-                      <span className="font-medium">{entry.numberOfLockers || 1}</span>
+                      <span className="font-medium">1 (Fixed)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Monthly Rate:</span>
+                      <span className="font-medium">₹300 per month</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between font-bold text-orange-800">
@@ -290,9 +292,41 @@ export default function PartialDispatchDialog({
             </div>
           )}
 
-          {/* Handover Person Information */}
+          {/* Deceased Person Information - Mandatory */}
           <div className="space-y-4">
-            <Label>Handover Person Information</Label>
+            <Label htmlFor="deceasedPersonName">Deceased Person Name *</Label>
+            <Input
+              id="deceasedPersonName"
+              value={entry.deceasedPersonName || ''}
+              disabled
+              className="bg-muted"
+              placeholder="Deceased person name should be set during entry"
+            />
+            <p className="text-sm text-muted-foreground">
+              This should have been set during the initial entry. If not set, please update the entry first.
+            </p>
+          </div>
+
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method *</Label>
+            <Select 
+              value={formData.paymentMethod} 
+              onValueChange={(value: 'cash' | 'upi') => handleChange('paymentMethod', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="upi">UPI</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Handover Person Information - Optional */}
+          <div className="space-y-4">
+            <Label>Handover Person Information (Optional)</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="handoverPersonName">Handover Person Name</Label>
@@ -316,9 +350,6 @@ export default function PartialDispatchDialog({
                 />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Optional: Enter details of person collecting the pots on behalf of customer
-            </p>
           </div>
 
           {/* Pots to Dispatch */}
@@ -370,7 +401,7 @@ export default function PartialDispatchDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={submitting || !formData.potsToDispatch || !currentLocker}
+              disabled={submitting || !formData.potsToDispatch || !currentLocker || !formData.paymentMethod}
             >
               {submitting ? (
                 <>

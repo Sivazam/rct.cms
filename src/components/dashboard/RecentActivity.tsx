@@ -17,11 +17,11 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatFirestoreDate } from '@/lib/date-utils';
-import { getEntries, getLocations } from '@/lib/firestore';
+import { getEntries, getLocations, getDispatchedLockers } from '@/lib/firestore';
 
 interface Activity {
   id: string;
-  type: 'entry' | 'renewal' | 'delivery';
+  type: 'entry' | 'renewal' | 'delivery' | 'partial-dispatch';
   title: string;
   description: string;
   customerName: string;
@@ -31,6 +31,8 @@ interface Activity {
   status?: string;
   amount?: number;
   operatorName?: string;
+  potsDispatched?: number;
+  remainingPots?: number;
 }
 
 interface RecentActivityProps {
@@ -67,8 +69,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
     try {
       setLoading(true);
       
-      // Fetch all entries and filter for different activity types
+      // Fetch all entries and dispatched lockers
       const allEntries = await getEntries({ 
+        locationId: locationId === 'all' ? undefined : locationId 
+      });
+      
+      const dispatchedLockers = await getDispatchedLockers({ 
         locationId: locationId === 'all' ? undefined : locationId 
       });
 
@@ -125,6 +131,29 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         }
       });
 
+      // Process partial dispatches from dispatchedLockers collection
+      dispatchedLockers.forEach((dispatchedLocker: any) => {
+        const dispatchInfo = dispatchedLocker.dispatchInfo;
+        const originalEntryData = dispatchedLocker.originalEntryData;
+        
+        if (dispatchInfo && originalEntryData) {
+          allActivities.push({
+            id: `partial-dispatch-${dispatchedLocker.id}`,
+            type: 'partial-dispatch',
+            title: 'Partial Dispatch',
+            description: `${dispatchInfo.potsDispatched} pot(s) dispatched, ${dispatchInfo.totalRemainingPots} remaining`,
+            customerName: originalEntryData.customerName,
+            customerMobile: originalEntryData.customerMobile,
+            locationName: getLocationName(originalEntryData.locationId),
+            timestamp: dispatchInfo.dispatchDate,
+            status: dispatchInfo.dispatchType,
+            operatorName: dispatchInfo.dispatchedBy,
+            potsDispatched: dispatchInfo.potsDispatched,
+            remainingPots: dispatchInfo.totalRemainingPots
+          });
+        }
+      });
+
       // Sort by timestamp (most recent first)
       allActivities.sort((a, b) => {
         const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
@@ -159,6 +188,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         return <RefreshCw className="h-4 w-4" />;
       case 'delivery':
         return <Truck className="h-4 w-4" />;
+      case 'partial-dispatch':
+        return <Truck className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
@@ -172,6 +203,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
       case 'delivery':
         return 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+      case 'partial-dispatch':
+        return 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
       default:
         return 'bg-muted text-muted-foreground border-border';
     }
@@ -185,6 +218,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         return 'secondary';
       case 'delivery':
         return 'outline';
+      case 'partial-dispatch':
+        return 'secondary';
       default:
         return 'secondary';
     }
