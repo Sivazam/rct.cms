@@ -39,6 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a, _b, _c, _d, _e, _f, _g, _h;
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendFinalDisposalReminders = exports.sendLastDayReminders = exports.sendExpiryReminders = exports.smsHealth = exports.sendExpiry = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const axios_1 = __importDefault(require("axios"));
@@ -56,14 +57,14 @@ const smsTemplates = sms_templates_1.default.getInstance();
 const DAILY_CHECK_HOUR = 10; // 10 AM as requested
 const TIME_ZONE = 'Asia/Kolkata';
 const EXPIRY_REMINDER_DAYS = 3; // 3 days before expiry
-// FastSMS Configuration - Securely loaded from environment
+// FastSMS Configuration - Using Firebase Functions Config with proper typing
 const FASTSMS_CONFIG = {
     apiKey: (_b = (_a = functions.config()) === null || _a === void 0 ? void 0 : _a.fastsms) === null || _b === void 0 ? void 0 : _b.api_key,
     senderId: (_d = (_c = functions.config()) === null || _c === void 0 ? void 0 : _c.fastsms) === null || _d === void 0 ? void 0 : _d.sender_id,
     entityId: (_f = (_e = functions.config()) === null || _e === void 0 ? void 0 : _e.fastsms) === null || _f === void 0 ? void 0 : _f.entity_id,
     baseUrl: 'https://www.fast2sms.com/dev/bulkV2'
 };
-// Admin Configuration - Securely loaded from environment
+// Admin Configuration - Using Firebase Functions Config with proper typing
 const ADMIN_CONFIG = {
     mobile: (_h = (_g = functions.config()) === null || _g === void 0 ? void 0 : _g.admin) === null || _h === void 0 ? void 0 : _h.mobile
 };
@@ -180,12 +181,12 @@ exports.testSMSTemplate = functions.https.onCall(async (data, context) => {
     if (!templateKey || !recipient) {
         throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
     }
-    const template = smsTemplates[templateKey];
+    const template = smsTemplates.getTemplateByKey(templateKey);
     if (!template) {
         throw new functions.https.HttpsError('not-found', `Template ${templateKey} not found`);
     }
     const variablesValues = variables ? variables.join('|') : '';
-    const result = await sendSMSAPI(recipient, template.templateId, variablesValues);
+    const result = await sendSMSAPI(recipient, template.id, variablesValues);
     return result;
 });
 // Force deploy trigger
@@ -331,3 +332,867 @@ exports.onDispatchedLockerCreated = functions
         return null;
     }
 });
+/**
+ * Function to send expiry reminders for specific entries
+ * This function can be called manually to send reminders for specific entries
+ */
+exports.sendExpiry = functions
+    .runWith({
+    memory: '256MB',
+    timeoutSeconds: 540, // 9 minutes
+})
+    .https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e, _f;
+    console.log('🔔 [MANUAL] Starting manual expiry reminders...');
+    // Check if user is authenticated
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+    try {
+        const { entryIds, reminderType } = data;
+        if (!entryIds || !Array.isArray(entryIds) || entryIds.length === 0) {
+            throw new functions.https.HttpsError('invalid-argument', 'Entry IDs array is required.');
+        }
+        if (!reminderType || !['threeDay', 'lastDay', 'finalDisposal'].includes(reminderType)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Valid reminder type (threeDay, lastDay, finalDisposal) is required.');
+        }
+        console.log(`📅 [MANUAL] Sending ${reminderType} reminders for ${entryIds.length} entries`);
+        let successCount = 0;
+        let failureCount = 0;
+        const results = [];
+        // Query for specified entries
+        const entriesSnapshot = await db.collection('entries')
+            .where('id', 'in', entryIds)
+            .where('status', '==', 'active')
+            .get();
+        console.log(`📊 [MANUAL] Found ${entriesSnapshot.size} matching entries`);
+        if (entriesSnapshot.empty) {
+            return {
+                success: true,
+                message: 'No active entries found for the provided IDs',
+                processed: 0,
+                successful: 0,
+                failed: 0,
+                timestamp: new Date().toISOString()
+            };
+        }
+        // Process each entry
+        for (const doc of entriesSnapshot.docs) {
+            const entry = doc.data();
+            try {
+                console.log(`🔄 [MANUAL] Processing entry: ${entry.id}`);
+                let customerTemplateKey;
+                let adminTemplateKey;
+                let customerVariables;
+                let adminVariables;
+                // Set templates and variables based on reminder type
+                if (reminderType === 'threeDay') {
+                    customerTemplateKey = 'threeDayReminder';
+                    adminTemplateKey = 'finalDisposalReminderAdmin';
+                    customerVariables = {
+                        var1: entry.deceasedName || '',
+                        var2: entry.location || '',
+                        var3: entry.expiryDate || '',
+                        var4: entry.contactNumber || '',
+                        var5: entry.location || ''
+                    };
+                    adminVariables = {
+                        var1: entry.location || '',
+                        var2: entry.deceasedName || ''
+                    };
+                }
+                else if (reminderType === 'lastDay') {
+                    customerTemplateKey = 'lastdayRenewal';
+                    adminTemplateKey = 'finalDisposalReminderAdmin';
+                    customerVariables = {
+                        var1: entry.deceasedName || '',
+                        var2: entry.location || '',
+                        var3: entry.expiryDate || '',
+                        var4: entry.contactNumber || '',
+                        var5: entry.location || ''
+                    };
+                    adminVariables = {
+                        var1: entry.location || '',
+                        var2: entry.deceasedName || ''
+                    };
+                }
+                else if (reminderType === 'finalDisposal') {
+                    customerTemplateKey = 'finalDisposalReminder';
+                    adminTemplateKey = 'finalDisposalReminderAdmin';
+                    customerVariables = {
+                        var1: entry.deceasedName || '',
+                        var2: entry.location || '',
+                        var3: entry.location || ''
+                    };
+                    adminVariables = {
+                        var1: entry.location || '',
+                        var2: entry.deceasedName || ''
+                    };
+                }
+                // Send SMS to both admin and customer
+                const smsResults = await sendSMSToBothParties(entry.contactNumber || '', adminTemplateKey, customerTemplateKey, customerVariables, adminVariables, entry.id);
+                if (smsResults.success) {
+                    successCount++;
+                    console.log(`✅ [MANUAL] Reminder sent for entry: ${entry.id}`);
+                    // Update entry to mark reminder sent
+                    const updateData = {
+                        [`${reminderType}ReminderSent`]: true,
+                        [`${reminderType}ReminderSentAt`]: admin.firestore.FieldValue.serverTimestamp(),
+                        [`${reminderType}ReminderSentBy`]: context.auth.uid
+                    };
+                    await doc.ref.update(updateData);
+                    // Log customer SMS
+                    if ((_a = smsResults.customerSMS) === null || _a === void 0 ? void 0 : _a.success) {
+                        await smsLogs.logSMS({
+                            type: customerTemplateKey,
+                            recipient: entry.contactNumber,
+                            templateId: getTemplateIdByKey(customerTemplateKey),
+                            message: ((_b = smsTemplates.getTemplateByKey(customerTemplateKey)) === null || _b === void 0 ? void 0 : _b.name) || 'Manual Reminder',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                    // Log admin SMS
+                    if ((_c = smsResults.adminSMS) === null || _c === void 0 ? void 0 : _c.success) {
+                        await smsLogs.logSMS({
+                            type: adminTemplateKey,
+                            recipient: ADMIN_CONFIG.mobile,
+                            templateId: getTemplateIdByKey(adminTemplateKey),
+                            message: ((_d = smsTemplates.getTemplateByKey(adminTemplateKey)) === null || _d === void 0 ? void 0 : _d.name) || 'Manual Admin Reminder',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                    results.push({
+                        entryId: entry.id,
+                        success: true,
+                        customerSMS: ((_e = smsResults.customerSMS) === null || _e === void 0 ? void 0 : _e.success) || false,
+                        adminSMS: ((_f = smsResults.adminSMS) === null || _f === void 0 ? void 0 : _f.success) || false
+                    });
+                }
+                else {
+                    failureCount++;
+                    console.error(`❌ [MANUAL] Failed to send reminder for entry: ${entry.id}`, smsResults.errors);
+                    results.push({
+                        entryId: entry.id,
+                        success: false,
+                        errors: smsResults.errors
+                    });
+                }
+            }
+            catch (error) {
+                failureCount++;
+                console.error(`❌ [MANUAL] Error processing entry ${entry.id}:`, error);
+                results.push({
+                    entryId: entry.id,
+                    success: false,
+                    errors: [error instanceof Error ? error.message : 'Unknown error']
+                });
+            }
+        }
+        console.log(`📊 [MANUAL] Manual expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
+        return {
+            success: true,
+            reminderType,
+            processed: entriesSnapshot.size,
+            successful: successCount,
+            failed: failureCount,
+            results,
+            timestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        console.error('💥 [CRITICAL] Manual expiry reminders failed:', error);
+        throw new functions.https.HttpsError('internal', `Manual expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+});
+/**
+ * SMS Health Check Function
+ * This function checks the health of the SMS system and provides diagnostic information
+ */
+exports.smsHealth = functions
+    .runWith({
+    memory: '256MB',
+    timeoutSeconds: 180, // 3 minutes
+})
+    .https.onCall(async (data, context) => {
+    var _a, _b;
+    console.log('🏥 [HEALTH] Starting SMS health check...');
+    // Check if user is authenticated
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+    try {
+        const healthStatus = {
+            timestamp: new Date().toISOString(),
+            status: 'healthy',
+            checks: {},
+            summary: {
+                totalChecks: 0,
+                passedChecks: 0,
+                failedChecks: 0
+            }
+        };
+        // Check 1: FastSMS Configuration
+        healthStatus.summary.totalChecks++;
+        try {
+            validateFastSMSConfig();
+            validateAdminConfig();
+            healthStatus.checks.configuration = {
+                status: 'pass',
+                message: 'FastSMS and Admin configuration is valid',
+                details: {
+                    hasApiKey: !!FASTSMS_CONFIG.apiKey,
+                    hasSenderId: !!FASTSMS_CONFIG.senderId,
+                    hasEntityId: !!FASTSMS_CONFIG.entityId,
+                    hasAdminMobile: !!ADMIN_CONFIG.mobile,
+                    apiKeyLength: ((_a = FASTSMS_CONFIG.apiKey) === null || _a === void 0 ? void 0 : _a.length) || 0,
+                    senderIdLength: ((_b = FASTSMS_CONFIG.senderId) === null || _b === void 0 ? void 0 : _b.length) || 0
+                }
+            };
+            healthStatus.summary.passedChecks++;
+        }
+        catch (error) {
+            healthStatus.checks.configuration = {
+                status: 'fail',
+                message: error instanceof Error ? error.message : 'Configuration error',
+                details: {
+                    hasApiKey: !!FASTSMS_CONFIG.apiKey,
+                    hasSenderId: !!FASTSMS_CONFIG.senderId,
+                    hasEntityId: !!FASTSMS_CONFIG.entityId,
+                    hasAdminMobile: !!ADMIN_CONFIG.mobile
+                }
+            };
+            healthStatus.summary.failedChecks++;
+            healthStatus.status = 'unhealthy';
+        }
+        // Check 2: SMS Templates Service
+        healthStatus.summary.totalChecks++;
+        try {
+            const templates = smsTemplates.getAllTemplates();
+            const activeTemplates = templates.filter(t => t.isActive);
+            healthStatus.checks.templates = {
+                status: 'pass',
+                message: `Found ${activeTemplates.length} active SMS templates`,
+                details: {
+                    totalTemplates: templates.length,
+                    activeTemplates: activeTemplates.length,
+                    categories: {
+                        reminder: activeTemplates.filter(t => t.category === 'reminder').length,
+                        confirmation: activeTemplates.filter(t => t.category === 'confirmation').length,
+                        disposal: activeTemplates.filter(t => t.category === 'disposal').length
+                    },
+                    templateIds: Object.keys(smsTemplates).map(key => {
+                        var _a, _b;
+                        return ({
+                            key,
+                            id: ((_a = smsTemplates[key]) === null || _a === void 0 ? void 0 : _a.id) || 'N/A',
+                            name: ((_b = smsTemplates[key]) === null || _b === void 0 ? void 0 : _b.name) || 'N/A'
+                        });
+                    })
+                }
+            };
+            healthStatus.summary.passedChecks++;
+        }
+        catch (error) {
+            healthStatus.checks.templates = {
+                status: 'fail',
+                message: error instanceof Error ? error.message : 'Templates service error',
+                details: {}
+            };
+            healthStatus.summary.failedChecks++;
+            healthStatus.status = 'unhealthy';
+        }
+        // Check 3: SMS Logs Service
+        healthStatus.summary.totalChecks++;
+        try {
+            const recentLogs = await smsLogs.getRecentSMSLogs(10);
+            const sentLogs = recentLogs.filter(log => log.status === 'sent');
+            const failedLogs = recentLogs.filter(log => log.status === 'failed');
+            healthStatus.checks.logs = {
+                status: 'pass',
+                message: `SMS logs service working - ${sentLogs.length} sent, ${failedLogs.length} failed in last 10 logs`,
+                details: {
+                    totalRecentLogs: recentLogs.length,
+                    sentCount: sentLogs.length,
+                    failedCount: failedLogs.length,
+                    successRate: recentLogs.length > 0 ? Math.round((sentLogs.length / recentLogs.length) * 100) : 0,
+                    lastLogTime: recentLogs.length > 0 ? recentLogs[0].timestamp : null
+                }
+            };
+            healthStatus.summary.passedChecks++;
+        }
+        catch (error) {
+            healthStatus.checks.logs = {
+                status: 'fail',
+                message: error instanceof Error ? error.message : 'SMS logs service error',
+                details: {}
+            };
+            healthStatus.summary.failedChecks++;
+            healthStatus.status = 'unhealthy';
+        }
+        // Check 4: Firestore Connectivity
+        healthStatus.summary.totalChecks++;
+        try {
+            const testDoc = await db.collection('health_checks').add({
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                type: 'sms_health_check'
+            });
+            await testDoc.delete();
+            healthStatus.checks.firestore = {
+                status: 'pass',
+                message: 'Firestore connectivity is working',
+                details: {
+                    writeSuccess: true,
+                    deleteSuccess: true
+                }
+            };
+            healthStatus.summary.passedChecks++;
+        }
+        catch (error) {
+            healthStatus.checks.firestore = {
+                status: 'fail',
+                message: error instanceof Error ? error.message : 'Firestore connectivity error',
+                details: {}
+            };
+            healthStatus.summary.failedChecks++;
+            healthStatus.status = 'unhealthy';
+        }
+        // Check 5: Recent SMS Activity (last 24 hours)
+        healthStatus.summary.totalChecks++;
+        try {
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+            const dayLogs = await smsLogs.getSMSLogs({
+                dateRange: {
+                    start: oneDayAgo,
+                    end: new Date()
+                }
+            });
+            const daySent = dayLogs.filter(log => log.status === 'sent');
+            const dayFailed = dayLogs.filter(log => log.status === 'failed');
+            healthStatus.checks.activity = {
+                status: 'pass',
+                message: `Last 24 hours: ${daySent.length} sent, ${dayFailed.length} failed`,
+                details: {
+                    total24h: dayLogs.length,
+                    sent24h: daySent.length,
+                    failed24h: dayFailed.length,
+                    successRate24h: dayLogs.length > 0 ? Math.round((daySent.length / dayLogs.length) * 100) : 0
+                }
+            };
+            healthStatus.summary.passedChecks++;
+        }
+        catch (error) {
+            healthStatus.checks.activity = {
+                status: 'fail',
+                message: error instanceof Error ? error.message : 'Activity check error',
+                details: {}
+            };
+            healthStatus.summary.failedChecks++;
+            healthStatus.status = 'unhealthy';
+        }
+        // Overall status determination
+        if (healthStatus.summary.failedChecks === 0) {
+            healthStatus.status = 'healthy';
+        }
+        else if (healthStatus.summary.failedChecks < healthStatus.summary.totalChecks) {
+            healthStatus.status = 'degraded';
+        }
+        else {
+            healthStatus.status = 'unhealthy';
+        }
+        console.log(`🏥 [HEALTH] SMS health check completed: ${healthStatus.status} (${healthStatus.summary.passedChecks}/${healthStatus.summary.totalChecks} checks passed)`);
+        return healthStatus;
+    }
+    catch (error) {
+        console.error('💥 [CRITICAL] SMS health check failed:', error);
+        throw new functions.https.HttpsError('internal', `SMS health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+});
+/**
+ * Scheduled function to check for expiring entries and send reminders
+ * Runs daily at 10 AM Asia/Kolkata time
+ */
+exports.sendExpiryReminders = functions
+    .runWith({
+    memory: '256MB',
+    timeoutSeconds: 540, // 9 minutes
+})
+    .pubsub.schedule('0 10 * * *')
+    .timeZone(TIME_ZONE)
+    .onRun(async (context) => {
+    var _a, _b, _c, _d;
+    console.log('🔔 [SCHEDULED] Starting expiry reminders check...');
+    try {
+        const now = new Date();
+        const reminderDate = new Date(now.getTime() + (EXPIRY_REMINDER_DAYS * 24 * 60 * 60 * 1000));
+        console.log('📅 [SCHEDULED] Checking for entries expiring on:', reminderDate.toISOString());
+        // Query for entries expiring in 3 days
+        const expiringEntries = await db.collection('entries')
+            .where('expiryDate', '==', reminderDate.toISOString().split('T')[0])
+            .where('status', '==', 'active')
+            .get();
+        console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring in ${EXPIRY_REMINDER_DAYS} days`);
+        if (expiringEntries.empty) {
+            console.log('✅ [SCHEDULED] No entries require expiry reminders');
+            return null;
+        }
+        let successCount = 0;
+        let failureCount = 0;
+        // Process each expiring entry
+        for (const doc of expiringEntries.docs) {
+            const entry = doc.data();
+            try {
+                console.log(`🔄 [SCHEDULED] Processing entry: ${entry.id}`);
+                let customerTemplateKey;
+                let adminTemplateKey;
+                // Prepare variables for customer SMS
+                const customerVariables = {
+                    var1: entry.deceasedName || '',
+                    var2: entry.location || '',
+                    var3: entry.expiryDate || '',
+                    var4: entry.contactNumber || '',
+                    var5: entry.location || '' // Repeated location
+                };
+                // Prepare variables for admin SMS
+                const adminVariables = {
+                    var1: entry.location || '',
+                    var2: entry.deceasedName || ''
+                };
+                customerTemplateKey = 'threeDayReminder';
+                adminTemplateKey = 'finalDisposalReminderAdmin';
+                // Send SMS to both admin and customer
+                const results = await sendSMSToBothParties(entry.contactNumber || '', adminTemplateKey, customerTemplateKey, customerVariables, adminVariables, entry.id);
+                if (results.success) {
+                    successCount++;
+                    console.log(`✅ [SCHEDULED] Reminder sent for entry: ${entry.id}`);
+                    // Update entry to mark reminder sent
+                    await doc.ref.update({
+                        reminderSent: true,
+                        reminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
+                        reminderSentBy: 'system'
+                    });
+                    // Log customer SMS
+                    if ((_a = results.customerSMS) === null || _a === void 0 ? void 0 : _a.success) {
+                        await smsLogs.logSMS({
+                            type: 'threeDayReminder',
+                            recipient: entry.contactNumber,
+                            templateId: getTemplateIdByKey('threeDayReminder'),
+                            message: ((_b = smsTemplates.getTemplateByKey('threeDayReminder')) === null || _b === void 0 ? void 0 : _b.name) || 'Three Day Reminder',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                    // Log admin SMS
+                    if ((_c = results.adminSMS) === null || _c === void 0 ? void 0 : _c.success) {
+                        await smsLogs.logSMS({
+                            type: 'finalDisposalReminderAdmin',
+                            recipient: ADMIN_CONFIG.mobile,
+                            templateId: getTemplateIdByKey('finalDisposalReminderAdmin'),
+                            message: ((_d = smsTemplates.getTemplateByKey('finalDisposalReminderAdmin')) === null || _d === void 0 ? void 0 : _d.name) || 'Final Disposal Reminder Admin',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                }
+                else {
+                    failureCount++;
+                    console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, results.errors);
+                }
+            }
+            catch (error) {
+                failureCount++;
+                console.error(`❌ [SCHEDULED] Error processing entry ${entry.id}:`, error);
+            }
+        }
+        console.log(`📊 [SCHEDULED] Expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
+        return {
+            success: true,
+            processed: expiringEntries.size,
+            successful: successCount,
+            failed: failureCount,
+            timestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        console.error('💥 [CRITICAL] Expiry reminders failed:', error);
+        throw new functions.https.HttpsError('internal', `Expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+});
+/**
+ * Scheduled function to check for entries expiring today (last day) and send final reminders
+ * Runs daily at 10 AM Asia/Kolkata time
+ */
+exports.sendLastDayReminders = functions
+    .runWith({
+    memory: '256MB',
+    timeoutSeconds: 540, // 9 minutes
+})
+    .pubsub.schedule('0 10 * * *')
+    .timeZone(TIME_ZONE)
+    .onRun(async (context) => {
+    var _a, _b, _c, _d;
+    console.log('🔔 [SCHEDULED] Starting last day expiry reminders check...');
+    try {
+        const now = new Date();
+        const today = now.toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+        console.log('📅 [SCHEDULED] Checking for entries expiring today:', today);
+        // Query for entries expiring today
+        const expiringEntries = await db.collection('entries')
+            .where('expiryDate', '==', today)
+            .where('status', '==', 'active')
+            .get();
+        console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring today`);
+        if (expiringEntries.empty) {
+            console.log('✅ [SCHEDULED] No entries require last day expiry reminders');
+            return null;
+        }
+        let successCount = 0;
+        let failureCount = 0;
+        // Process each expiring entry
+        for (const doc of expiringEntries.docs) {
+            const entry = doc.data();
+            try {
+                console.log(`🔄 [SCHEDULED] Processing last day reminder for entry: ${entry.id}`);
+                let customerTemplateKey;
+                let adminTemplateKey;
+                // Prepare variables for customer SMS
+                const customerVariables = {
+                    var1: entry.deceasedName || '',
+                    var2: entry.location || '',
+                    var3: today,
+                    var4: entry.contactNumber || '',
+                    var5: entry.location || '' // Repeated location
+                };
+                // Prepare variables for admin SMS
+                const adminVariables = {
+                    var1: entry.location || '',
+                    var2: entry.deceasedName || ''
+                };
+                customerTemplateKey = 'lastdayRenewal';
+                adminTemplateKey = 'finalDisposalReminderAdmin';
+                // Send SMS to both admin and customer
+                const results = await sendSMSToBothParties(entry.contactNumber || '', adminTemplateKey, customerTemplateKey, customerVariables, adminVariables, entry.id);
+                if (results.success) {
+                    successCount++;
+                    console.log(`✅ [SCHEDULED] Last day reminder sent for entry: ${entry.id}`);
+                    // Update entry to mark last day reminder sent
+                    await doc.ref.update({
+                        lastDayReminderSent: true,
+                        lastDayReminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
+                        lastDayReminderSentBy: 'system'
+                    });
+                    // Log customer SMS
+                    if ((_a = results.customerSMS) === null || _a === void 0 ? void 0 : _a.success) {
+                        await smsLogs.logSMS({
+                            type: 'lastdayRenewal',
+                            recipient: entry.contactNumber,
+                            templateId: getTemplateIdByKey('lastdayRenewal'),
+                            message: ((_b = smsTemplates.getTemplateByKey('lastdayRenewal')) === null || _b === void 0 ? void 0 : _b.name) || 'Last Day Renewal Reminder',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                    // Log admin SMS
+                    if ((_c = results.adminSMS) === null || _c === void 0 ? void 0 : _c.success) {
+                        await smsLogs.logSMS({
+                            type: 'finalDisposalReminderAdmin',
+                            recipient: ADMIN_CONFIG.mobile,
+                            templateId: getTemplateIdByKey('finalDisposalReminderAdmin'),
+                            message: ((_d = smsTemplates.getTemplateByKey('finalDisposalReminderAdmin')) === null || _d === void 0 ? void 0 : _d.name) || 'Final Disposal Reminder Admin',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                }
+                else {
+                    failureCount++;
+                    console.error(`❌ [SCHEDULED] Failed to send last day reminder for entry: ${entry.id}`, results.errors);
+                }
+            }
+            catch (error) {
+                failureCount++;
+                console.error(`❌ [SCHEDULED] Error processing last day reminder for entry ${entry.id}:`, error);
+            }
+        }
+        console.log(`📊 [SCHEDULED] Last day expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
+        return {
+            success: true,
+            processed: expiringEntries.size,
+            successful: successCount,
+            failed: failureCount,
+            timestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        console.error('💥 [CRITICAL] Last day expiry reminders failed:', error);
+        throw new functions.https.HttpsError('internal', `Last day expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+});
+/**
+ * Scheduled function to check for entries that expired 60 days ago and send final disposal reminders
+ * Runs daily at 10 AM Asia/Kolkata time
+ */
+exports.sendFinalDisposalReminders = functions
+    .runWith({
+    memory: '256MB',
+    timeoutSeconds: 540, // 9 minutes
+})
+    .pubsub.schedule('0 10 * * *')
+    .timeZone(TIME_ZONE)
+    .onRun(async (context) => {
+    var _a, _b, _c, _d;
+    console.log('🔔 [SCHEDULED] Starting final disposal reminders check...');
+    try {
+        const now = new Date();
+        const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+        const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0]; // 60 days ago in YYYY-MM-DD format
+        console.log('📅 [SCHEDULED] Checking for entries that expired 60 days ago:', sixtyDaysAgoStr);
+        // Query for entries that expired 60 days ago and are still active
+        const expiredEntries = await db.collection('entries')
+            .where('expiryDate', '==', sixtyDaysAgoStr)
+            .where('status', '==', 'active')
+            .get();
+        console.log(`📊 [SCHEDULED] Found ${expiredEntries.size} entries expired 60 days ago`);
+        if (expiredEntries.empty) {
+            console.log('✅ [SCHEDULED] No entries require final disposal reminders');
+            return null;
+        }
+        let successCount = 0;
+        let failureCount = 0;
+        // Process each expired entry
+        for (const doc of expiredEntries.docs) {
+            const entry = doc.data();
+            try {
+                console.log(`🔄 [SCHEDULED] Processing final disposal reminder for entry: ${entry.id}`);
+                let customerTemplateKey;
+                let adminTemplateKey;
+                // Prepare variables for customer SMS
+                const customerVariables = {
+                    var1: entry.deceasedName || '',
+                    var2: entry.location || '',
+                    var3: entry.location || '' // Repeated location
+                };
+                // Prepare variables for admin SMS
+                const adminVariables = {
+                    var1: entry.location || '',
+                    var2: entry.deceasedName || ''
+                };
+                customerTemplateKey = 'finalDisposalReminder';
+                adminTemplateKey = 'finalDisposalReminderAdmin';
+                // Send SMS to both admin and customer
+                const results = await sendSMSToBothParties(entry.contactNumber || '', adminTemplateKey, customerTemplateKey, customerVariables, adminVariables, entry.id);
+                if (results.success) {
+                    successCount++;
+                    console.log(`✅ [SCHEDULED] Final disposal reminder sent for entry: ${entry.id}`);
+                    // Update entry to mark final disposal reminder sent
+                    await doc.ref.update({
+                        finalDisposalReminderSent: true,
+                        finalDisposalReminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
+                        finalDisposalReminderSentBy: 'system'
+                    });
+                    // Log customer SMS
+                    if ((_a = results.customerSMS) === null || _a === void 0 ? void 0 : _a.success) {
+                        await smsLogs.logSMS({
+                            type: 'finalDisposalReminder',
+                            recipient: entry.contactNumber,
+                            templateId: getTemplateIdByKey('finalDisposalReminder'),
+                            message: ((_b = smsTemplates.getTemplateByKey('finalDisposalReminder')) === null || _b === void 0 ? void 0 : _b.name) || 'Final Disposal Reminder',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                    // Log admin SMS
+                    if ((_c = results.adminSMS) === null || _c === void 0 ? void 0 : _c.success) {
+                        await smsLogs.logSMS({
+                            type: 'finalDisposalReminderAdmin',
+                            recipient: ADMIN_CONFIG.mobile,
+                            templateId: getTemplateIdByKey('finalDisposalReminderAdmin'),
+                            message: ((_d = smsTemplates.getTemplateByKey('finalDisposalReminderAdmin')) === null || _d === void 0 ? void 0 : _d.name) || 'Final Disposal Reminder Admin',
+                            status: 'sent',
+                            entryId: entry.id,
+                            customerId: entry.customerId,
+                            locationId: entry.locationId,
+                            timestamp: new Date(),
+                            retryCount: 0
+                        });
+                    }
+                }
+                else {
+                    failureCount++;
+                    console.error(`❌ [SCHEDULED] Failed to send final disposal reminder for entry: ${entry.id}`, results.errors);
+                }
+            }
+            catch (error) {
+                failureCount++;
+                console.error(`❌ [SCHEDULED] Error processing final disposal reminder for entry ${entry.id}:`, error);
+            }
+        }
+        console.log(`📊 [SCHEDULED] Final disposal reminders completed: ${successCount} successful, ${failureCount} failed`);
+        return {
+            success: true,
+            processed: expiredEntries.size,
+            successful: successCount,
+            failed: failureCount,
+            timestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        console.error('💥 [CRITICAL] Final disposal reminders failed:', error);
+        throw new functions.https.HttpsError('internal', `Final disposal reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+});
+// Helper function to send SMS to both admin and customer (updated version)
+async function sendSMSToBothParties(customerMobile, adminTemplateKey, customerTemplateKey, customerVariables, adminVariables, entryId) {
+    var _a, _b, _c, _d;
+    const results = {
+        customerSMS: null,
+        adminSMS: null,
+        success: false,
+        errors: []
+    };
+    try {
+        validateFastSMSConfig();
+        validateAdminConfig();
+        // Send SMS to customer first
+        if (customerMobile && customerTemplateKey && customerVariables) {
+            try {
+                const customerTemplateId = getTemplateIdByKey(customerTemplateKey);
+                const customerFormattedVariables = formatVariablesForAPI(customerTemplateKey, customerVariables);
+                console.log('📱 [DEBUG] Sending customer SMS to:', customerMobile.substring(0, 4) + '****' + customerMobile.substring(-4));
+                results.customerSMS = await sendSMSAPI(customerMobile, customerTemplateId, customerFormattedVariables);
+                if (results.customerSMS.success) {
+                    console.log('✅ [DEBUG] Customer SMS sent successfully');
+                }
+                else {
+                    results.errors.push(`Customer SMS failed: ${((_a = results.customerSMS.error) === null || _a === void 0 ? void 0 : _a.message) || 'Unknown error'}`);
+                }
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error sending customer SMS';
+                results.errors.push(errorMessage);
+                console.error('❌ [DEBUG] Error sending customer SMS:', error);
+            }
+        }
+        // Send SMS to admin
+        if (ADMIN_CONFIG.mobile && adminTemplateKey && adminVariables) {
+            try {
+                const adminTemplateId = getTemplateIdByKey(adminTemplateKey);
+                const adminFormattedVariables = formatVariablesForAPI(adminTemplateKey, adminVariables);
+                console.log('📱 [DEBUG] Sending admin SMS to:', ADMIN_CONFIG.mobile.substring(0, 4) + '****' + ADMIN_CONFIG.mobile.substring(-4));
+                results.adminSMS = await sendSMSAPI(ADMIN_CONFIG.mobile, adminTemplateId, adminFormattedVariables);
+                if (results.adminSMS.success) {
+                    console.log('✅ [DEBUG] Admin SMS sent successfully');
+                }
+                else {
+                    results.errors.push(`Admin SMS failed: ${((_b = results.adminSMS.error) === null || _b === void 0 ? void 0 : _b.message) || 'Unknown error'}`);
+                }
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error sending admin SMS';
+                results.errors.push(errorMessage);
+                console.error('❌ [DEBUG] Error sending admin SMS:', error);
+            }
+        }
+        // Set overall success if at least one SMS was sent successfully
+        results.success = (((_c = results.customerSMS) === null || _c === void 0 ? void 0 : _c.success) || ((_d = results.adminSMS) === null || _d === void 0 ? void 0 : _d.success));
+        return results;
+    }
+    catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error in sendSMSToBothParties';
+        results.errors.push(errorMessage);
+        console.error('❌ [DEBUG] Error in sendSMSToBothParties:', error);
+        return results;
+    }
+}
+// Helper function to get template ID by key with enhanced validation
+function getTemplateIdByKey(templateKey) {
+    console.log('🔍 [DEBUG] Getting template ID for key:', templateKey);
+    const template = smsTemplates.getTemplateByKey(templateKey);
+    if (!template) {
+        console.error('🔍 [DEBUG] Template not found for key:', templateKey);
+        throw new Error(`Template not found: ${templateKey}`);
+    }
+    // Enhanced template validation
+    console.log('🔍 [DEBUG] Template details:', {
+        key: template.key,
+        id: template.id,
+        name: template.name,
+        variableCount: template.variableCount,
+        isActive: template.isActive,
+        idLength: template.id.length,
+        idFormat: /^\d+$/.test(template.id) ? 'NUMERIC' : 'INVALID'
+    });
+    // Validate template ID format (should be numeric for Fast2SMS)
+    if (!/^\d+$/.test(template.id)) {
+        console.error('🔍 [DEBUG] Invalid template ID format (should be numeric):', template.id);
+        throw new Error(`Invalid template ID format: ${template.id}. Template IDs must be numeric for Fast2SMS compliance.`);
+    }
+    // Validate template ID length (Fast2SMS Message IDs are typically 6 digits)
+    if (template.id.length !== 6) {
+        console.warn('🔍 [DEBUG] Unusual template ID length (expected 6 digits for Fast2SMS):', template.id.length);
+    }
+    // Check if template is active
+    if (!template.isActive) {
+        console.error('🔍 [DEBUG] Template is not active:', template.key);
+        throw new Error(`Template is not active: ${templateKey}`);
+    }
+    console.log('🔍 [DEBUG] Template validation passed, returning ID:', template.id);
+    return template.id;
+}
+// Helper function to format variables for API with enhanced validation
+function formatVariablesForAPI(templateKey, variables) {
+    console.log('🔍 [DEBUG] Formatting variables for API:', {
+        templateKey,
+        variables,
+        variableKeys: Object.keys(variables || {}),
+        variableValues: Object.values(variables || {})
+    });
+    // Validate variables before formatting
+    const validation = smsTemplates.validateTemplateVariables ?
+        smsTemplates.validateTemplateVariables(templateKey, variables) :
+        { isValid: true, errors: [] };
+    if (!validation.isValid) {
+        console.error('🔍 [DEBUG] Template variable validation failed:', validation.errors);
+        throw new Error(`Template variable validation failed: ${validation.errors.join(', ')}`);
+    }
+    const formattedVariables = smsTemplates.formatVariablesForAPI ?
+        smsTemplates.formatVariablesForAPI(templateKey, variables) :
+        Object.values(variables || {}).join('|');
+    console.log('🔍 [DEBUG] Formatted variables result:', {
+        originalVariables: variables,
+        formattedVariables,
+        variableCount: formattedVariables.split('|').length,
+        isEmpty: formattedVariables === ''
+    });
+    return formattedVariables;
+}

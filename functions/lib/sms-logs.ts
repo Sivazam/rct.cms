@@ -45,7 +45,7 @@ class SMSLogsService {
       }
       SMSLogsService.instance = new SMSLogsService(db);
     }
-    return SMSLogsService.instance;
+    return SMSLogsService.instance!;
   }
 
   /**
