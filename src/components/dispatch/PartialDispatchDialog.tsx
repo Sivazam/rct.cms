@@ -112,58 +112,6 @@ export default function PartialDispatchDialog({
       }
 
       onSuccess(data);
-      
-      // Send SMS notifications only if this is not the last pot
-      const remainingPotsAfterDispatch = entry.totalPots - parseInt(formData.potsToDispatch);
-      
-      if (remainingPotsAfterDispatch > 0) {
-        try {
-          const dispatchDate = new Date().toLocaleDateString('en-GB', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
-          });
-
-          // Send confirmation to customer
-          const customerSMSResult = await smsService.sendPartialDispatchConfirmationCustomer(
-            entry.customerMobile,
-            entry.deceasedPersonName || entry.customerName, // Use deceased person name
-            parseInt(formData.potsToDispatch), // Partial pots being dispatched
-            entry.totalPots, // Total pots stored when entry made
-            dispatchDate, // Date of dispatch
-            formData.handoverPersonName || 'N/A',
-            formData.handoverPersonMobile || 'N/A',
-            '+919014882779', // Admin mobile
-            entry.locationName || 'N/A',
-            entry.id,
-            entry.customerId,
-            entry.locationId,
-            user.uid
-          );
-          
-          console.log('📱 Customer SMS Result:', customerSMSResult);
-          
-          // Send notification to admin
-          const adminSMSResult = await smsService.sendPartialDispatchNotificationAdmin(
-            '+919014882779', // Admin mobile
-            entry.deceasedPersonName || entry.customerName, // Use deceased person name
-            parseInt(formData.potsToDispatch), // Partial pots being dispatched
-            entry.totalPots, // Total pots stored when entry made
-            entry.locationName || 'N/A',
-            entry.id,
-            entry.customerId,
-            entry.locationId,
-            user.uid
-          );
-          
-          console.log('📞 Admin SMS Result:', adminSMSResult);
-        } catch (smsError) {
-          console.error('Failed to send SMS notifications:', smsError);
-        }
-      } else {
-        console.log('Last pot dispatched - partial dispatch SMS skipped, full dispatch SMS should be triggered');
-      }
-      
       onClose();
     } catch (error: any) {
       setError(error.message || 'Failed to process partial dispatch');
@@ -185,8 +133,17 @@ export default function PartialDispatchDialog({
     const totalPots = entry.totalPots || entry.numberOfPots || 1;
     
     // Calculate remaining pots based on already dispatched pots
+    // IMPORTANT: We need to account for all dispatched pots, not just from lockerDetails
+    // since the UI might not have the latest lockerDetails after dispatch
     const dispatchedPots = entry.lockerDetails?.[0]?.dispatchedPots || [];
-    const remainingPots = totalPots - dispatchedPots.length;
+    const remainingPots = Math.max(0, totalPots - dispatchedPots.length);
+    
+    console.log('🔍 [PARTIAL_DISPATCH] Locker calculation:', {
+      totalPots,
+      dispatchedPotsCount: dispatchedPots.length,
+      remainingPots,
+      lockerDetails: entry.lockerDetails
+    });
     
     return {
       lockerNumber: 1,

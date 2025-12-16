@@ -129,7 +129,7 @@ class SMSService {
       const payload = {
         templateKey: request.templateKey,
         recipient: cleanRecipient, // Use cleaned mobile number
-        variables: request.variables,
+        variablesValues: request.variables, // Changed from 'variables' to 'variablesValues'
         entryId: request.entryId,
         customerId: request.customerId,
         locationId: request.locationId,

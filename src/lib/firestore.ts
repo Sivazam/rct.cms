@@ -574,7 +574,7 @@ export const partialDispatch = async (entryId: string, dispatchData: {
         dispatchReason: dispatchData.dispatchReason || 'Partial collection',
         handoverPersonName: dispatchData.handoverPersonName,
         handoverPersonMobile: dispatchData.handoverPersonMobile,
-        paymentMethod: dispatchData.paymentMethod,
+        paymentMethod: dispatchData.paymentMethod || 'cash', // Default to 'cash' if not provided
         paymentAmount: dispatchData.paymentAmount || 0,
         dispatchedBy: dispatchData.dispatchedBy
       }

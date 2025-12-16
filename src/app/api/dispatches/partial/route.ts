@@ -78,70 +78,18 @@ export async function POST(request: NextRequest) {
       dispatchedBy: operatorId
     });
 
-    // Send SMS notifications if this is not the last pot
-    if (result.totalRemainingPots > 0) {
-      try {
-        const smsService = SMSService.getInstance();
-        const dispatchDate = new Date().toLocaleDateString('en-GB', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
-        });
-
-        // Get admin mobile number from store or use default
-        const adminMobile = '+919014882779'; // Fallback, should come from store
-
-        // Send SMS to customer
-        const customerSMSResult = await smsService.sendPartialDispatchConfirmationCustomer(
-          entry.customerMobile,
-          entry.deceasedPersonName || entry.customerName, // Use deceased person name, fallback to customer name
-          potsToDispatch,
-          entry.totalPots || 0, // Total pots stored when entry made
-          dispatchDate,
-          handoverPersonName || 'N/A',
-          handoverPersonMobile || 'N/A',
-          adminMobile,
-          entry.locationName || 'N/A',
-          entryId,
-          entry.customerId,
-          entry.locationId,
-          operatorId
-        );
-
-        // Send SMS to admin
-        const adminSMSResult = await smsService.sendPartialDispatchNotificationAdmin(
-          adminMobile,
-          entry.deceasedPersonName || entry.customerName, // Use deceased person name, fallback to customer name
-          potsToDispatch,
-          entry.totalPots || 0, // Total pots stored when entry made
-          entry.locationName || 'N/A',
-          entryId,
-          entry.customerId,
-          entry.locationId,
-          operatorId
-        );
-
-        console.log('Partial dispatch SMS sent:', {
-          customerSMS: customerSMSResult.success,
-          adminSMS: adminSMSResult.success,
-          totalRemainingPots: result.totalRemainingPots
-        });
-
-      } catch (smsError) {
-        console.error('Error sending partial dispatch SMS:', smsError);
-        // Don't fail the dispatch if SMS fails
-      }
-    } else {
-      // This is the last pot - full dispatch SMS should be handled elsewhere
-      console.log('Last pot dispatched - full dispatch SMS should be triggered');
-    }
+    console.log('Partial dispatch processed:', {
+      entryId,
+      totalRemainingPots: result.totalRemainingPots,
+      lockerStatus: result.lockerStatus
+    });
 
     return NextResponse.json({ 
       success: true, 
       message: 'Partial dispatch processed successfully',
       totalRemainingPots: result.totalRemainingPots,
       lockerStatus: result.lockerStatus,
-      smsSent: result.totalRemainingPots > 0 ? 'partial' : 'full'
+      smsSent: 'handled_by_cloud_functions'
     });
   } catch (error: any) {
     console.error('Error processing partial dispatch:', error);

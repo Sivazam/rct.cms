@@ -1,5 +1,5 @@
 // SMS Template Management System - Firebase Cloud Functions
-// Clean version with proper syntax - Reverted to Firebase Functions v1
+// Clean version with proper syntax - Firebase Functions v4.7.0 Compatible
 
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
@@ -7,8 +7,11 @@ import axios from 'axios';
 import SMSTemplatesService, { TEMPLATE_IDS } from './lib/sms-templates';
 import smsLogsService from './lib/sms-logs';
 
-// Initialize Firebase Admin
-admin.initializeApp();
+// Initialize Firebase Admin with app name for Functions compatibility
+const adminApp = admin.initializeApp({
+  projectId: 'rctscm01',
+  // Add any other required configurations for v4.7.0
+});
 
 // Firestore instance
 const db = admin.firestore();

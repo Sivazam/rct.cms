@@ -149,7 +149,7 @@ function RenewalSystemWithPreselectedEntry({ entry, onBack }: { entry: Entry; on
 
 export default function InteractiveEntriesList({ type, locationId, navbarLocation, dateRange, onDataChanged }: InteractiveEntriesListProps) {
   const { user } = useAuth();
-  const adminMobile = useAdminMobile();
+  const adminMobile = useAdminMobile() || '+919014882779'; // Add fallback
   const { toast } = useToast();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -226,7 +226,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         getUsers()
       ]);
       
-      console.log(`${type} entries found:`, type === 'dispatched' ? dispatchedLockersData.length : entriesData.length);
+      console.log(`${type} entries found:`, type === 'dispatched' ? (dispatchedLockersData || []).length : (entriesData || []).length);
       
       // Create location mapping
       const locationMap = new Map();
@@ -245,19 +245,19 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       
       if (type === 'dispatched') {
         // For dispatched lockers, use the dispatchedLockers data structure
-        entriesWithDetails = dispatchedLockersData.map(dispatchedLocker => ({
+        entriesWithDetails = (dispatchedLockersData || []).map(dispatchedLocker => ({
           ...dispatchedLocker.originalEntryData,
           id: dispatchedLocker.id, // Use dispatched locker record ID
           dispatchedInfo: dispatchedLocker.dispatchInfo,
           // Map to expected fields for display
-          customerName: dispatchedLocker.originalEntryData.customerName,
-          customerMobile: dispatchedLocker.originalEntryData.customerMobile,
-          customerCity: dispatchedLocker.originalEntryData.customerCity,
-          locationName: dispatchedLocker.originalEntryData.locationName,
-          operatorName: dispatchedLocker.originalEntryData.operatorName,
+          customerName: dispatchedLocker.originalEntryData?.customerName || 'Unknown',
+          customerMobile: dispatchedLocker.originalEntryData?.customerMobile || 'Unknown',
+          customerCity: dispatchedLocker.originalEntryData?.customerCity || 'Unknown',
+          locationName: dispatchedLocker.originalEntryData?.locationName || 'Unknown',
+          operatorName: dispatchedLocker.originalEntryData?.operatorName || 'Unknown',
           // Use dispatch info for display
-          deliveryDate: dispatchedLocker.dispatchInfo.dispatchDate,
-          dispatchReason: dispatchedLocker.dispatchInfo.dispatchReason,
+          deliveryDate: dispatchedLocker.dispatchInfo?.dispatchDate,
+          dispatchReason: dispatchedLocker.dispatchInfo?.dispatchReason,
           // For pots display, show dispatched info
           totalPots: dispatchedLocker.originalEntryData.totalPots,
           numberOfPots: dispatchedLocker.originalEntryData.totalPots,
