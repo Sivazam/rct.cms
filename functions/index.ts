@@ -25,16 +25,18 @@ const TIME_ZONE = 'Asia/Kolkata';
 const EXPIRY_REMINDER_DAYS = 3; // 3 days before expiry
 
 // FastSMS Configuration - Using Firebase Functions Config with proper typing
+// @ts-ignore
+const functionsConfig = functions.config();
 const FASTSMS_CONFIG = {
-  apiKey: functions.config()?.fastsms?.api_key as string | undefined,
-  senderId: functions.config()?.fastsms?.sender_id as string | undefined,
-  entityId: functions.config()?.fastsms?.entity_id as string | undefined,
+  apiKey: functionsConfig.fastsms?.api_key,
+  senderId: functionsConfig.fastsms?.sender_id,
+  entityId: functionsConfig.fastsms?.entity_id,
   baseUrl: 'https://www.fast2sms.com/dev/bulkV2'
 };
 
 // Admin Configuration - Using Firebase Functions Config with proper typing
 const ADMIN_CONFIG = {
-  mobile: functions.config()?.admin?.mobile as string | undefined
+  mobile: functionsConfig.admin?.mobile
 };
 
 // Retry configuration
