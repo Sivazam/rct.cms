@@ -8,14 +8,17 @@ export async function POST(request: NextRequest) {
       customerId, 
       customerName, 
       customerMobile, 
-      numberOfPots, 
+      customerCity,
+      deceasedPersonName,
+      numberOfLockers, 
+      potsPerLocker,
       locationId, 
       operatorId, 
       paymentMethod 
     } = body;
 
     // Validate required fields
-    if (!customerId || !customerName || !customerMobile || !numberOfPots || 
+    if (!customerId || !customerName || !customerMobile || !numberOfLockers || !potsPerLocker ||
         !locationId || !operatorId || !paymentMethod) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -31,10 +34,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate number of pots
-    if (numberOfPots < 1 || numberOfPots > 100) {
+    // Validate number of lockers and pots per locker
+    if (numberOfLockers < 1 || numberOfLockers > 10) {
       return NextResponse.json(
-        { error: 'Number of pots must be between 1 and 100' },
+        { error: 'Number of lockers must be between 1 and 10' },
+        { status: 400 }
+      );
+    }
+
+    if (potsPerLocker < 1 || potsPerLocker > 50) {
+      return NextResponse.json(
+        { error: 'Pots per locker must be between 1 and 50' },
         { status: 400 }
       );
     }
@@ -43,7 +53,10 @@ export async function POST(request: NextRequest) {
       customerId,
       customerName,
       customerMobile,
-      numberOfPots,
+      customerCity,
+      deceasedPersonName,
+      numberOfLockers,
+      potsPerLocker,
       locationId,
       operatorId,
       paymentMethod

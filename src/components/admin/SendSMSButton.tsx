@@ -115,7 +115,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           });
           smsResult = await smsService.sendThreeDayReminder(
             entry.customerMobile,
-            entry.customerName,
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
             entry.locationName,
             formattedExpiryDate,
             entry.id,
@@ -135,7 +135,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           });
           smsResult = await smsService.sendLastDayRenewalReminder(
             entry.customerMobile,
-            entry.customerName,
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
             entry.locationName,
             formattedExpiryDate,
             entry.id,
@@ -155,7 +155,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           });
           smsResult = await smsService.sendRenewalConfirmationCustomer(
             entry.customerMobile,
-            entry.customerName,
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
             entry.locationName,
             formattedExpiryDate,
             entry.id,
@@ -170,7 +170,7 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           deliveryDate.setDate(deliveryDate.getDate() + 3);
           console.log('🔍 [DEBUG] Dispatch Confirmation Customer variables:', {
             customerMobile: entry.customerMobile,
-            customerName: entry.customerName,
+            deceasedPersonName: entry.deceasedPersonName || entry.customerName,
             locationName: entry.locationName,
             deliveryDate: formatDate(deliveryDate),
             contactPerson: entry.customerName,
@@ -179,10 +179,10 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
           });
           smsResult = await smsService.sendDispatchConfirmationCustomer(
             entry.customerMobile,
-            entry.customerName,
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
             entry.locationName,
             formatDate(deliveryDate),
-            entry.customerName,
+            entry.customerName, // Handover person is customer who made entry
             entry.customerMobile,
             entry.id,
             entry.customerId,
@@ -194,14 +194,14 @@ export default function SendSMSButton({ entry, onSMSsent }: SendSMSButtonProps) 
         case 'finalDisposalReminder':
           console.log('🔍 [DEBUG] Final Disposal Reminder variables:', {
             recipient: entry.customerMobile,
-            deceasedPersonName: entry.customerName,
+            deceasedPersonName: entry.deceasedPersonName || entry.customerName,
             locationName: entry.locationName,
             entryId: entry.id
           });
           console.log('🔍 [DEBUG] About to call sendFinalDisposalReminder...');
           smsResult = await smsService.sendFinalDisposalReminder(
             entry.customerMobile,
-            entry.customerName,
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
             entry.locationName,
             entry.id,
             entry.customerId,

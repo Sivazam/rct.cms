@@ -477,7 +477,7 @@ export default function CustomerEntrySystem() {
               <div className="space-y-1 text-sm text-muted-foreground">
                 <p><strong>Customer:</strong> {formData.customerName}</p>
                 <p><strong>Mobile:</strong> {formData.customerMobile}</p>
-                <p><strong>Pots:</strong> {formData.numberOfPots}</p>
+                <p><strong>Pots:</strong> {formData.numberOfLockers * formData.potsPerLocker}</p>
                 <p><strong>Amount:</strong> ₹500</p>
                 <p><strong>Storage Period:</strong> 30 days</p>
               </div>

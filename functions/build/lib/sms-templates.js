@@ -14,8 +14,10 @@ exports.TEMPLATE_IDS = {
     lastdayRenewal: '198608', // Fast2SMS Message ID
     renewalConfirmCustomer: '198609', // Fast2SMS Message ID
     renewalConfirmAdmin: '198610', // Fast2SMS Message ID
-    dispatchConfirmCustomer: '198611', // Fast2SMS Message ID
-    deliveryConfirmAdmin: '198612', // Fast2SMS Message ID
+    dispatchConfirmCustomer: '198611', // Fast2SMS Message ID (Full dispatch)
+    deliveryConfirmAdmin: '198612', // Fast2SMS Message ID (Full dispatch)
+    partialDispatchCustomer: '205257', // Fast2SMS Message ID (Partial dispatch)
+    partialDispatchAdmin: '205258', // Fast2SMS Message ID (Partial dispatch)
     finalDisposalReminder: '198613', // Fast2SMS Message ID (Customer)
     finalDisposalReminderAdmin: '198614', // Fast2SMS Message ID (Admin)
 };
@@ -25,8 +27,10 @@ exports.TEMPLATE_NAMES = {
     lastdayRenewal: 'Last Day Renewal Reminder',
     renewalConfirmCustomer: 'Renewal Confirmation (Customer)',
     renewalConfirmAdmin: 'Renewal Confirmation (Admin)',
-    dispatchConfirmCustomer: 'Dispatch Confirmation (Customer)',
-    deliveryConfirmAdmin: 'Delivery Confirmation (Admin)',
+    dispatchConfirmCustomer: 'Dispatch Confirmation (Customer) - Full',
+    deliveryConfirmAdmin: 'Delivery Confirmation (Admin) - Full',
+    partialDispatchCustomer: 'Partial Dispatch Confirmation (Customer)',
+    partialDispatchAdmin: 'Partial Dispatch Confirmation (Admin)',
     finalDisposalReminder: 'Final Disposal Reminder (Customer)',
     finalDisposalReminderAdmin: 'Final Disposal Reminder (Admin)',
 };
@@ -277,6 +281,112 @@ exports.FASTSMS_TEMPLATES = [
             }
         ],
         variableCount: 2,
+        isActive: true,
+        category: 'confirmation'
+    },
+    {
+        key: 'partialDispatchCustomer',
+        id: exports.TEMPLATE_IDS.partialDispatchCustomer,
+        name: exports.TEMPLATE_NAMES.partialDispatchCustomer,
+        description: 'Send partial dispatch confirmation to customer',
+        variables: [
+            {
+                name: 'var1',
+                description: 'Deceased person name (entry name)',
+                example: 'ramayya',
+                required: true,
+                position: 1
+            },
+            {
+                name: 'var2',
+                description: 'Partial pots that are being dispatched',
+                example: '3',
+                required: true,
+                position: 2
+            },
+            {
+                name: 'var3',
+                description: 'Total number of pots that stored when entry made',
+                example: '5',
+                required: true,
+                position: 3
+            },
+            {
+                name: 'var4',
+                description: 'Date of dispatch (DD/MM/YYYY)',
+                example: '15/12/2025',
+                required: true,
+                position: 4
+            },
+            {
+                name: 'var5',
+                description: 'Name of handovered person',
+                example: 'srinivas',
+                required: true,
+                position: 5
+            },
+            {
+                name: 'var6',
+                description: 'Phone number of handovered person',
+                example: '9876543210',
+                required: true,
+                position: 6
+            },
+            {
+                name: 'var7',
+                description: 'Admin mobile number',
+                example: '1800123456',
+                required: true,
+                position: 7
+            },
+            {
+                name: 'var8',
+                description: 'Location name',
+                example: 'kailasabhoomi kootilingalu',
+                required: true,
+                position: 8
+            }
+        ],
+        variableCount: 8,
+        isActive: true,
+        category: 'confirmation'
+    },
+    {
+        key: 'partialDispatchAdmin',
+        id: exports.TEMPLATE_IDS.partialDispatchAdmin,
+        name: exports.TEMPLATE_NAMES.partialDispatchAdmin,
+        description: 'Send partial dispatch confirmation to admin',
+        variables: [
+            {
+                name: 'var1',
+                description: 'Deceased person name (entry name)',
+                example: 'ramayya',
+                required: true,
+                position: 1
+            },
+            {
+                name: 'var2',
+                description: 'Partial pots that are being dispatched',
+                example: '3',
+                required: true,
+                position: 2
+            },
+            {
+                name: 'var3',
+                description: 'Total number of pots that stored when entry made',
+                example: '5',
+                required: true,
+                position: 3
+            },
+            {
+                name: 'var4',
+                description: 'Location name',
+                example: 'Kailasabhoomi kotilingalu',
+                required: true,
+                position: 4
+            }
+        ],
+        variableCount: 4,
         isActive: true,
         category: 'confirmation'
     },

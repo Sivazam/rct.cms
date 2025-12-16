@@ -591,23 +591,29 @@ class SMSService {
    * Send partial dispatch confirmation to customer
    */
   public async sendPartialDispatchConfirmationCustomer(
-    customerName: string,
     customerMobile: string,
+    deceasedPersonName: string,
+    partialPotsDispatched: number,
+    totalPotsStored: number,
+    dispatchDate: string,
+    handoverPersonName: string,
+    handoverPersonMobile: string,
+    adminMobile: string,
     locationName: string,
-    lockerNumber: number,
-    potsDispatched: number,
-    remainingPots: number,
     entryId?: string,
     customerId?: string,
     locationId?: string,
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      var1: customerName,
-      var2: potsDispatched.toString(),
-      var3: lockerNumber.toString(),
-      var4: remainingPots.toString(),
-      var5: locationName
+      var1: deceasedPersonName,
+      var2: partialPotsDispatched.toString(),
+      var3: totalPotsStored.toString(),
+      var4: dispatchDate,
+      var5: handoverPersonName,
+      var6: handoverPersonMobile,
+      var7: adminMobile,
+      var8: locationName
     };
 
     return await this.sendSMSWithRetry({
@@ -625,28 +631,26 @@ class SMSService {
    * Send partial dispatch notification to admin
    */
   public async sendPartialDispatchNotificationAdmin(
-    recipient: string,
-    customerName: string,
+    adminMobile: string,
+    deceasedPersonName: string,
+    partialPotsDispatched: number,
+    totalPotsStored: number,
     locationName: string,
-    lockerNumber: number,
-    potsDispatched: number,
-    remainingPots: number,
     entryId?: string,
     customerId?: string,
     locationId?: string,
     operatorId?: string
   ): Promise<SMSServiceResult> {
     const variables: TemplateVariables = {
-      var1: customerName,
-      var2: potsDispatched.toString(),
-      var3: lockerNumber.toString(),
-      var4: remainingPots.toString(),
-      var5: locationName
+      var1: deceasedPersonName,
+      var2: partialPotsDispatched.toString(),
+      var3: totalPotsStored.toString(),
+      var4: locationName
     };
 
     return await this.sendSMSWithRetry({
       templateKey: 'partialDispatchAdmin',
-      recipient,
+      recipient: adminMobile,
       variables,
       entryId,
       customerId,

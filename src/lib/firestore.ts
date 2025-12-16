@@ -307,6 +307,7 @@ export const addEntry = async (entryData: {
   customerId: string;
   customerName: string;
   customerMobile: string;
+  customerCity?: string; // Add optional customerCity field
   deceasedPersonName?: string; // New field for deceased person details
   numberOfLockers: number; // Changed from numberOfPots to numberOfLockers
   potsPerLocker: number; // New field - number of pots in each locker
@@ -319,9 +320,9 @@ export const addEntry = async (entryData: {
     const entryDate = entryData.entryDate || new Date();
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     
-    // Calculate total pots and payment based on number of lockers
-    const totalPots = entryData.numberOfLockers * entryData.potsPerLocker;
-    const entryFee = 500 * entryData.numberOfLockers; // ₹500 per locker
+    // Calculate total pots and payment - simplified to single locker per entry
+    const totalPots = entryData.numberOfPots || entryData.numberOfLockers * entryData.potsPerLocker; // Backward compatibility
+    const entryFee = 500; // Fixed ₹500 per entry, not per locker
     
     const docRef = await addDoc(collection(db, 'entries'), {
       ...entryData,
@@ -330,12 +331,13 @@ export const addEntry = async (entryData: {
       expiryDate: expiryDate,
       status: 'active',
       payments: [{
-        amount: entryFee, // Based on number of lockers
+        amount: entryFee, // Fixed ₹500 per entry
         date: entryDate,
         type: 'entry',
         method: entryData.paymentMethod,
         months: 1,
-        lockerCount: entryData.numberOfLockers
+        lockerCount: 1, // Always 1 locker per entry
+        description: `Entry fee for ${totalPots} pots`
       }],
       renewals: [],
       // Track pots per locker for partial dispatches
@@ -552,15 +554,15 @@ export const partialDispatch = async (entryId: string, dispatchData: {
       originalEntryData: {
         customerName: entry.customerName,
         customerMobile: entry.customerMobile,
-        customerCity: entry.customerCity,
+        customerCity: entry.customerCity || 'Unknown', // Add fallback for undefined
         locationId: entry.locationId,
-        locationName: entry.locationName,
+        locationName: entry.locationName || 'Unknown Location', // Add fallback for undefined
         numberOfLockers: entry.numberOfLockers,
         potsPerLocker: entry.potsPerLocker,
         totalPots: entry.totalPots,
         entryDate: entry.entryDate,
         operatorId: entry.operatorId,
-        operatorName: entry.operatorName
+        operatorName: entry.operatorName || 'Unknown Operator' // Add fallback for undefined
       },
       dispatchInfo: {
         lockerNumber: dispatchData.lockerNumber,

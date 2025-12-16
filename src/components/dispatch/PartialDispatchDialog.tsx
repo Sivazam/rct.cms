@@ -113,41 +113,55 @@ export default function PartialDispatchDialog({
 
       onSuccess(data);
       
-      // Send SMS notifications
-      try {
-        // Send confirmation to customer
-        const customerSMSResult = await smsService.sendPartialDispatchConfirmationCustomer(
-          entry.customerName,
-          entry.customerMobile,
-          entry.locationName || 'Unknown Location',
-          parseInt(formData.lockerNumber),
-          parseInt(formData.potsToDispatch),
-          entry.totalPots - parseInt(formData.potsToDispatch), // remaining pots
-          entry.id,
-          entry.customerId,
-          entry.locationId,
-          user.uid
-        );
-        
-        console.log('📱 Customer SMS Result:', customerSMSResult);
-        
-        // Send notification to admin
-        const adminSMSResult = await smsService.sendPartialDispatchNotificationAdmin(
-          '+919014882779', // Admin mobile
-          entry.customerName,
-          entry.locationName || 'Unknown Location',
-          parseInt(formData.lockerNumber),
-          parseInt(formData.potsToDispatch),
-          entry.totalPots - parseInt(formData.potsToDispatch), // remaining pots
-          entry.id,
-          entry.customerId,
-          entry.locationId,
-          user.uid
-        );
-        
-        console.log('📞 Admin SMS Result:', adminSMSResult);
-      } catch (smsError) {
-        console.error('Failed to send SMS notifications:', smsError);
+      // Send SMS notifications only if this is not the last pot
+      const remainingPotsAfterDispatch = entry.totalPots - parseInt(formData.potsToDispatch);
+      
+      if (remainingPotsAfterDispatch > 0) {
+        try {
+          const dispatchDate = new Date().toLocaleDateString('en-GB', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+          });
+
+          // Send confirmation to customer
+          const customerSMSResult = await smsService.sendPartialDispatchConfirmationCustomer(
+            entry.customerMobile,
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
+            parseInt(formData.potsToDispatch), // Partial pots being dispatched
+            entry.totalPots, // Total pots stored when entry made
+            dispatchDate, // Date of dispatch
+            formData.handoverPersonName || 'N/A',
+            formData.handoverPersonMobile || 'N/A',
+            '+919014882779', // Admin mobile
+            entry.locationName || 'N/A',
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
+          
+          console.log('📱 Customer SMS Result:', customerSMSResult);
+          
+          // Send notification to admin
+          const adminSMSResult = await smsService.sendPartialDispatchNotificationAdmin(
+            '+919014882779', // Admin mobile
+            entry.deceasedPersonName || entry.customerName, // Use deceased person name
+            parseInt(formData.potsToDispatch), // Partial pots being dispatched
+            entry.totalPots, // Total pots stored when entry made
+            entry.locationName || 'N/A',
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
+          
+          console.log('📞 Admin SMS Result:', adminSMSResult);
+        } catch (smsError) {
+          console.error('Failed to send SMS notifications:', smsError);
+        }
+      } else {
+        console.log('Last pot dispatched - partial dispatch SMS skipped, full dispatch SMS should be triggered');
       }
       
       onClose();
@@ -167,22 +181,19 @@ export default function PartialDispatchDialog({
       return null;
     }
     
-    // Check if entry has lockerDetails (new structure) or fallback to old structure
-    if (entry.lockerDetails && entry.lockerDetails.length > 0) {
-      return entry.lockerDetails[0]; // Return first locker for current entry
-    } else {
-      // Fallback for old entries - create virtual locker from old data
-      const totalPots = entry.totalPots || entry.numberOfPots || 1;
-      const numberOfLockers = entry.numberOfLockers || 1;
-      const potsPerLocker = entry.potsPerLocker || Math.ceil(totalPots / numberOfLockers);
-      
-      return {
-        lockerNumber: 1,
-        totalPots: potsPerLocker,
-        remainingPots: totalPots,
-        dispatchedPots: []
-      };
-    }
+    // For new simplified system: 1 locker per entry
+    const totalPots = entry.totalPots || entry.numberOfPots || 1;
+    
+    // Calculate remaining pots based on already dispatched pots
+    const dispatchedPots = entry.lockerDetails?.[0]?.dispatchedPots || [];
+    const remainingPots = totalPots - dispatchedPots.length;
+    
+    return {
+      lockerNumber: 1,
+      totalPots: totalPots,
+      remainingPots: remainingPots,
+      dispatchedPots: dispatchedPots
+    };
   };
 
   const calculatePendingAmount = () => {
@@ -256,8 +267,8 @@ export default function PartialDispatchDialog({
                 </div>
                 <div>
                   <span className="font-medium">Remaining Pots:</span> 
-                  {entry.lockerDetails 
-                    ? entry.lockerDetails.reduce((sum, locker) => sum + locker.remainingPots, 0)
+                  {entry.lockerDetails?.[0]?.remainingPots !== undefined 
+                    ? entry.lockerDetails[0].remainingPots 
                     : (entry.totalPots || entry.numberOfPots)}
                 </div>
               </div>

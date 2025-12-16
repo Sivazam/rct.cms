@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +39,7 @@ export default function AdminSettings() {
     return null;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate before saving
     const validationError = validateMobile(inputMobile);
     if (validationError) {
@@ -49,19 +49,47 @@ export default function AdminSettings() {
     }
     
     try {
+      // Update local state first
       setAdminMobile(inputMobile);
       setValidationError(null);
-      setMessage({ type: 'success', text: 'Admin mobile number updated successfully!' });
+      
+      // Also update Firebase config
+      const response = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ adminMobile: inputMobile }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setMessage({ 
+          type: 'success', 
+          text: 'Admin mobile number updated successfully in both local state and Firebase config!' 
+        });
+      } else {
+        setMessage({ 
+          type: 'error', 
+          text: `Local state updated but Firebase config failed: ${result.error}` 
+        });
+      }
+      
       setIsEditing(false);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to update admin mobile number. Please check the format.' });
+      console.error('Error updating admin mobile:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Failed to update admin mobile number. Please try again.' 
+      });
     }
     
-    // Clear message after 3 seconds
+    // Clear message after 5 seconds
     setTimeout(() => {
       setMessage(null);
       setValidationError(null);
-    }, 3000);
+    }, 5000);
   };
 
   const handleReset = () => {

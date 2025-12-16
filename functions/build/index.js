@@ -1,7 +1,6 @@
 "use strict";
-// SMS Template Management System - Updated with Fast2SMS Message IDs
-// This version uses Fast2SMS Message IDs for API calls, not DLT Template IDs
-// Last updated: 2025-01-21 - Fixed template IDs for finalDisposalReminder (198613) and finalDisposalReminderAdmin (198614)
+// SMS Template Management System - Firebase Cloud Functions
+// Clean version with proper syntax
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -38,9 +37,8 @@ var __importStar = (this && this.__importStar) || (function () {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a, _b, _c;
+var _a, _b, _c, _d, _e, _f, _g, _h;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.debugTemplateIds = exports.debugSMSLogs = exports.forceDeployTrigger = exports.testSMSTemplate = exports.getSMSLogs = exports.getSMSTemplates = exports.sendExpiryReminders = exports.sendSMSV2 = exports.healthCheck = exports.testFunction = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const axios_1 = __importDefault(require("axios"));
@@ -51,17 +49,23 @@ admin.initializeApp();
 // Firestore instance
 const db = admin.firestore();
 // Initialize SMS Logs Service with Firestore instance
-const smsLogsService = sms_logs_1.default.getInstance(db);
+const smsLogs = sms_logs_1.default.getInstance(db);
+// Initialize SMS Templates Service
+const smsTemplates = sms_templates_1.default.getInstance();
 // Configuration constants
 const DAILY_CHECK_HOUR = 10; // 10 AM as requested
 const TIME_ZONE = 'Asia/Kolkata';
 const EXPIRY_REMINDER_DAYS = 3; // 3 days before expiry
 // FastSMS Configuration - Securely loaded from environment
 const FASTSMS_CONFIG = {
-    apiKey: (_a = functions.config().fastsms) === null || _a === void 0 ? void 0 : _a.api_key,
-    senderId: (_b = functions.config().fastsms) === null || _b === void 0 ? void 0 : _b.sender_id,
-    entityId: (_c = functions.config().fastsms) === null || _c === void 0 ? void 0 : _c.entity_id,
-    baseUrl: 'https://www.fast2sms.com/dev/bulkV2' // Updated DLT-compliant endpoint
+    apiKey: (_b = (_a = functions.config()) === null || _a === void 0 ? void 0 : _a.fastsms) === null || _b === void 0 ? void 0 : _b.api_key,
+    senderId: (_d = (_c = functions.config()) === null || _c === void 0 ? void 0 : _c.fastsms) === null || _d === void 0 ? void 0 : _d.sender_id,
+    entityId: (_f = (_e = functions.config()) === null || _e === void 0 ? void 0 : _e.fastsms) === null || _f === void 0 ? void 0 : _f.entity_id,
+    baseUrl: 'https://www.fast2sms.com/dev/bulkV2'
+};
+// Admin Configuration - Securely loaded from environment
+const ADMIN_CONFIG = {
+    mobile: (_h = (_g = functions.config()) === null || _g === void 0 ? void 0 : _g.admin) === null || _h === void 0 ? void 0 : _h.mobile
 };
 // Retry configuration
 const MAX_RETRY_ATTEMPTS = 3;
@@ -70,876 +74,260 @@ const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
 // Validate FastSMS configuration
 function validateFastSMSConfig() {
     if (!FASTSMS_CONFIG.apiKey) {
-        throw new Error('FastSMS API key not configured. Please run: firebase functions:config:set fastsms.api_key="YOUR_API_KEY"');
+        throw new Error('FastSMS API key not configured');
     }
     if (!FASTSMS_CONFIG.senderId) {
-        throw new Error('FastSMS sender ID not configured. Please run: firebase functions:config:set fastsms.sender_id="YOUR_SENDER_ID"');
-    }
-    // Entity ID is optional for DLT route but recommended for enhanced compliance
-    if (!FASTSMS_CONFIG.entityId) {
-        console.warn('FastSMS entity ID not configured. DLT compliance may be limited. Run: firebase functions:config:set fastsms.entity_id="YOUR_ENTITY_ID"');
+        throw new Error('FastSMS sender ID not configured');
     }
 }
-// Secure SMS sending function (server-side only) - Using DLT Route as per Fast2SMS recommendation
+// Validate Admin configuration
+function validateAdminConfig() {
+    if (!ADMIN_CONFIG.mobile) {
+        throw new Error('Admin mobile not configured');
+    }
+}
+// Secure SMS sending function
 async function sendSMSAPI(recipient, templateId, variablesValues, attempt = 1) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     try {
-        console.log('🔍 [DEBUG] Starting sendSMSAPI function...');
-        console.log('🔍 [DEBUG] Input parameters:', {
-            recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-            templateId,
-            templateIdLength: templateId.length,
-            variablesValues: variablesValues.substring(0, 20) + '...',
-            variablesCount: variablesValues.split('|').length,
-            attempt
-        });
         validateFastSMSConfig();
-        console.log('🔍 [DEBUG] FastSMS config validated:', {
-            hasApiKey: !!FASTSMS_CONFIG.apiKey,
-            hasSenderId: !!FASTSMS_CONFIG.senderId,
-            hasEntityId: !!FASTSMS_CONFIG.entityId,
-            senderId: FASTSMS_CONFIG.senderId,
-            entityId: FASTSMS_CONFIG.entityId ? FASTSMS_CONFIG.entityId.substring(0, 8) + '****' : 'NOT_SET',
-            baseUrl: FASTSMS_CONFIG.baseUrl
-        });
-        const apiUrl = new URL(FASTSMS_CONFIG.baseUrl);
         // Enhanced validation of recipient number
         if (!recipient || !/^[6-9]\d{9}$/.test(recipient.replace('+91', ''))) {
-            console.error('🔍 [DEBUG] Invalid recipient number format:', recipient);
-            throw new Error(`Invalid recipient number format: ${recipient}. Must be 10 digits starting with 6-9.`);
+            throw new Error(`Invalid recipient number format: ${recipient}`);
         }
-        // Enhanced validation of template ID (Fast2SMS Message ID)
+        // Enhanced validation of template ID
         if (!templateId || !/^\d+$/.test(templateId)) {
-            console.error('🔍 [DEBUG] Invalid template ID format:', templateId);
-            throw new Error(`Invalid template ID format: ${templateId}. Must be numeric.`);
+            throw new Error(`Invalid template ID format: ${templateId}`);
         }
         // Enhanced validation of variables
         if (!variablesValues || typeof variablesValues !== 'string') {
-            console.error('🔍 [DEBUG] Invalid variables values:', variablesValues);
-            throw new Error(`Invalid variables values: ${variablesValues}. Must be a non-empty string.`);
+            throw new Error(`Invalid variables values: ${variablesValues}`);
         }
-        // Using DLT Route as recommended by Fast2SMS team
+        const apiUrl = new URL(FASTSMS_CONFIG.baseUrl);
         apiUrl.searchParams.append('authorization', FASTSMS_CONFIG.apiKey);
         apiUrl.searchParams.append('route', 'dlt');
         apiUrl.searchParams.append('sender_id', FASTSMS_CONFIG.senderId);
-        apiUrl.searchParams.append('message', templateId); // Fast2SMS Message ID (updated)
-        apiUrl.searchParams.append('variables_values', variablesValues); // Pipe-separated variables
+        apiUrl.searchParams.append('message', templateId);
+        apiUrl.searchParams.append('variables_values', variablesValues);
         apiUrl.searchParams.append('flash', '0');
-        apiUrl.searchParams.append('numbers', recipient.replace('+91', '')); // Remove country code for API
-        // Add entity_id if available (for enhanced DLT compliance)
+        apiUrl.searchParams.append('numbers', recipient.replace('+91', ''));
         if (FASTSMS_CONFIG.entityId) {
             apiUrl.searchParams.append('entity_id', FASTSMS_CONFIG.entityId);
         }
-        const fullUrl = apiUrl.toString();
-        console.log(`🔍 [DEBUG] FastSMS API Call (Attempt ${attempt}):`, {
-            recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-            templateId,
-            templateIdLength: templateId.length,
-            variablesValues: variablesValues.substring(0, 20) + '...',
-            variablesCount: variablesValues.split('|').length,
-            route: 'dlt',
-            hasEntityId: !!FASTSMS_CONFIG.entityId,
-            entityId: FASTSMS_CONFIG.entityId ? FASTSMS_CONFIG.entityId.substring(0, 8) + '****' : 'NOT_SET',
-            senderId: FASTSMS_CONFIG.senderId,
-            url: fullUrl.substring(0, 150) + '...',
-            urlLength: fullUrl.length
-        });
-        console.log('🔍 [DEBUG] Making HTTP GET request to FastSMS API...');
-        const response = await axios_1.default.get(fullUrl, {
+        const response = await axios_1.default.get(apiUrl.toString(), {
             timeout: REQUEST_TIMEOUT_MS,
             headers: {
                 'User-Agent': 'Rotary-CMS/1.0',
                 'Accept': 'application/json'
             }
         });
-        console.log('🔍 [DEBUG] FastSMS API Response:', {
-            status: response.status,
-            statusText: response.statusText,
-            data: response.data,
-            return: response.data.return,
-            request_id: response.data.request_id,
-            message: response.data.message,
-            type: typeof response.data,
-            keys: Object.keys(response.data || {})
-        });
-        // Enhanced response validation
-        if (!response.data || typeof response.data !== 'object') {
-            console.error('🔍 [DEBUG] Invalid API response format:', response.data);
-            throw new Error('Invalid API response format from FastSMS');
-        }
         if (response.data.return === true) {
-            console.log('🔍 [DEBUG] SMS sent successfully:', {
-                requestId: response.data.request_id,
-                message: response.data.message
-            });
             return {
                 success: true,
                 messageId: response.data.request_id
             };
         }
         else {
-            // Enhanced error details with specific focus on template/entity ID issues
             const errorMessage = response.data.message || 'SMS sending failed';
-            const errorCode = response.data.code || 'UNKNOWN_ERROR';
-            console.error('🔍 [DEBUG] FastSMS API Error Details:', {
-                errorMessage,
-                errorCode,
-                fullResponse: response.data,
-                templateId,
-                entityId: FASTSMS_CONFIG.entityId,
-                senderId: FASTSMS_CONFIG.senderId,
-                recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4)
-            });
-            // Special handling for template/entity ID errors
-            if (errorMessage.includes('Invalid Message ID') || errorMessage.includes('Template') || errorMessage.includes('Entity ID')) {
-                console.error('🔍 [DEBUG] TEMPLATE/ENTITY ID ERROR DETECTED!');
-                console.error('🔍 [DEBUG] Please verify:');
-                console.error('🔍 [DEBUG] 1. Fast2SMS Message ID is correct and active:', templateId);
-                console.error('🔍 [DEBUG] 2. Entity ID is correct and associated with template:', FASTSMS_CONFIG.entityId);
-                console.error('🔍 [DEBUG] 3. Sender ID is approved for this template/entity combination:', FASTSMS_CONFIG.senderId);
-                console.error('🔍 [DEBUG] 4. Template variables match the DLT template format exactly');
-            }
-            const errorDetails = {
-                type: 'API_ERROR',
-                message: errorMessage,
-                code: errorCode,
-                details: response.data,
-                timestamp: new Date(),
-                debugInfo: {
-                    templateId,
-                    templateIdFormat: /^\d+$/.test(templateId) ? 'VALID_NUMERIC' : 'INVALID_FORMAT',
-                    recipientFormat: /^[6-9]\d{9}$/.test(recipient.replace('+91', '')) ? 'VALID_MOBILE' : 'INVALID_MOBILE',
-                    variablesFormat: variablesValues.split('|').length > 0 ? 'VALID_VARIABLES' : 'INVALID_VARIABLES',
-                    apiEndpoint: fullUrl,
-                    isTemplateEntityError: errorMessage.includes('Invalid Message ID') || errorMessage.includes('Template') || errorMessage.includes('Entity ID')
-                }
-            };
-            console.error('🔍 [DEBUG] Enhanced FastSMS Error:', errorDetails);
-            throw errorDetails;
+            throw new Error(errorMessage);
         }
     }
     catch (error) {
-        console.error('🔍 [DEBUG] FastSMS API Error:', error);
-        if (axios_1.default.isAxiosError(error)) {
-            const status = (_a = error.response) === null || _a === void 0 ? void 0 : _a.status;
-            const message = ((_c = (_b = error.response) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.message) || error.message;
-            const responseData = (_d = error.response) === null || _d === void 0 ? void 0 : _d.data;
-            console.error('🔍 [DEBUG] Axios Error Details:', {
-                status,
-                message,
-                responseData,
-                config: {
-                    url: (_e = error.config) === null || _e === void 0 ? void 0 : _e.url,
-                    method: (_f = error.config) === null || _f === void 0 ? void 0 : _f.method,
-                    timeout: (_g = error.config) === null || _g === void 0 ? void 0 : _g.timeout
-                }
-            });
-            let errorType = 'API_ERROR';
-            if (status === 401)
-                errorType = 'AUTHENTICATION_ERROR';
-            else if (status === 429)
-                errorType = 'RATE_LIMIT_ERROR';
-            else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-                errorType = 'NETWORK_ERROR';
-            }
-            const enhancedError = {
-                success: false,
-                error: {
-                    type: errorType,
-                    message: `FastSMS API Error: ${message}`,
-                    code: status === null || status === void 0 ? void 0 : status.toString(),
-                    details: responseData,
-                    timestamp: new Date(),
-                    debugInfo: {
-                        templateId,
-                        recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-                        axiosError: {
-                            status,
-                            statusText: (_h = error.response) === null || _h === void 0 ? void 0 : _h.statusText,
-                            config: {
-                                url: (_j = error.config) === null || _j === void 0 ? void 0 : _j.url,
-                                method: (_k = error.config) === null || _k === void 0 ? void 0 : _k.method,
-                                timeout: (_l = error.config) === null || _l === void 0 ? void 0 : _l.timeout
-                            }
-                        }
-                    }
-                }
-            };
-            console.error('🔍 [DEBUG] Enhanced Axios Error:', enhancedError);
-            return enhancedError;
-        }
-        else {
-            const enhancedError = {
-                success: false,
-                error: {
-                    type: 'UNKNOWN',
-                    message: error instanceof Error ? error.message : 'Unknown error occurred',
-                    timestamp: new Date(),
-                    debugInfo: {
-                        templateId,
-                        recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-                        errorType: typeof error,
-                        errorMessage: error instanceof Error ? error.message : 'Non-error object',
-                        errorStack: error instanceof Error ? error.stack : undefined
-                    }
-                }
-            };
-            console.error('🔍 [DEBUG] Enhanced Unknown Error:', enhancedError);
-            return enhancedError;
-        }
-    }
-}
-// Helper function to get template ID by key with enhanced validation
-function getTemplateIdByKey(templateKey) {
-    console.log('🔍 [DEBUG] Getting template ID for key:', templateKey);
-    const template = sms_templates_1.default.getInstance().getTemplateByKey(templateKey);
-    if (!template) {
-        console.error('🔍 [DEBUG] Template not found for key:', templateKey);
-        throw new Error(`Template not found: ${templateKey}`);
-    }
-    // Enhanced template validation
-    console.log('🔍 [DEBUG] Template details:', {
-        key: template.key,
-        id: template.id,
-        name: template.name,
-        variableCount: template.variableCount,
-        isActive: template.isActive,
-        idLength: template.id.length,
-        idFormat: /^\d+$/.test(template.id) ? 'NUMERIC' : 'INVALID'
-    });
-    // Validate template ID format (should be numeric for Fast2SMS)
-    if (!/^\d+$/.test(template.id)) {
-        console.error('🔍 [DEBUG] Invalid template ID format (should be numeric):', template.id);
-        throw new Error(`Invalid template ID format: ${template.id}. Template IDs must be numeric for Fast2SMS compliance.`);
-    }
-    // Validate template ID length (Fast2SMS Message IDs are typically 6 digits)
-    if (template.id.length !== 6) {
-        console.warn('🔍 [DEBUG] Unusual template ID length (expected 6 digits for Fast2SMS):', template.id.length);
-    }
-    // Check if template is active
-    if (!template.isActive) {
-        console.error('🔍 [DEBUG] Template is not active:', template.key);
-        throw new Error(`Template is not active: ${templateKey}`);
-    }
-    console.log('🔍 [DEBUG] Template validation passed, returning ID:', template.id);
-    return template.id;
-}
-// Helper function to format variables for API with enhanced validation
-function formatVariablesForAPI(templateKey, variables) {
-    console.log('🔍 [DEBUG] Formatting variables for API:', {
-        templateKey,
-        variables,
-        variableKeys: Object.keys(variables || {}),
-        variableValues: Object.values(variables || {})
-    });
-    // Validate variables before formatting
-    const validation = sms_templates_1.default.getInstance().validateTemplateVariables(templateKey, variables);
-    if (!validation.isValid) {
-        console.error('🔍 [DEBUG] Template variable validation failed:', validation.errors);
-        throw new Error(`Template variable validation failed: ${validation.errors.join(', ')}`);
-    }
-    const formattedVariables = sms_templates_1.default.getInstance().formatVariablesForAPI(templateKey, variables);
-    console.log('🔍 [DEBUG] Formatted variables result:', {
-        originalVariables: variables,
-        formattedVariables,
-        variableCount: formattedVariables.split('|').length,
-        isEmpty: formattedVariables === ''
-    });
-    return formattedVariables;
-}
-// Helper function for delay/sleep
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-/**
- * Simple test function to verify deployment works
- */
-exports.testFunction = functions
-    .runWith({
-    memory: '256MB',
-    timeoutSeconds: 60,
-})
-    .https.onCall(async (data, context) => {
-    console.log('Test function called with data:', JSON.stringify(data, null, 2));
-    try {
-        // Simple test response
+        console.error('FastSMS API Error:', error);
         return {
-            success: true,
-            message: 'Test function executed successfully',
-            timestamp: new Date().toISOString(),
-            data: data
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
         };
     }
-    catch (error) {
-        console.error('Error in test function:', error);
-        throw new functions.https.HttpsError('internal', 'Test function failed');
-    }
+}
+// Test function
+exports.testFunction = functions.https.onCall(async (data, context) => {
+    return { message: 'Cloud functions are working!', timestamp: new Date().toISOString() };
 });
-/**
- * Health check function
- */
-exports.healthCheck = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
+// Health check function
+exports.healthCheck = functions.https.onCall(async (data, context) => {
+    return {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    };
+});
+// Send SMS function
+exports.sendSMSV2 = functions.https.onCall(async (data, context) => {
+    const { recipient, templateId, variablesValues } = data;
+    if (!recipient || !templateId || !variablesValues) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+    }
+    const result = await sendSMSAPI(recipient, templateId, variablesValues);
+    return result;
+});
+// Get SMS templates
+exports.getSMSTemplates = functions.https.onCall(async (data, context) => {
+    return smsTemplates;
+});
+// Get SMS logs
+exports.getSMSLogs = functions.https.onCall(async (data, context) => {
     try {
-        res.status(200).json({
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '1.0.0'
-        });
+        const logs = await smsLogs.getSMSLogs(data === null || data === void 0 ? void 0 : data.filters);
+        return { success: true, logs };
     }
     catch (error) {
-        console.error('Health check failed:', error);
-        res.status(500).json({
-            status: 'unhealthy',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        throw new functions.https.HttpsError('internal', 'Failed to get SMS logs');
     }
 });
-/**
- * Callable function to send SMS securely from front-end
- * This function validates authentication and authorization before sending SMS
- */
-exports.sendSMSV2 = functions
+// Test SMS template
+exports.testSMSTemplate = functions.https.onCall(async (data, context) => {
+    const { templateKey, recipient, variables } = data;
+    if (!templateKey || !recipient) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+    }
+    const template = smsTemplates[templateKey];
+    if (!template) {
+        throw new functions.https.HttpsError('not-found', `Template ${templateKey} not found`);
+    }
+    const variablesValues = variables ? variables.join('|') : '';
+    const result = await sendSMSAPI(recipient, template.templateId, variablesValues);
+    return result;
+});
+// Force deploy trigger
+exports.forceDeployTrigger = functions.https.onCall(async (data, context) => {
+    return {
+        message: 'Force deploy triggered successfully',
+        timestamp: new Date().toISOString()
+    };
+});
+// Debug SMS logs
+exports.debugSMSLogs = functions.https.onCall(async (data, context) => {
+    try {
+        const logs = await smsLogs.getRecentSMSLogs(50);
+        return { success: true, logs };
+    }
+    catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+});
+// Debug template IDs
+exports.debugTemplateIds = functions.https.onCall(async (data, context) => {
+    return {
+        templates: Object.keys(smsTemplates).map(key => (Object.assign({ key }, smsTemplates[key]))),
+        config: {
+            hasApiKey: !!FASTSMS_CONFIG.apiKey,
+            hasSenderId: !!FASTSMS_CONFIG.senderId,
+            hasEntityId: !!FASTSMS_CONFIG.entityId
+        }
+    };
+});
+// Firestore Trigger for Dispatched Lockers - Send SMS notifications
+exports.onDispatchedLockerCreated = functions
     .runWith({
     memory: '256MB',
     timeoutSeconds: 60,
 })
-    .https.onCall(async (data, context) => {
-    var _a;
-    console.log('sendSMS called with data:', JSON.stringify(data, null, 2));
-    // Check if user is authenticated
-    if (!context.auth) {
-        console.error('Authentication failed: No auth context');
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
-    }
-    // Validate required parameters
-    const { templateKey, recipient, variables, entryId, customerId, locationId } = data;
-    if (!templateKey || !recipient || !variables) {
-        console.error('Validation failed: Missing required parameters', {
-            templateKey: !!templateKey,
-            recipient: !!recipient,
-            variables: !!variables
-        });
-        throw new functions.https.HttpsError('invalid-argument', 'Template key, recipient, and variables are required.');
-    }
+    .firestore
+    .document('dispatchedLockers/{docId}')
+    .onCreate(async (snap, context) => {
+    var _a, _b, _c, _d, _e, _f;
+    console.log('🔥 [DISPATCH_TRIGGER] New dispatched locker record created');
     try {
-        // Get template ID using the service
-        const templateId = getTemplateIdByKey(templateKey);
-        // Format variables for API
-        const formattedVariables = formatVariablesForAPI(templateKey, variables);
-        console.log('🔍 [DEBUG] Sending SMS with formatted data:', {
-            templateKey,
-            templateId,
-            recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-            formattedVariables: formattedVariables.substring(0, 30) + '...',
-            entryId,
-            customerId,
-            locationId
-        });
-        // Send SMS with retry logic
-        let lastError = null;
-        for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
-            try {
-                const result = await sendSMSAPI(recipient, templateId, formattedVariables, attempt);
-                if (result.success && 'messageId' in result) {
-                    console.log('✅ [SUCCESS] SMS sent successfully:', {
-                        templateKey,
-                        recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-                        messageId: result.messageId,
-                        attempt
-                    });
-                    // Log successful SMS to Firestore
-                    await smsLogsService.logSMS({
-                        type: templateKey,
-                        templateId,
-                        message: formattedVariables,
-                        recipient,
-                        status: 'sent',
-                        entryId,
-                        customerId,
-                        locationId,
-                        operatorId: context.auth.uid,
-                        timestamp: new Date(),
-                        retryCount: 0
-                    });
-                    return {
-                        success: true,
-                        messageId: result.messageId,
-                        templateKey,
-                        recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-                        timestamp: new Date().toISOString()
-                    };
-                }
-            }
-            catch (error) {
-                lastError = error;
-                console.error(`❌ [ERROR] Attempt ${attempt} failed:`, error);
-                if (attempt < MAX_RETRY_ATTEMPTS) {
-                    console.log(`⏳ [RETRY] Waiting ${RETRY_DELAY_MS}ms before retry...`);
-                    await delay(RETRY_DELAY_MS);
-                }
-            }
-        }
-        // All attempts failed
-        console.error('💥 [CRITICAL] All SMS attempts failed:', lastError);
-        // Log failed SMS to Firestore
-        await smsLogsService.logSMS({
-            type: templateKey,
-            templateId,
-            message: formattedVariables,
-            recipient,
-            status: 'failed',
-            entryId,
-            customerId,
-            locationId,
-            operatorId: context.auth.uid,
-            timestamp: new Date(),
-            errorMessage: (lastError === null || lastError === void 0 ? void 0 : lastError.message) || 'Unknown error',
-            retryCount: MAX_RETRY_ATTEMPTS
-        });
-        throw new functions.https.HttpsError('internal', `Failed to send SMS after ${MAX_RETRY_ATTEMPTS} attempts: ${(lastError === null || lastError === void 0 ? void 0 : lastError.message) || 'Unknown error'}`);
-    }
-    catch (error) {
-        console.error('💥 [CRITICAL] SMS sending failed:', error);
-        // Format error for client
-        let errorMessage = 'Failed to send SMS';
-        let errorCode = 'SMS_SEND_FAILED';
-        if (error.type === 'AUTHENTICATION_ERROR') {
-            errorMessage = 'SMS service authentication failed';
-            errorCode = 'SMS_AUTH_ERROR';
-        }
-        else if (error.type === 'RATE_LIMIT_ERROR') {
-            errorMessage = 'SMS rate limit exceeded';
-            errorCode = 'SMS_RATE_LIMIT';
-        }
-        else if (error.type === 'NETWORK_ERROR') {
-            errorMessage = 'SMS service network error';
-            errorCode = 'SMS_NETWORK_ERROR';
-        }
-        else if ((_a = error.debugInfo) === null || _a === void 0 ? void 0 : _a.isTemplateEntityError) {
-            errorMessage = 'SMS template configuration error';
-            errorCode = 'SMS_TEMPLATE_ERROR';
-        }
-        throw new functions.https.HttpsError('internal', errorMessage, {
-            code: errorCode,
-            timestamp: new Date().toISOString(),
-            debugInfo: error.debugInfo || {}
-        });
-    }
-});
-/**
- * Scheduled function to check for expiring entries and send reminders
- * Runs daily at 10 AM Asia/Kolkata time
- */
-exports.sendExpiryReminders = functions
-    .runWith({
-    memory: '256MB',
-    timeoutSeconds: 540, // 9 minutes
-})
-    .pubsub.schedule('0 10 * * *')
-    .timeZone(TIME_ZONE)
-    .onRun(async (context) => {
-    var _a;
-    console.log('🔔 [SCHEDULED] Starting expiry reminders check...');
-    try {
-        const now = new Date();
-        const reminderDate = new Date(now.getTime() + (EXPIRY_REMINDER_DAYS * 24 * 60 * 60 * 1000));
-        console.log('📅 [SCHEDULED] Checking for entries expiring on:', reminderDate.toISOString());
-        // Query for entries expiring in 3 days
-        const expiringEntries = await db.collection('entries')
-            .where('expiryDate', '==', reminderDate.toISOString().split('T')[0])
-            .where('status', '==', 'active')
-            .get();
-        console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring in ${EXPIRY_REMINDER_DAYS} days`);
-        if (expiringEntries.empty) {
-            console.log('✅ [SCHEDULED] No entries require expiry reminders');
+        const dispatchedData = snap.data();
+        if (!dispatchedData) {
+            console.error('🔥 [DISPATCH_TRIGGER] No data found in dispatched locker record');
             return null;
         }
-        let successCount = 0;
-        let failureCount = 0;
-        // Process each expiring entry
-        for (const doc of expiringEntries.docs) {
-            const entry = doc.data();
-            try {
-                console.log(`🔄 [SCHEDULED] Processing entry: ${entry.id}`);
-                // Prepare variables for SMS
-                const variables = {
-                    var1: entry.deceasedName || '',
-                    var2: entry.location || '',
-                    var3: entry.expiryDate || '',
-                    var4: entry.contactNumber || '',
-                    var5: entry.location || '' // Repeated location
-                };
-                // Get template ID
-                const templateId = getTemplateIdByKey('threeDayReminder');
-                // Format variables
-                const formattedVariables = formatVariablesForAPI('threeDayReminder', variables);
-                // Send SMS
-                const result = await sendSMSAPI(entry.contactNumber, templateId, formattedVariables);
-                if (result.success) {
-                    successCount++;
-                    console.log(`✅ [SCHEDULED] Reminder sent for entry: ${entry.id}`);
-                    // Update entry to mark reminder sent
-                    await doc.ref.update({
-                        reminderSent: true,
-                        reminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
-                        reminderSentBy: 'system'
-                    });
-                    // Log SMS
-                    await smsLogsService.logSMS({
-                        type: 'threeDayReminder',
-                        recipient: entry.contactNumber,
-                        templateId: templateId,
-                        message: ((_a = sms_templates_1.default.getInstance().getTemplateByKey('threeDayReminder')) === null || _a === void 0 ? void 0 : _a.name) || 'Three Day Reminder',
-                        status: 'sent',
-                        entryId: entry.id,
-                        customerId: entry.customerId,
-                        locationId: entry.locationId,
-                        timestamp: new Date(),
-                        retryCount: 0
-                    });
-                }
-                else {
-                    failureCount++;
-                    console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, result);
-                }
-            }
-            catch (error) {
-                failureCount++;
-                console.error(`❌ [SCHEDULED] Error processing entry ${entry.id}:`, error);
-            }
+        const dispatchInfo = dispatchedData.dispatchInfo;
+        const originalEntryData = dispatchedData.originalEntryData;
+        if (!dispatchInfo || !originalEntryData) {
+            console.error('🔥 [DISPATCH_TRIGGER] Missing dispatch info or original entry data');
+            return null;
         }
-        console.log(`📊 [SCHEDULED] Expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
-        return {
-            success: true,
-            processed: expiringEntries.size,
-            successful: successCount,
-            failed: failureCount,
-            timestamp: new Date().toISOString()
-        };
-    }
-    catch (error) {
-        console.error('💥 [CRITICAL] Expiry reminders failed:', error);
-        throw new functions.https.HttpsError('internal', `Expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-});
-/**
- * Function to get all available SMS templates
- */
-exports.getSMSTemplates = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onCall(async (data, context) => {
-    console.log('getSMSTemplates called');
-    // Check if user is authenticated
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
-    }
-    try {
-        const templates = sms_templates_1.default.getInstance().getAllTemplates();
-        const stats = sms_templates_1.default.getInstance().getTemplateStats();
-        return {
-            success: true,
-            templates: templates,
-            stats: stats,
-            timestamp: new Date().toISOString()
-        };
-    }
-    catch (error) {
-        console.error('Error getting SMS templates:', error);
-        throw new functions.https.HttpsError('internal', `Failed to get SMS templates: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-});
-/**
- * Function to get SMS logs
- */
-exports.getSMSLogs = functions
-    .runWith({
-    memory: '256MB',
-    timeoutSeconds: 60,
-})
-    .https.onCall(async (data, context) => {
-    console.log('getSMSLogs called with data:', JSON.stringify(data, null, 2));
-    // Check if user is authenticated
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
-    }
-    try {
-        const { limit = 50, offset = 0, templateKey, status } = data;
-        const logs = await smsLogsService.getSMSLogs({
-            type: templateKey,
-            status
+        console.log('🔥 [DISPATCH_TRIGGER] Processing dispatch:', {
+            entryId: dispatchedData.entryId,
+            dispatchType: dispatchInfo.dispatchType,
+            totalRemainingPots: dispatchInfo.totalRemainingPots,
+            potsDispatched: dispatchInfo.potsDispatched
         });
-        // Apply pagination manually since the service doesn't support it directly
-        const paginatedLogs = logs.slice(offset, offset + limit);
-        return {
-            success: true,
-            logs: paginatedLogs,
-            total: logs.length,
-            timestamp: new Date().toISOString()
-        };
-    }
-    catch (error) {
-        console.error('Error getting SMS logs:', error);
-        throw new functions.https.HttpsError('internal', `Failed to get SMS logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-});
-/**
- * Function to test SMS template with specific variables
- */
-exports.testSMSTemplate = functions
-    .runWith({
-    memory: '256MB',
-    timeoutSeconds: 60,
-})
-    .https.onCall(async (data, context) => {
-    var _a, _b;
-    console.log('testSMSTemplate called with data:', JSON.stringify(data, null, 2));
-    // Check if user is authenticated
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
-    }
-    // Validate required parameters
-    const { templateKey, recipient, variables } = data;
-    if (!templateKey || !recipient || !variables) {
-        throw new functions.https.HttpsError('invalid-argument', 'Template key, recipient, and variables are required.');
-    }
-    // Get template ID (moved outside try block for catch block access)
-    const templateId = getTemplateIdByKey(templateKey);
-    try {
-        // Format variables
-        const formattedVariables = formatVariablesForAPI(templateKey, variables);
-        console.log('🔍 [DEBUG] Testing SMS template:', {
-            templateKey,
-            templateId,
-            recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-            formattedVariables: formattedVariables.substring(0, 30) + '...'
-        });
-        // Send test SMS
-        const result = await sendSMSAPI(recipient, templateId, formattedVariables);
-        if (result.success && 'messageId' in result) {
-            console.log('✅ [SUCCESS] Test SMS sent successfully:', {
-                templateKey,
-                recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-                messageId: result.messageId
-            });
-            // Log test SMS
-            await smsLogsService.logSMS({
-                type: templateKey,
-                recipient,
-                templateId: templateId,
-                message: ((_a = sms_templates_1.default.getInstance().getTemplateByKey(templateKey)) === null || _a === void 0 ? void 0 : _a.name) || 'Test SMS',
-                status: 'sent',
-                timestamp: new Date(),
-                retryCount: 0
-            });
-            return {
-                success: true,
-                messageId: result.messageId,
-                templateKey,
-                recipient: recipient.substring(0, 4) + '****' + recipient.substring(-4),
-                timestamp: new Date().toISOString()
+        // Only send SMS for partial dispatches (when some pots remain)
+        if (dispatchInfo.dispatchType === 'partial' && dispatchInfo.totalRemainingPots > 0) {
+            console.log('🔥 [DISPATCH_TRIGGER] Partial dispatch detected - sending SMS notifications');
+            const results = {
+                customerSMS: null,
+                adminSMS: null
             };
+            try {
+                // Send SMS to customer
+                const customerTemplate = smsTemplates.getTemplateByKey('partialDispatchCustomer');
+                if (customerTemplate) {
+                    const customerVariables = [
+                        originalEntryData.deceasedPersonName || originalEntryData.customerName,
+                        dispatchInfo.potsDispatched.toString(),
+                        dispatchInfo.totalRemainingPots.toString(),
+                        new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                        dispatchInfo.handoverPersonName || 'N/A',
+                        dispatchInfo.handoverPersonMobile || 'N/A',
+                        ADMIN_CONFIG.mobile || 'N/A',
+                        originalEntryData.locationName || 'N/A'
+                    ].join('|');
+                    results.customerSMS = await sendSMSAPI(originalEntryData.customerMobile, customerTemplate.id, customerVariables);
+                }
+                // Send SMS to admin
+                const adminTemplate = smsTemplates.getTemplateByKey('partialDispatchAdmin');
+                if (adminTemplate) {
+                    const adminVariables = [
+                        originalEntryData.deceasedPersonName || originalEntryData.customerName,
+                        dispatchInfo.potsDispatched.toString(),
+                        dispatchInfo.totalRemainingPots.toString(),
+                        originalEntryData.locationName || 'N/A'
+                    ].join('|');
+                    results.adminSMS = await sendSMSAPI(ADMIN_CONFIG.mobile, adminTemplate.id, adminVariables);
+                }
+                // Log SMS results
+                await smsLogs.logSMS({
+                    type: 'partial_dispatch_customer',
+                    recipient: originalEntryData.customerMobile,
+                    templateId: (customerTemplate === null || customerTemplate === void 0 ? void 0 : customerTemplate.id) || '',
+                    message: 'Partial dispatch notification to customer',
+                    status: ((_a = results.customerSMS) === null || _a === void 0 ? void 0 : _a.success) ? 'sent' : 'failed',
+                    errorMessage: (_b = results.customerSMS) === null || _b === void 0 ? void 0 : _b.error,
+                    timestamp: new Date(),
+                    retryCount: 1,
+                    entryId: dispatchedData.entryId,
+                    customerId: originalEntryData.customerId,
+                    locationId: originalEntryData.locationId,
+                    operatorId: originalEntryData.operatorId
+                });
+                await smsLogs.logSMS({
+                    type: 'partial_dispatch_admin',
+                    recipient: ADMIN_CONFIG.mobile,
+                    templateId: (adminTemplate === null || adminTemplate === void 0 ? void 0 : adminTemplate.id) || '',
+                    message: 'Partial dispatch notification to admin',
+                    status: ((_c = results.adminSMS) === null || _c === void 0 ? void 0 : _c.success) ? 'sent' : 'failed',
+                    errorMessage: (_d = results.adminSMS) === null || _d === void 0 ? void 0 : _d.error,
+                    timestamp: new Date(),
+                    retryCount: 1,
+                    entryId: dispatchedData.entryId,
+                    customerId: originalEntryData.customerId,
+                    locationId: originalEntryData.locationId,
+                    operatorId: originalEntryData.operatorId
+                });
+            }
+            catch (smsError) {
+                console.error('🔥 [DISPATCH_TRIGGER] Error sending SMS:', smsError);
+            }
+            console.log('🔥 [DISPATCH_TRIGGER] SMS sending completed:', {
+                customerSMS: (_e = results.customerSMS) === null || _e === void 0 ? void 0 : _e.success,
+                adminSMS: (_f = results.adminSMS) === null || _f === void 0 ? void 0 : _f.success,
+                totalRemainingPots: dispatchInfo.totalRemainingPots
+            });
+        }
+        else if (dispatchInfo.dispatchType === 'full') {
+            console.log('🔥 [DISPATCH_TRIGGER] Full dispatch detected - partial dispatch SMS skipped');
         }
         else {
-            throw new functions.https.HttpsError('internal', `Failed to send test SMS: ${'error' in result ? result.error.message : 'Unknown error'}`);
+            console.log('🔥 [DISPATCH_TRIGGER] No SMS sent - dispatchType:', dispatchInfo.dispatchType, 'totalRemainingPots:', dispatchInfo.totalRemainingPots);
         }
+        return null;
     }
     catch (error) {
-        console.error('Error testing SMS template:', error);
-        // Log failed test SMS
-        await smsLogsService.logSMS({
-            type: templateKey,
-            recipient,
-            templateId: templateId,
-            message: ((_b = sms_templates_1.default.getInstance().getTemplateByKey(templateKey)) === null || _b === void 0 ? void 0 : _b.name) || 'Test SMS',
-            status: 'failed',
-            timestamp: new Date(),
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            retryCount: 0
-        });
-        throw new functions.https.HttpsError('internal', `Failed to test SMS template: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-});
-/**
- * Force deployment trigger function - NEW FUNCTION TO FORCE DEPLOYMENT
- * This function is added to force Firebase to detect changes and deploy the updated template IDs
- */
-exports.forceDeployTrigger = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
-    console.log('🚀 Force deploy trigger called - Template IDs Updated:');
-    console.log('   finalDisposalReminder: 198613');
-    console.log('   finalDisposalReminderAdmin: 198614');
-    res.status(200).json({
-        success: true,
-        message: 'Force deploy triggered - Template IDs updated successfully',
-        timestamp: new Date().toISOString(),
-        templateIds: {
-            finalDisposalReminder: '198613',
-            finalDisposalReminderAdmin: '198614'
-        },
-        deploymentStatus: 'completed'
-    });
-});
-/**
- * Debug function to check recent SMS logs
- * This function helps verify SMS sending attempts and results
- */
-exports.debugSMSLogs = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
-    // Set CORS headers for public access
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    // Handle OPTIONS requests (CORS preflight)
-    if (req.method === 'OPTIONS') {
-        res.status(204).send('');
-        return;
-    }
-    try {
-        console.log('🔍 Debug SMS logs function called');
-        // Get recent SMS logs (last 24 hours)
-        const oneDayAgo = new Date();
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        const logs = await smsLogsService.getSMSLogs({
-            dateRange: {
-                start: oneDayAgo,
-                end: new Date()
-            }
-        });
-        // Get failed SMS logs specifically
-        const failedLogs = await smsLogsService.getSMSLogs({
-            status: 'failed',
-            dateRange: {
-                start: oneDayAgo,
-                end: new Date()
-            }
-        });
-        // Get successful SMS logs
-        const successLogs = await smsLogsService.getSMSLogs({
-            status: 'sent',
-            dateRange: {
-                start: oneDayAgo,
-                end: new Date()
-            }
-        });
-        const response = {
-            success: true,
-            summary: {
-                total: logs.length,
-                sent: successLogs.length,
-                failed: failedLogs.length,
-                pending: logs.length - successLogs.length - failedLogs.length
-            },
-            recentLogs: logs.slice(0, 10).map(log => ({
-                id: log.id,
-                type: log.type,
-                recipient: log.recipient,
-                status: log.status,
-                timestamp: log.timestamp,
-                errorMessage: log.errorMessage,
-                templateId: log.templateId
-            })),
-            failedLogs: failedLogs.slice(0, 5).map(log => ({
-                id: log.id,
-                type: log.type,
-                recipient: log.recipient,
-                status: log.status,
-                timestamp: log.timestamp,
-                errorMessage: log.errorMessage,
-                templateId: log.templateId
-            })),
-            timestamp: new Date().toISOString(),
-            deployment: {
-                nodeVersion: process.version,
-                environment: process.env.NODE_ENV
-            }
-        };
-        console.log('🔍 Debug SMS logs response:', JSON.stringify(response, null, 2));
-        res.status(200).json(response);
-    }
-    catch (error) {
-        console.error('🔍 Error in debug SMS logs function:', error);
-        res.status(500).json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-/**
- * Debug function to check template IDs in deployed functions
- * This function helps verify that the correct template IDs are being used
- */
-exports.debugTemplateIds = functions
-    .runWith({
-    memory: '128MB',
-    timeoutSeconds: 30,
-})
-    .https.onRequest(async (req, res) => {
-    // Set CORS headers for public access
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    // Handle OPTIONS requests (CORS preflight)
-    if (req.method === 'OPTIONS') {
-        res.status(204).send('');
-        return;
-    }
-    try {
-        console.log('🔍 Debug template IDs function called');
-        // Get the templates that were causing issues
-        const finalDisposalTemplate = sms_templates_1.default.getInstance().getTemplateByKey('finalDisposalReminder');
-        const adminTemplate = sms_templates_1.default.getInstance().getTemplateByKey('finalDisposalReminderAdmin');
-        const response = {
-            success: true,
-            templates: {
-                finalDisposalReminder: {
-                    key: finalDisposalTemplate.key,
-                    id: finalDisposalTemplate.id,
-                    name: finalDisposalTemplate.name,
-                    variableCount: finalDisposalTemplate.variableCount
-                },
-                finalDisposalReminderAdmin: {
-                    key: adminTemplate.key,
-                    id: adminTemplate.id,
-                    name: adminTemplate.name,
-                    variableCount: adminTemplate.variableCount
-                }
-            },
-            expected: {
-                finalDisposalReminder: '198613',
-                finalDisposalReminderAdmin: '198614'
-            },
-            timestamp: new Date().toISOString(),
-            deployment: {
-                nodeVersion: process.version,
-                environment: process.env.NODE_ENV
-            }
-        };
-        console.log('🔍 Debug template IDs response:', JSON.stringify(response, null, 2));
-        res.status(200).json(response);
-    }
-    catch (error) {
-        console.error('🔍 Error in debug template IDs function:', error);
-        res.status(500).json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-        });
+        console.error('🔥 [DISPATCH_TRIGGER] Error processing dispatched locker:', error);
+        return null;
     }
 });

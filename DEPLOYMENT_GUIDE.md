@@ -1,145 +1,181 @@
-# 🚀 Firebase Functions Deployment Guide
+# 🚀 Cloud Functions Deployment Guide
 
-## 📋 Issue Fixed
+## 📋 Prerequisites
+1. ✅ Firebase CLI installed (v14.17.0)
+2. ✅ Firebase project configured
+3. ✅ Functions code updated with partial dispatch templates
+4. ✅ All fixes applied (pricing, pot calculations, etc.)
 
-The deployment error "Cannot determine backend specification. Timeout after 10000" was caused by a missing `delay` function in the Firebase Functions code. This has been resolved.
+## 🔧 Deployment Steps
 
-## 🔧 Fix Applied
+### Option 1: Quick Deploy (Recommended)
+```bash
+# From project root directory
+cd /home/z/my-project
 
-### Added Missing Function:
-```typescript
-// Helper function for delay/sleep
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+# Run the deployment script
+./deploy-functions.sh
 ```
 
-## 🚀 Deployment Steps
-
-### Step 1: Navigate to Project Root
+### Option 2: Manual Deploy
 ```bash
-cd /path/to/your/project
-```
+# Navigate to functions directory
+cd /home/z/my-project/functions
 
-### Step 2: Install Functions Dependencies
-```bash
-cd functions
+# Install dependencies (if needed)
 npm install
-```
 
-### Step 3: Compile TypeScript
-```bash
+# Build TypeScript
 npm run build
+
+# Deploy to Firebase
+npx firebase deploy --only functions
 ```
 
-### Step 4: Deploy Functions
+### Option 3: Step-by-Step
 ```bash
-cd ..
-firebase deploy --only functions
+# 1. Login to Firebase (if not already logged in)
+npx firebase login
+
+# 2. Check current project
+npx firebase projects:list
+
+# 3. Switch to correct project if needed
+npx firebase use your-project-id
+
+# 4. Deploy functions only
+npx firebase deploy --only functions
 ```
 
-## 🔍 Expected Output
+## 📊 What's Being Deployed
 
-### Successful Deployment:
-```
-=== Deploying to 'rctscm01'...
+### 🆕 New Partial Dispatch Templates
+- **Template ID 205257**: Partial Dispatch Customer (8 variables)
+- **Template ID 205258**: Partial Dispatch Admin (4 variables)
+- **Trigger**: Firestore `onDispatchedLockerCreated`
 
-i  deploying functions
-i  functions: preparing codebase default for deployment
-i  functions: ensuring required API cloudfunctions.googleapis.com is enabled...
-i  functions: ensuring required API cloudbuild.googleapis.com is enabled...
-i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled...
-i  functions: Loading and analyzing source code for codebase default to determine what to deploy
+### 🔧 Existing Templates (Unchanged)
+- **Template ID 198611**: Full Dispatch Customer
+- **Template ID 198612**: Full Dispatch Admin
+- **Template ID 198607-198614**: Renewal & Disposal reminders
 
-✔  functions[sendSMSV2(us-central1)]: Successful update operation. 
-✔  functions[dailyExpiryCheckV2(us-central1)]: Successful update operation.
-✔  Deploy complete!
+## 🎯 Key Features Deployed
 
-Project Console: https://console.firebase.google.com/project/rctscm01/overview
-```
+### ✅ Smart Dispatch Logic
+- Partial dispatch SMS sent when `totalRemainingPots > 0`
+- Full dispatch SMS sent when `totalRemainingPots === 0`
+- Triple redundancy (API + Firestore trigger + Manual)
 
-## 📞 Functions Available
+### ✅ Correct Variable Mappings
+- Uses `deceasedPersonName` with fallback to `customerName`
+- Proper date formatting (DD/MM/YYYY)
+- Admin mobile number integration
 
-After successful deployment, these functions will be available:
+### ✅ Fixed Pricing
+- Entry fee: ₹500 per entry (fixed)
+- Renewal fee: ₹300 per month (fixed)
+- No per-pot multiplication
 
-1. **sendSMSV2** - Send SMS with DLT compliance
-2. **dailyExpiryCheckV2** - Daily expiry check scheduler
-3. **getSMSStatisticsV2** - Get SMS statistics
-4. **retryFailedSMSV2** - Retry failed SMS
-5. **smsHealthCheckV2** - Health check function
-
-## 🔧 Configuration Required
-
-Before using SMS functionality, configure FastSMS:
-
-```bash
-firebase functions:config:set fastsms.api_key="YOUR_API_KEY"
-firebase functions:config:set fastsms.sender_id="YOUR_SENDER_ID"
-firebase functions:config:set fastsms.entity_id="YOUR_ENTITY_ID"
-```
-
-## ✅ Verification
+## 🔍 Post-Deployment Verification
 
 ### 1. Check Deployment Status
 ```bash
-firebase functions:list
+npx firebase functions:list
 ```
 
-### 2. Test SMS Functionality
-Use the application to send SMS and check console logs.
-
-### 3. Monitor Logs
+### 2. Monitor Logs
 ```bash
-firebase functions:log --follow
+# Real-time logs
+npx firebase functions:log
+
+# Specific function logs
+npx firebase functions:log --only onDispatchedLockerCreated
 ```
 
-## 🚨 Troubleshooting
+### 3. Test in Firebase Console
+1. Go to: https://console.firebase.google.com/
+2. Navigate to Functions → Logs
+3. Look for successful deployment
+4. Test partial dispatch from frontend
 
-### If deployment fails again:
+### 4. Verify SMS Templates
+1. Go to Firebase Console → Functions
+2. Check `sendSMSV2` function logs
+3. Verify template IDs: 205257, 205258
+4. Check for any Fast2SMS API errors
 
-1. **Clear Firebase Cache**:
-   ```bash
-   firebase use default
-   firebase deploy --only functions --force
-   ```
+## 🚨 Common Issues & Solutions
 
-2. **Check Node Version**:
-   ```bash
-   node --version  # Should be 20.x
-   ```
+### Issue: "FUNCTIONS_CONTAINER_CPU_TIMEOUT"
+**Solution**: Function is taking too long, check Fast2SMS API response time
 
-3. **Reinstall Dependencies**:
-   ```bash
-   cd functions
-   rm -rf node_modules package-lock.json
-   npm install
-   cd ..
-   ```
+### Issue: "PERMISSION_DENIED"
+**Solution**: Check Firebase Functions IAM permissions
 
-4. **Manual Build**:
-   ```bash
-   cd functions
-   npx tsc
-   cd ..
-   firebase deploy --only functions
-   ```
+### Issue: "Fast2SMS API errors"
+**Solution**: 
+1. Verify API key in Firebase config
+2. Check template IDs are correct
+3. Verify sender ID is approved
+
+## 📱 Testing Checklist
+
+### ✅ Partial Dispatch Test
+- [ ] Create test entry with 5 pots
+- [ ] Dispatch 2 pots (should send partial dispatch SMS)
+- [ ] Verify remaining pots shows 3
+- [ ] Check SMS logs for successful delivery
+
+### ✅ Full Dispatch Test  
+- [ ] Dispatch remaining 3 pots (should send full dispatch SMS)
+- [ ] Verify remaining pots shows 0
+- [ ] Check SMS logs for full dispatch templates
+
+### ✅ Error Handling
+- [ ] Test with invalid mobile number
+- [ ] Test with missing fields
+- [ ] Verify fallback mechanisms work
+
+## 🔄 Continuous Deployment
+
+For production, consider setting up CI/CD:
+```yaml
+# .github/workflows/deploy-functions.yml
+name: Deploy Functions
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: w9jds/firebase-action@v1.0
+        with:
+          args: deploy --only functions
+```
 
 ## 📞 Support
 
-If issues persist:
-1. **Firebase Console**: Check for error messages
-2. **Functions Logs**: `firebase functions:log --follow`
-3. **Fast2SMS Support**: Contact with configuration details
+If you encounter any issues:
+1. Check Firebase Console logs
+2. Verify environment variables
+3. Test templates individually
+4. Check Fast2SMS dashboard
+
+## 🎉 Success Indicators
+
+✅ **Deployment Successful**: 
+- "functions[onDispatchedLockerCreated]" is up-to-date
+- No error messages in deployment output
+- Can see functions in Firebase Console
+
+✅ **SMS Working**:
+- Partial dispatch SMS sent correctly
+- Full dispatch SMS sent correctly  
+- Variables populated correctly
+- No Fast2SMS API errors
 
 ---
 
-## 🎯 Success Metrics
-
-- ✅ Functions deploy without timeout errors
-- ✅ All 5 functions successfully deployed
-- ✅ SMS functionality works with DLT compliance
-- ✅ No more "Cannot determine backend specification" errors
-
----
-
-**🚀 Ready to deploy! The missing delay function has been added and the code should now deploy successfully.**
+**Ready to deploy! Run `./deploy-functions.sh` to get started.**
