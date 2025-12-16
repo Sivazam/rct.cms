@@ -37,7 +37,7 @@ var __importStar = (this && this.__importStar) || (function () {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a, _b, _c, _d;
+var _a, _b, _c, _d, _e, _f, _g, _h;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendFinalDisposalReminders = exports.sendLastDayReminders = exports.sendExpiryReminders = exports.smsHealth = exports.sendExpiry = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
@@ -58,17 +58,15 @@ const DAILY_CHECK_HOUR = 10; // 10 AM as requested
 const TIME_ZONE = 'Asia/Kolkata';
 const EXPIRY_REMINDER_DAYS = 3; // 3 days before expiry
 // FastSMS Configuration - Using Firebase Functions Config with proper typing
-// @ts-ignore
-const functionsConfig = functions.config();
 const FASTSMS_CONFIG = {
-    apiKey: (_a = functionsConfig.fastsms) === null || _a === void 0 ? void 0 : _a.api_key,
-    senderId: (_b = functionsConfig.fastsms) === null || _b === void 0 ? void 0 : _b.sender_id,
-    entityId: (_c = functionsConfig.fastsms) === null || _c === void 0 ? void 0 : _c.entity_id,
+    apiKey: (_b = (_a = functions.config()) === null || _a === void 0 ? void 0 : _a.fastsms) === null || _b === void 0 ? void 0 : _b.api_key,
+    senderId: (_d = (_c = functions.config()) === null || _c === void 0 ? void 0 : _c.fastsms) === null || _d === void 0 ? void 0 : _d.sender_id,
+    entityId: (_f = (_e = functions.config()) === null || _e === void 0 ? void 0 : _e.fastsms) === null || _f === void 0 ? void 0 : _f.entity_id,
     baseUrl: 'https://www.fast2sms.com/dev/bulkV2'
 };
 // Admin Configuration - Using Firebase Functions Config with proper typing
 const ADMIN_CONFIG = {
-    mobile: (_d = functionsConfig.admin) === null || _d === void 0 ? void 0 : _d.mobile
+    mobile: (_h = (_g = functions.config()) === null || _g === void 0 ? void 0 : _g.admin) === null || _h === void 0 ? void 0 : _h.mobile
 };
 // Retry configuration
 const MAX_RETRY_ATTEMPTS = 3;
