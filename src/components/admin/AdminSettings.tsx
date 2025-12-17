@@ -11,9 +11,12 @@ import { Settings, Save, RotateCcw, Smartphone, Shield, MapPin, MessageSquare, C
 import { useAdminConfigStore } from '@/stores/admin-config';
 import LocationManagement from './LocationManagement';
 import SMSLogsTable from './SMSLogsTable';
+import { functions, httpsCallable } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminSettings() {
   const { adminMobile, setAdminMobile, resetToDefault } = useAdminConfigStore();
+  const { user } = useAuth();
   const [inputMobile, setInputMobile] = useState(adminMobile);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -150,33 +153,133 @@ export default function AdminSettings() {
     setTimeout(() => setSchedulerMessage(null), 5000);
   };
 
-  const handleTestReminders = async () => {
+  const handleDebugEntries = async () => {
     try {
+      // Check if user is authenticated
+      if (!user) {
+        setSchedulerMessage({ 
+          type: 'error', 
+          text: '❌ You must be logged in to debug entries.' 
+        });
+        return;
+      }
+
+      console.log('🔍 [DEBUG] Starting entries debug...');
       setSchedulerMessage({ 
         type: 'success', 
-        text: 'Testing expiry reminders... Check console for results.' 
+        text: '🔍 Debugging entries data... Check console for details.' 
       });
       
-      // Call the existing cloud function directly
-      const response = await fetch('https://us-central1-rctscm01.cloudfunctions.net/sendAllExpiryReminders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAuthToken()}`
-        },
-        body: JSON.stringify({
+      // Call debug function
+      const debugEntries = httpsCallable(functions, 'debugEntries');
+      const result = await debugEntries();
+      
+      console.log('🔍 [DEBUG] Debug result:', result.data);
+      
+      if (result.data?.success) {
+        const entriesCount = result.data.entries?.length || 0;
+        const threeDayMatches = result.data.dateTests?.threeDaysFromNow?.entryMatches || 0;
+        const todayMatches = result.data.dateTests?.today?.entryMatches || 0;
+        const sixtyDayMatches = result.data.dateTests?.sixtyDaysAgo?.entryMatches || 0;
+        
+        setSchedulerMessage({ 
+          type: 'success', 
+          text: `🔍 Debug complete! Found ${entriesCount} entries. 3-day: ${threeDayMatches}, Today: ${todayMatches}, 60-day: ${sixtyDayMatches}` 
+        });
+      } else {
+        setSchedulerMessage({ 
+          type: 'error', 
+          text: `❌ Debug failed: ${result.data?.error || 'Unknown error'}` 
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('Error debugging entries:', error);
+      setSchedulerMessage({ 
+        type: 'error', 
+        text: `❌ Debug failed: ${error.message}` 
+      });
+    }
+  };
+
+  const handleTestReminders = async () => {
+    try {
+      // Check if user is authenticated
+      if (!user) {
+        setSchedulerMessage({ 
+          type: 'error', 
+          text: '❌ You must be logged in to test expiry reminders.' 
+        });
+        return;
+      }
+
+      console.log('🧪 [TEST] Starting expiry reminders test...', {
+        user: user.email,
+        uid: user.uid,
+        role: user.role
+      });
+
+      setSchedulerMessage({ 
+        type: 'success', 
+        text: 'Testing expiry reminders... This may take a few moments.' 
+      });
+      
+      // First test basic connectivity with simpleTest
+      try {
+        console.log('🧪 [TEST] Testing basic connectivity...');
+        const simpleTest = httpsCallable(functions, 'simpleTest');
+        const simpleResult = await simpleTest();
+        console.log('🧪 [TEST] Simple test result:', simpleResult.data);
+        
+        if (!simpleResult.data?.success) {
+          setSchedulerMessage({ 
+            type: 'error', 
+            text: `❌ Basic connectivity test failed: ${simpleResult.data?.error || 'Unknown error'}` 
+          });
+          return;
+        }
+        
+        setSchedulerMessage({ 
+          type: 'success', 
+          text: '✅ Basic connectivity test passed. Now testing expiry reminders...' 
+        });
+        
+      } catch (error: any) {
+        console.error('🧪 [TEST] Simple test error:', error);
+        setSchedulerMessage({ 
+          type: 'error', 
+          text: `❌ Basic connectivity test failed: ${error.message}` 
+        });
+        return;
+      }
+      
+      // Try to call the new test function (if deployed) or fallback to sendExpiry
+      let result;
+      try {
+        // First try the new testExpiryReminders function
+        const testExpiryReminders = httpsCallable(functions, 'testExpiryReminders');
+        result = await testExpiryReminders({
           reminderTypes: ['3day', 'lastday', '60day']
-        })
-      });
+        });
+      } catch (error: any) {
+        if (error.code === 'functions/not-found') {
+          // Fallback: inform user to deploy the new function
+          setSchedulerMessage({ 
+            type: 'error', 
+            text: '❌ Test function not deployed. Please run: cd functions && firebase deploy --only functions:testExpiryReminders' 
+          });
+          return;
+        }
+        throw error;
+      }
       
-      const result = await response.json();
-      console.log('🧪 [TEST] Expiry reminders test result:', result);
+      console.log('🧪 [TEST] Expiry reminders test result:', result.data);
       
       // Show more detailed result to user
-      if (result.success) {
-        const threeDayCount = result.results?.threeDayReminders?.sent || 0;
-        const lastDayCount = result.results?.lastDayReminders?.sent || 0;
-        const finalDisposalCount = result.results?.finalDisposalReminders?.sent || 0;
+      if (result.data?.success) {
+        const threeDayCount = result.data.results?.threeDayReminders?.sent || 0;
+        const lastDayCount = result.data.results?.lastDayReminders?.sent || 0;
+        const finalDisposalCount = result.data.results?.finalDisposalReminders?.sent || 0;
         
         setSchedulerMessage({ 
           type: 'success', 
@@ -185,28 +288,29 @@ export default function AdminSettings() {
       } else {
         setSchedulerMessage({ 
           type: 'error', 
-          text: `❌ Test failed: ${result.message || 'Unknown error'}` 
+          text: `❌ Test failed: ${result.data?.message || 'Unknown error'}` 
         });
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error testing expiry reminders:', error);
+      
+      // Handle Firebase Functions specific errors
+      let errorMessage = 'Failed to test expiry reminders. Please check console.';
+      if (error.code === 'unauthenticated') {
+        errorMessage = '❌ Authentication required. Please log in and try again.';
+      } else if (error.code === 'permission-denied') {
+        errorMessage = '❌ Permission denied. You need admin privileges to test reminders.';
+      } else if (error.code === 'functions/not-found') {
+        errorMessage = '❌ Test function not deployed. Please deploy the testExpiryReminders function first.';
+      } else if (error.message) {
+        errorMessage = `❌ Error: ${error.message}`;
+      }
+      
       setSchedulerMessage({ 
         type: 'error', 
-        text: 'Failed to test expiry reminders. Please check console.' 
+        text: errorMessage
       });
-    }
-  };
-
-  // Helper function to get auth token for cloud function call
-  const getAuthToken = async () => {
-    // This would typically get the current user's auth token
-    // For demo purposes, you might need to implement proper auth
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      return user.token || 'demo-token';
-    } catch {
-      return 'demo-token';
     }
   };
 
@@ -463,6 +567,14 @@ export default function AdminSettings() {
                   >
                     <TestTube className="h-4 w-4" />
                     <span>Test Now</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDebugEntries}
+                    className="flex items-center space-x-1 ml-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Debug Data</span>
                   </Button>
                 </div>
               </div>
