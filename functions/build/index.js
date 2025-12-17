@@ -192,6 +192,57 @@ function createSnapshotFromDocs(docs) {
         empty: docs.length === 0
     };
 }
+/**
+ * Function to filter entries that expired exactly on a specific calendar date
+ * Used for 60-day reminders to find entries that expired exactly 60 days ago (not 60+ days)
+ */
+function filterEntriesExpiredExactlyOnCalendarDate(entries, targetDate) {
+    const targetDateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    console.log(`🔍 [FILTER_EXACT_EXPIRED] Target exact date: ${targetDateStr}`);
+    return entries.filter(doc => {
+        const entry = doc.data();
+        const expiryDate = entry.expiryDate;
+        if (!expiryDate) {
+            return false;
+        }
+        // Handle different timestamp formats
+        let expiryDateObj;
+        if (expiryDate instanceof Date) {
+            // Regular JavaScript Date
+            expiryDateObj = expiryDate;
+        }
+        else if (expiryDate && typeof expiryDate === 'object') {
+            // Firestore Timestamp - handle both _seconds and toDate() methods
+            try {
+                if (expiryDate.toDate && typeof expiryDate.toDate === 'function') {
+                    // Use Firestore's toDate() method if available
+                    expiryDateObj = expiryDate.toDate();
+                }
+                else if (expiryDate._seconds !== undefined) {
+                    // Handle timestamp with _seconds and _nanoseconds
+                    expiryDateObj = new Date(expiryDate._seconds * 1000 + (expiryDate._nanoseconds || 0) / 1000000);
+                }
+                else {
+                    console.warn(`⚠️ [FILTER_EXACT_EXPIRED] Unrecognized timestamp format for entry ${doc.id}:`, expiryDate);
+                    return false;
+                }
+            }
+            catch (error) {
+                console.error(`❌ [FILTER_EXACT_EXPIRED] Error processing timestamp for entry ${doc.id}:`, error);
+                return false;
+            }
+        }
+        else {
+            console.warn(`⚠️ [FILTER_EXACT_EXPIRED] Invalid expiry date format for entry ${doc.id}:`, expiryDate);
+            return false;
+        }
+        // Convert to calendar date string (YYYY-MM-DD) for exact comparison
+        const expiryDateStr = expiryDateObj.toISOString().split('T')[0];
+        console.log(`🔍 [FILTER_EXACT_EXPIRED] Entry ${doc.id} (${entry.customerName}): expiry=${expiryDateStr}, target=${targetDateStr}, match=${expiryDateStr === targetDateStr}`);
+        // Return entries that expired exactly on the target date (not 60+ days)
+        return expiryDateStr === targetDateStr;
+    });
+}
 // Helper function to filter entries by expiry date range (for 3-day reminders)
 function filterEntriesByDateRange(entries, startDate, endDate) {
     return entries.filter(doc => {
@@ -740,14 +791,14 @@ async function processFinalDisposalReminders() {
         const sixtyDayActiveSnapshot = await db.collection('entries')
             .where('status', '==', 'active')
             .get();
-        // Filter entries that expired 60+ days ago (using the same timezone-aware logic)
-        const filteredDocs = filterEntriesExpiredByCalendarDate(sixtyDayActiveSnapshot.docs, sixtyDaysAgo);
+        // Filter entries that expired exactly 60 days ago (not 60+ days)
+        const filteredDocs = filterEntriesExpiredExactlyOnCalendarDate(sixtyDayActiveSnapshot.docs, sixtyDaysAgo);
         const entriesSnapshot = createSnapshotFromDocs(filteredDocs);
         if (entriesSnapshot.empty) {
-            console.log('📅 [60DAY] No entries expired 60 days ago');
+            console.log('📅 [60DAY] No entries expired exactly 60 days ago');
             return result;
         }
-        console.log(`📅 [60DAY] Found ${entriesSnapshot.size} entries expired 60 days ago`);
+        console.log(`📅 [60DAY] Found ${entriesSnapshot.size} entries expired exactly 60 days ago`);
         for (const doc of entriesSnapshot.docs) {
             const entry = doc.data();
             let customerResult = null; // Declare outside try block
@@ -758,8 +809,8 @@ async function processFinalDisposalReminders() {
                 if (customerTemplate && entry.customerMobile) {
                     const customerVariables = [
                         entry.deceasedPersonName || entry.customerName,
-                        entry.locationName || 'Unknown Location',
-                        entry.locationName || 'Unknown Location'
+                        entry.locationName || 'Unknown Location', // Fixed: use locationName instead of location
+                        entry.locationName || 'Unknown Location' // Fixed: use locationName instead of location
                     ].join('|');
                     customerResult = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVariables);
                     if (customerResult.success) {
@@ -773,7 +824,7 @@ async function processFinalDisposalReminders() {
                 const adminTemplate = smsTemplates.getTemplateByKey('finalDisposalReminderAdmin');
                 if (adminTemplate) {
                     const adminVariables = [
-                        entry.locationName || 'Unknown Location',
+                        entry.locationName || 'Unknown Location', // Fixed: use locationName instead of location
                         entry.deceasedPersonName || entry.customerName
                     ].join('|');
                     adminResult = await sendSMSAPI(ADMIN_CONFIG.mobile, adminTemplate.id, adminVariables);
@@ -885,13 +936,13 @@ exports.sendExpiry = functions
                     adminTemplateKey = 'finalDisposalReminderAdmin';
                     customerVariables = {
                         var1: entry.deceasedName || '',
-                        var2: entry.location || '',
+                        var2: entry.locationName || '', // Fixed: use locationName instead of location
                         var3: entry.expiryDate || '',
                         var4: entry.contactNumber || '',
-                        var5: entry.location || ''
+                        var5: entry.locationName || '' // Fixed: use locationName instead of location
                     };
                     adminVariables = {
-                        var1: entry.location || '',
+                        var1: entry.locationName || '', // Fixed: use locationName instead of location
                         var2: entry.deceasedName || ''
                     };
                 }
@@ -900,13 +951,13 @@ exports.sendExpiry = functions
                     adminTemplateKey = 'finalDisposalReminderAdmin';
                     customerVariables = {
                         var1: entry.deceasedName || '',
-                        var2: entry.location || '',
+                        var2: entry.locationName || '', // Fixed: use locationName instead of location
                         var3: entry.expiryDate || '',
                         var4: entry.contactNumber || '',
-                        var5: entry.location || ''
+                        var5: entry.locationName || '' // Fixed: use locationName instead of location
                     };
                     adminVariables = {
-                        var1: entry.location || '',
+                        var1: entry.locationName || '', // Fixed: use locationName instead of location
                         var2: entry.deceasedName || ''
                     };
                 }
@@ -915,24 +966,37 @@ exports.sendExpiry = functions
                     adminTemplateKey = 'finalDisposalReminderAdmin';
                     customerVariables = {
                         var1: entry.deceasedName || '',
-                        var2: entry.location || '',
-                        var3: entry.location || ''
+                        var2: entry.locationName || '', // Fixed: use locationName instead of location
+                        var3: entry.locationName || '' // Fixed: use locationName instead of location
                     };
                     adminVariables = {
-                        var1: entry.location || '',
+                        var1: entry.locationName || '', // Fixed: use locationName instead of location
                         var2: entry.deceasedName || ''
                     };
                 }
                 // Send SMS to customer
                 const customerTemplate = smsTemplates.getTemplateByKey(customerTemplateKey);
                 if (customerTemplate && entry.customerMobile) {
-                    const customerVars = [
-                        entry.deceasedPersonName || entry.customerName,
-                        entry.locationName || 'Unknown Location',
-                        entry.expiryDate || '',
-                        ADMIN_CONFIG.mobile || 'N/A',
-                        entry.locationName || 'Unknown Location'
-                    ].join('|');
+                    let customerVars;
+                    // Handle different template structures for different reminder types
+                    if (reminderType === 'finalDisposal') {
+                        // Final disposal reminder has only 3 variables (no expiry date, no admin mobile)
+                        customerVars = [
+                            entry.deceasedPersonName || entry.customerName,
+                            entry.locationName || 'Unknown Location',
+                            entry.locationName || 'Unknown Location'
+                        ].join('|');
+                    }
+                    else {
+                        // 3-day and last-day reminders have 5 variables (includes expiry date and admin mobile)
+                        customerVars = [
+                            entry.deceasedPersonName || entry.customerName,
+                            entry.locationName || 'Unknown Location',
+                            entry.expiryDate || '', // Use entry's expiry date
+                            ADMIN_CONFIG.mobile || 'N/A',
+                            entry.locationName || 'Unknown Location'
+                        ].join('|');
+                    }
                     try {
                         const smsResults = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVars);
                         if (smsResults.success) {
@@ -958,6 +1022,41 @@ exports.sendExpiry = functions
                                 timestamp: new Date(),
                                 retryCount: 0
                             });
+                            // Send admin SMS for finalDisposal reminders (FIXED: This was missing!)
+                            if (reminderType === 'finalDisposal') {
+                                const adminTemplate = smsTemplates.getTemplateByKey('finalDisposalReminderAdmin');
+                                if (adminTemplate) {
+                                    const adminVars = [
+                                        entry.locationName || 'Unknown Location',
+                                        entry.deceasedPersonName || entry.customerName
+                                    ].join('|');
+                                    try {
+                                        const adminSmsResults = await sendSMSAPI(ADMIN_CONFIG.mobile, adminTemplate.id, adminVars);
+                                        if (adminSmsResults.success) {
+                                            console.log(`✅ [MANUAL] Successfully sent final disposal reminder to admin for ${entry.customerName}`);
+                                            // Log admin SMS
+                                            await smsLogs.logSMS({
+                                                type: 'finalDisposalReminderAdmin',
+                                                recipient: ADMIN_CONFIG.mobile,
+                                                templateId: adminTemplate.id,
+                                                message: adminTemplate.name || 'Final Disposal Reminder Admin',
+                                                status: 'sent',
+                                                entryId: doc.id,
+                                                customerId: entry.customerId,
+                                                locationId: entry.locationId,
+                                                timestamp: new Date(),
+                                                retryCount: 0
+                                            });
+                                        }
+                                        else {
+                                            console.error(`❌ [MANUAL] Failed to send final disposal reminder to admin for ${entry.customerName}:`, adminSmsResults.error);
+                                        }
+                                    }
+                                    catch (adminError) {
+                                        console.error(`❌ [MANUAL] Error sending admin SMS for entry ${doc.id}:`, adminError);
+                                    }
+                                }
+                            }
                         }
                         else {
                             failureCount++;
@@ -974,25 +1073,25 @@ exports.sendExpiry = functions
                     console.error(`❌ [MANUAL] Missing template or customer mobile for entry ${doc.id}`);
                 }
             }
-            finally {
+            catch (error) {
+                failureCount++;
+                console.error(`❌ [MANUAL] Error processing entry ${doc.id}:`, error);
             }
-            console.log(`📊 [MANUAL] Manual expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
-            return {
-                success: true,
-                reminderType,
-                processed: entriesSnapshot.size,
-                successful: successCount,
-                failed: failureCount,
-                timestamp: new Date().toISOString()
-            };
         }
-        try { }
-        catch (error) {
-            console.error('💥 [CRITICAL] Manual expiry reminders failed:', error);
-            throw new functions.https.HttpsError('internal', `Manual expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        console.log(`📊 [MANUAL] Manual expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
+        return {
+            success: true,
+            reminderType,
+            processed: entriesSnapshot.size,
+            successful: successCount,
+            failed: failureCount,
+            timestamp: new Date().toISOString()
+        };
     }
-    finally { }
+    catch (error) {
+        console.error('💥 [CRITICAL] Manual expiry reminders failed:', error);
+        throw new functions.https.HttpsError('internal', `Manual expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 });
 /**
  * SMS Health Check Function
@@ -1311,10 +1410,10 @@ exports.sendFinalDisposalReminders = functions
         const allActiveEntries = await db.collection('entries')
             .where('status', '==', 'active')
             .get();
-        // Filter entries that expired 60+ days ago (using the same timezone-aware logic)
-        const filteredDocs = filterEntriesExpiredByCalendarDate(allActiveEntries.docs, sixtyDaysAgo);
+        // Filter entries that expired exactly 60 days ago (not 60+ days)
+        const filteredDocs = filterEntriesExpiredExactlyOnCalendarDate(allActiveEntries.docs, sixtyDaysAgo);
         const expiredEntries = createSnapshotFromDocs(filteredDocs);
-        console.log(`📊 [SCHEDULED] Found ${expiredEntries.size} entries expired 60+ days ago after filtering`);
+        console.log(`📊 [SCHEDULED] Found ${expiredEntries.size} entries expired exactly 60 days ago after filtering`);
         if (expiredEntries.empty) {
             console.log('✅ [SCHEDULED] No entries require final disposal reminders');
             return null;
@@ -1331,8 +1430,8 @@ exports.sendFinalDisposalReminders = functions
                 if (customerTemplate && entry.customerMobile) {
                     const customerVariables = [
                         entry.deceasedPersonName || entry.customerName,
-                        entry.locationName || 'Unknown Location',
-                        entry.locationName || 'Unknown Location'
+                        entry.locationName || 'Unknown Location', // Fixed: use locationName instead of location
+                        entry.locationName || 'Unknown Location' // Fixed: use locationName instead of location
                     ].join('|');
                     const customerResult = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVariables);
                     if (customerResult.success) {
@@ -1347,6 +1446,27 @@ exports.sendFinalDisposalReminders = functions
                 else {
                     failureCount++;
                     console.error(`❌ [SCHEDULED] Missing template or customer mobile for entry ${doc.id}`);
+                }
+                // Send final disposal reminder to admin (FIXED: This was missing!)
+                const adminTemplate = smsTemplates.getTemplateByKey('finalDisposalReminderAdmin');
+                if (adminTemplate) {
+                    const adminVariables = [
+                        entry.locationName || 'Unknown Location', // Fixed: use locationName instead of location
+                        entry.deceasedPersonName || entry.customerName
+                    ].join('|');
+                    const adminResult = await sendSMSAPI(ADMIN_CONFIG.mobile, adminTemplate.id, adminVariables);
+                    if (adminResult.success) {
+                        successCount++;
+                        console.log(`✅ [SCHEDULED] Successfully sent final disposal reminder to admin for ${entry.customerName}`);
+                    }
+                    else {
+                        failureCount++;
+                        console.error(`❌ [SCHEDULED] Failed to send final disposal reminder to admin for ${entry.customerName}:`, adminResult.error);
+                    }
+                }
+                else {
+                    failureCount++;
+                    console.error(`❌ [SCHEDULED] Missing admin template for entry ${doc.id}`);
                 }
             }
             catch (error) {

@@ -608,39 +608,121 @@ export const getDispatchedLockers = async (filters?: {
   dateRange?: { from: Date; to: Date };
 }) => {
   try {
-    let q = query(collection(db, 'dispatchedLockers'));
+    console.log('🔍 [DEBUG] getDispatchedLockers called with filters:', filters);
+    
+    // Fetch from both collections: 'dispatchedLockers' and 'deliveries'
+    const [dispatchedLockersSnapshot, deliveriesSnapshot] = await Promise.all([
+      getDocs(query(collection(db, 'dispatchedLockers'))),
+      getDocs(query(collection(db, 'deliveries')))
+    ]);
+
+    console.log('🔍 [DEBUG] Raw data counts:', {
+      dispatchedLockers: dispatchedLockersSnapshot.docs.length,
+      deliveries: deliveriesSnapshot.docs.length
+    });
+
+    // Process dispatchedLockers collection data
+    const dispatchedLockers = dispatchedLockersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('🔍 [DEBUG] Processing dispatchedLocker:', { id: doc.id, data });
+      return {
+        id: doc.id,
+        ...data,
+        sourceCollection: 'dispatchedLockers'
+      };
+    });
+
+    // Process deliveries collection data and convert to similar structure
+    const deliveries = deliveriesSnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('🔍 [DEBUG] Processing delivery:', { id: doc.id, data });
+      return {
+        id: doc.id,
+        sourceCollection: 'deliveries',
+        originalEntryData: {
+          customerName: data.customerName || '',
+          customerMobile: data.customerMobile || '',
+          customerCity: data.customerCity || '',
+          locationName: data.locationName || '',
+          locationId: data.locationId || '', // Add locationId for proper filtering
+          operatorName: data.operatorName || '',
+          totalPots: data.pots || 0,
+          potsPerLocker: data.pots || 0
+        },
+        dispatchInfo: {
+          dispatchDate: data.deliveryDate,
+          dispatchReason: data.reason || '',
+          lockerNumber: 1, // Default for full deliveries
+          potsDispatched: data.pots || 0,
+          remainingPotsInLocker: 0, // 0 for full deliveries
+          handoverPersonName: data.handoverPersonName || '',
+          handoverPersonMobile: data.handoverPersonMobile || ''
+        }
+      };
+    });
+
+    // Combine both datasets
+    const allDispatchedItems = [...dispatchedLockers, ...deliveries];
+    console.log('🔍 [DEBUG] Combined items before filtering:', allDispatchedItems.length);
     
     // Apply location filter if provided
+    let filteredItems = allDispatchedItems;
     if (filters?.locationId) {
-      q = query(
-        collection(db, 'dispatchedLockers'),
-        where('originalEntryData.locationId', '==', filters.locationId)
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    const dispatchedLockers = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    
-    // Sort manually by dispatch date
-    dispatchedLockers.sort((a, b) => {
-      const aTime = a.dispatchInfo?.dispatchDate?.toDate?.() || new Date(a.dispatchInfo?.dispatchDate);
-      const bTime = b.dispatchInfo?.dispatchDate?.toDate?.() || new Date(b.dispatchInfo?.dispatchDate);
-      return bTime.getTime() - aTime.getTime(); // desc order
-    });
-    
-    // Apply date range filter if provided
-    let filteredLockers = dispatchedLockers;
-    if (filters?.dateRange) {
-      filteredLockers = dispatchedLockers.filter(locker => {
-        const dispatchDate = locker.dispatchInfo?.dispatchDate?.toDate?.() || new Date(locker.dispatchInfo?.dispatchDate);
-        return dispatchDate >= filters.dateRange.from && dispatchDate <= filters.dateRange.to;
+      console.log('🔍 [DEBUG] Applying location filter for:', filters.locationId);
+      filteredItems = allDispatchedItems.filter(item => {
+        // For dispatchedLockers, filter by locationId in originalEntryData
+        if (item.sourceCollection === 'dispatchedLockers') {
+          const match = item.originalEntryData?.locationId === filters.locationId;
+          console.log('🔍 [DEBUG] dispatchedLockers filter:', { 
+            itemId: item.id, 
+            locationId: item.originalEntryData?.locationId, 
+            filterId: filters.locationId, 
+            match 
+          });
+          return match;
+        }
+        // For deliveries, filter by locationId in originalEntryData
+        if (item.sourceCollection === 'deliveries') {
+          const match = item.originalEntryData?.locationId === filters.locationId;
+          console.log('🔍 [DEBUG] deliveries filter:', { 
+            itemId: item.id, 
+            locationId: item.originalEntryData?.locationId, 
+            filterId: filters.locationId, 
+            match 
+          });
+          return match;
+        }
+        return false;
       });
     }
     
-    return filteredLockers;
+    // Sort by dispatch date (newest first)
+    filteredItems.sort((a, b) => {
+      const aTime = a.dispatchInfo?.dispatchDate?.toDate?.() || new Date(a.dispatchInfo?.dispatchDate);
+      const bTime = b.dispatchInfo?.dispatchDate?.toDate?.() || new Date(b.dispatchInfo?.dispatchDate);
+      return bTime.getTime() - aTime.getTime();
+    });
+    
+    // Apply date range filter if provided
+    if (filters?.dateRange) {
+      console.log('🔍 [DEBUG] Applying date range filter:', filters.dateRange);
+      filteredItems = filteredItems.filter(item => {
+        const dispatchDate = item.dispatchInfo?.dispatchDate?.toDate?.() || new Date(item.dispatchInfo?.dispatchDate);
+        const inRange = dispatchDate >= filters.dateRange.from && dispatchDate <= filters.dateRange.to;
+        console.log('🔍 [DEBUG] Date range filter:', { 
+          itemId: item.id, 
+          dispatchDate, 
+          rangeStart: filters.dateRange.from, 
+          rangeEnd: filters.dateRange.to, 
+          inRange 
+        });
+        return inRange;
+      });
+    }
+    
+    console.log(`🔍 [DEBUG] Final result: ${filteredItems.length} dispatched items (${dispatchedLockers.length} from dispatchedLockers, ${deliveries.length} from deliveries)`);
+    
+    return filteredItems;
   } catch (error) {
     console.error('Error getting dispatched lockers:', error);
     throw error;
@@ -721,7 +803,9 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     let entries = await getEntries({ locationId });
     
     // Get dispatched lockers from separate collection
+    console.log('🔍 [DEBUG] getSystemStats: About to call getDispatchedLockers with locationId:', locationId);
     const dispatchedLockers = await getDispatchedLockers({ locationId });
+    console.log('🔍 [DEBUG] getSystemStats: Received dispatchedLockers:', dispatchedLockers.length);
     
     // Calculate statistics from actual entries
     let totalRenewalCollections = 0;
