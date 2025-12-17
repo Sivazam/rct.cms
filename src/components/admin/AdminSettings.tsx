@@ -179,12 +179,14 @@ export default function AdminSettings() {
       if (result.data?.success) {
         const entriesCount = result.data.entries?.length || 0;
         const threeDayMatches = result.data.dateTests?.threeDaysFromNow?.entryMatches || 0;
+        const tomorrowMatches = result.data.dateTests?.tomorrow?.entryMatches || 0;
         const todayMatches = result.data.dateTests?.today?.entryMatches || 0;
+        const expiredMatches = result.data.dateTests?.expired?.entryMatches || 0;
         const sixtyDayMatches = result.data.dateTests?.sixtyDaysAgo?.entryMatches || 0;
         
         setSchedulerMessage({ 
           type: 'success', 
-          text: `🔍 Debug complete! Found ${entriesCount} entries. 3-day: ${threeDayMatches}, Today: ${todayMatches}, 60-day: ${sixtyDayMatches}` 
+          text: `🔍 Debug complete! Found ${entriesCount} entries. 3-day: ${threeDayMatches}, Tomorrow: ${tomorrowMatches}, Today: ${todayMatches}, Expired: ${expiredMatches}, 60-day: ${sixtyDayMatches}` 
         });
       } else {
         setSchedulerMessage({ 
@@ -597,7 +599,7 @@ export default function AdminSettings() {
               </h4>
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                 <li>• <strong>3-Day Reminders:</strong> Sent to customers 3 days before expiry</li>
-                <li>• <strong>Last-Day Reminders:</strong> Sent to customers on expiry day</li>
+                <li>• <strong>Last-Day Reminders:</strong> Sent to customers one day before expiry</li>
                 <li>• <strong>60-Day Final Disposal:</strong> Sent to customers and admin for entries expired 60+ days</li>
                 <li>• <strong>Demo Mode:</strong> Use "Test Now" to trigger all reminders immediately</li>
                 <li>• <strong>Production:</strong> Actual PubSub scheduler runs at configured time daily</li>

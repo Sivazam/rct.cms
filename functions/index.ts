@@ -47,6 +47,190 @@ const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 5000; // 5 seconds
 const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
 
+// Helper function to filter entries that expired on or before a specific calendar date
+function filterEntriesExpiredByCalendarDate(
+  entries: any[], 
+  targetDate: Date
+): any[] {
+  const targetDateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+  console.log(`🔍 [FILTER_EXPIRED] Target cutoff date: ${targetDateStr}`);
+  
+  return entries.filter(doc => {
+    const entry = doc.data();
+    const expiryDate = entry.expiryDate;
+    
+    if (!expiryDate) {
+      return false;
+    }
+    
+    // Handle different timestamp formats
+    let expiryDateObj: Date;
+    
+    if (expiryDate instanceof Date) {
+      // Regular JavaScript Date
+      expiryDateObj = expiryDate;
+    } else if (expiryDate && typeof expiryDate === 'object') {
+      // Firestore Timestamp - handle both _seconds and toDate() methods
+      try {
+        if (expiryDate.toDate && typeof expiryDate.toDate === 'function') {
+          // Use Firestore's toDate() method if available
+          expiryDateObj = expiryDate.toDate();
+        } else if (expiryDate._seconds !== undefined) {
+          // Handle timestamp with _seconds and _nanoseconds
+          expiryDateObj = new Date(expiryDate._seconds * 1000 + (expiryDate._nanoseconds || 0) / 1000000);
+        } else {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+    
+    // Convert expiry date to Indian Standard Time (UTC+5:30) for comparison
+    // because the Firestore UI shows dates in IST
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+    const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+    const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+    
+    // Check if expiry date is on or before the target date (expired 60+ days ago)
+    const matches = expiryDateStr <= targetDateStr;
+    
+    // Log only matching entries for cleaner output
+    if (matches) {
+      console.log(`🔍 [FILTER_EXPIRED] Entry ${doc.id} (${entry.customerName}): EXPIRED ✅`);
+      console.log(`  - Expiry IST: ${expiryDateStr} (<= ${targetDateStr})`);
+    }
+    
+    return matches;
+  });
+}
+
+// Helper function to filter entries by calendar date (simple and clean)
+function filterEntriesByCalendarDate(
+  entries: any[], 
+  targetDate: Date
+): any[] {
+  const targetDateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+  console.log(`🔍 [FILTER] Target date: ${targetDateStr}`);
+  
+  return entries.filter(doc => {
+    const entry = doc.data();
+    const expiryDate = entry.expiryDate;
+    
+    if (!expiryDate) {
+      return false;
+    }
+    
+    // Handle different timestamp formats
+    let expiryDateObj: Date;
+    
+    if (expiryDate instanceof Date) {
+      // Regular JavaScript Date
+      expiryDateObj = expiryDate;
+    } else if (expiryDate && typeof expiryDate === 'object') {
+      // Firestore Timestamp - handle both _seconds and toDate() methods
+      try {
+        if (expiryDate.toDate && typeof expiryDate.toDate === 'function') {
+          // Use Firestore's toDate() method if available
+          expiryDateObj = expiryDate.toDate();
+        } else if (expiryDate._seconds !== undefined) {
+          // Handle timestamp with _seconds and _nanoseconds
+          expiryDateObj = new Date(expiryDate._seconds * 1000 + (expiryDate._nanoseconds || 0) / 1000000);
+        } else {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+    
+    // Convert expiry date to Indian Standard Time (UTC+5:30) for comparison
+    // because the Firestore UI shows dates in IST
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+    const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+    const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+    
+    // Simple calendar date comparison (ignoring time completely)
+    const matches = expiryDateStr === targetDateStr;
+    
+    // Log only matching entries for cleaner output
+    if (matches) {
+      console.log(`🔍 [FILTER] Entry ${doc.id} (${entry.customerName}): MATCHES ✅`);
+      console.log(`  - Expiry UTC: ${expiryDateObj.toISOString().split('T')[0]}`);
+      console.log(`  - Expiry IST: ${expiryDateStr}`);
+    }
+    
+    return matches;
+  });
+}
+
+// Helper function to create a snapshot-like object from filtered docs
+function createSnapshotFromDocs(docs: any[]) {
+  return {
+    docs: docs,
+    size: docs.length,
+    empty: docs.length === 0
+  };
+}
+
+// Helper function to filter entries by expiry date range (for 3-day reminders)
+function filterEntriesByDateRange(
+  entries: any[], 
+  startDate: Date, 
+  endDate: Date
+): any[] {
+  return entries.filter(doc => {
+    const entry = doc.data();
+    const expiryDate = entry.expiryDate;
+    
+    if (!expiryDate) return false;
+    
+    // Handle Firestore timestamp format
+    let expiryDateObj: Date;
+    if (expiryDate instanceof Date) {
+      expiryDateObj = expiryDate;
+    } else if (expiryDate && typeof expiryDate === 'object' && expiryDate._seconds) {
+      expiryDateObj = new Date(expiryDate._seconds * 1000 + expiryDate._nanoseconds / 1000000);
+    } else {
+      return false;
+    }
+    
+    // Check if expiry date is within the specified range
+    return expiryDateObj >= startDate && expiryDateObj < endDate;
+  });
+}
+
+// Helper function to filter entries that expired between two dates (for 60-day final disposal)
+function filterEntriesExpiredBetween(
+  entries: any[], 
+  startDate: Date, 
+  endDate: Date
+): any[] {
+  return entries.filter(doc => {
+    const entry = doc.data();
+    const expiryDate = entry.expiryDate;
+    
+    if (!expiryDate) return false;
+    
+    // Handle Firestore timestamp format
+    let expiryDateObj: Date;
+    if (expiryDate instanceof Date) {
+      expiryDateObj = expiryDate;
+    } else if (expiryDate && typeof expiryDate === 'object' && expiryDate._seconds) {
+      expiryDateObj = new Date(expiryDate._seconds * 1000 + expiryDate._nanoseconds / 1000000);
+    } else {
+      return false;
+    }
+    
+    // Check if expiry date is between the two dates (inclusive)
+    return expiryDateObj <= startDate && expiryDateObj >= endDate;
+  });
+}
+
 // Validate FastSMS configuration
 function validateFastSMSConfig() {
   if (!FASTSMS_CONFIG.apiKey) {
@@ -449,21 +633,23 @@ async function processThreeDayReminders() {
   
   try {
     const now = new Date();
+    // Calculate date 3 days from now
     const reminderDate = new Date(now.getTime() + (EXPIRY_REMINDER_DAYS * 24 * 60 * 60 * 1000));
-    const reminderDateStart = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate());
-    const reminderDateEnd = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate() + 1); // Next day
+    const reminderDateStr = reminderDate.toISOString().split('T')[0];
     
-    console.log('📅 [3DAY] Checking for entries expiring between:', {
-      start: reminderDateStart.toISOString(),
-      end: reminderDateEnd.toISOString()
+    console.log('📅 [3DAY] Checking for entries expiring in 3 days:', {
+      reminderDate: reminderDate.toISOString(),
+      reminderDateStr: reminderDateStr
     });
     
-    // Query for entries expiring in 3 days (using range for reliability)
-    const entriesSnapshot = await db.collection('entries')
+    // Query for all active entries, then filter by expiry date in memory
+    const threeDayActiveSnapshot = await db.collection('entries')
       .where('status', '==', 'active')
-      .where('expiryDate', '>=', reminderDateStart)
-      .where('expiryDate', '<', reminderDateEnd)
       .get();
+    
+    // Filter entries that expire in 3 days (using the same timezone-aware logic)
+    const filteredDocs = filterEntriesByCalendarDate(threeDayActiveSnapshot.docs, reminderDate);
+    const entriesSnapshot = createSnapshotFromDocs(filteredDocs);
     
     if (entriesSnapshot.empty) {
       console.log('📅 [3DAY] No entries expiring in 3 days');
@@ -483,7 +669,7 @@ async function processThreeDayReminders() {
           const customerVariables = [
             entry.deceasedPersonName || entry.customerName,
             entry.locationName || 'Unknown Location',
-            reminderDateStart.toISOString().split('T')[0], // Format as YYYY-MM-DD
+            reminderDateStr, // Simple date format: 2025-12-20
             ADMIN_CONFIG.mobile || 'N/A',
             entry.locationName || 'Unknown Location'
           ].join('|');
@@ -526,216 +712,41 @@ async function processThreeDayReminders() {
   return result;
 }
 
-/**
- * Helper function to check if a date matches today's range
- */
-function checkDateMatches(expiryDate: any, todayStart: Date, todayEnd: Date): boolean {
-  if (!expiryDate) return false;
-  
-  if (expiryDate instanceof Date) {
-    const expiryDateOnly = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), expiryDate.getDate());
-    return expiryDateOnly >= todayStart && expiryDateOnly < todayEnd;
-  }
-  
-  if (expiryDate && typeof expiryDate === 'object' && expiryDate._seconds) {
-    const expiryDateFromTimestamp = new Date(expiryDate._seconds * 1000 + expiryDate._nanoseconds / 1000000);
-    return expiryDateFromTimestamp >= todayStart && expiryDateFromTimestamp < todayEnd;
-  }
-  
-  // Handle string dates (YYYY-MM-DD format)
-  if (typeof expiryDate === 'string') {
-    const [year, month, day] = expiryDate.split('-').map(Number);
-    const expiryDateObj = new Date(year, month - 1, day); // month - 1 because Date months are 0-indexed
-    return expiryDateObj >= todayStart && expiryDateObj < todayEnd;
-  }
-  
-  return false;
-}
-
-/**
- * Process 3-day expiry reminders
- */
-async function processThreeDayReminders() {
-  const result = { sent: 0, failed: 0 };
-  
-  try {
-    const now = new Date();
-    const reminderDate = new Date(now.getTime() + (EXPIRY_REMINDER_DAYS * 24 * 60 * 60 * 1000));
-    const reminderDateStart = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate());
-    const reminderDateEnd = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate() + 1); // Next day
-    
-    console.log('📅 [3DAY] Checking for entries expiring between:', {
-      start: reminderDateStart.toISOString(),
-      end: reminderDateEnd.toISOString(),
-      startFormatted: reminderDateStart.toISOString().split('T')[0],
-      endFormatted: reminderDateEnd.toISOString().split('T')[0]
-    });
-    
-    // Query for entries expiring in 3 days (using range for reliability)
-    const entriesSnapshot = await db.collection('entries')
-      .where('status', '==', 'active')
-      .where('expiryDate', '>=', reminderDateStart)
-      .where('expiryDate', '<', reminderDateEnd)
-      .get();
-    
-    if (entriesSnapshot.empty) {
-      console.log('📅 [3DAY] No entries expiring in 3 days');
-      return result;
-    }
-    
-    console.log(`📅 [3DAY] Found ${entriesSnapshot.size} entries expiring in 3 days`);
-    
-    // Debug: Log each matching entry's details
-    for (const doc of entriesSnapshot.docs) {
-      const entry = doc.data();
-      console.log('📅 [3DAY] Matching entry debug:', {
-        id: doc.id,
-        customerName: entry.customerName,
-        expiryDate: entry.expiryDate,
-        expiryDateType: typeof entry.expiryDate,
-        expiryDateObj: entry.expiryDate instanceof Date ? 'Date object' : 'Other',
-        expiryDateFormatted: entry.expiryDate instanceof Date ? entry.expiryDate.toISOString().split('T')[0] : 'N/A',
-        expiryDateTimestamp: entry.expiryDate && typeof entry.expiryDate === 'object' && entry.expiryDate._seconds ? 
-          new Date(entry.expiryDate._seconds * 1000 + entry.expiryDate._nanoseconds / 1000000).toISOString().split('T')[0] : 'N/A',
-        todayStartFormatted: reminderDateStart.toISOString().split('T')[0],
-        todayEndFormatted: reminderDateEnd.toISOString().split('T')[0],
-        matchesQuery: checkDateMatches(entry.expiryDate, reminderDateStart, reminderDateEnd)
-      });
-    }
-    
-    for (const doc of entriesSnapshot.docs) {
-      const entry = doc.data();
-      let customerResult: any = null; // Declare outside try block
-      
-      try {
-        // Send 3-day reminder to customer
-        const customerTemplate = smsTemplates.getTemplateByKey('threeDayReminder');
-        if (customerTemplate && entry.customerMobile) {
-          const customerVariables = [
-            entry.deceasedPersonName || entry.customerName,
-            entry.locationName || 'Unknown Location',
-            reminderDateStart.toISOString().split('T')[0], // Format as YYYY-MM-DD
-            ADMIN_CONFIG.mobile || 'N/A',
-            entry.locationName || 'Unknown Location'
-          ].join('|');
-          
-          customerResult = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVariables);
-          if (customerResult.success) {
-            result.sent++;
-          } else {
-            result.failed++;
-          }
-        }
-        
-        // Log SMS attempt
-        await smsLogs.logSMS({
-          type: 'three_day_reminder',
-          recipient: entry.customerMobile,
-          templateId: customerTemplate?.id || '',
-          message: '3-day expiry reminder',
-          status: customerResult?.success ? 'sent' : 'failed',
-          errorMessage: customerResult?.error,
-          timestamp: new Date(),
-          retryCount: 1,
-          entryId: doc.id,
-          customerId: entry.customerId,
-          locationId: entry.locationId,
-          operatorId: entry.operatorId
-        });
-        
-      } catch (entryError) {
-        console.error(`📅 [3DAY] Error processing entry ${doc.id}:`, entryError);
-        result.failed++;
-      }
-    }
-    
-  } catch (error) {
-    console.error('📅 [3DAY] Error in 3-day reminders:', error);
-    result.failed++;
-  }
-  
-  return result;
-}
 async function processLastDayReminders() {
   const result = { sent: 0, failed: 0 };
   
   try {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1); // Next day
+    // For last day reminder, we want entries expiring TOMORROW
+    const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const tomorrowDateStr = tomorrowDate.toISOString().split('T')[0];
     
-    console.log('📅 [LASTDAY] Current server time:', now.toISOString());
-    console.log('📅 [LASTDAY] Checking for entries expiring between:', {
-      start: todayStart.toISOString(),
-      end: todayEnd.toISOString(),
-      startFormatted: todayStart.toISOString().split('T')[0],
-      endFormatted: todayEnd.toISOString().split('T')[0]
+    console.log('📅 [LASTDAY] Current server time (UTC):', now.toISOString());
+    console.log('📅 [LASTDAY] Checking for entries expiring tomorrow (last day reminder):', {
+      tomorrowDate: tomorrowDate.toISOString(),
+      tomorrowDateStr: tomorrowDateStr
     });
     
-    // First, let's check ALL active entries to understand the data
+    // Query for all active entries, then filter by expiry date in memory
     const allActiveSnapshot = await db.collection('entries')
       .where('status', '==', 'active')
-      .limit(5) // Limit for debugging
       .get();
     
     console.log('📅 [LASTDAY] Total active entries in database:', allActiveSnapshot.size);
     
-    // Debug: Log all active entries with their expiry dates
-    for (const doc of allActiveSnapshot.docs) {
-      const entry = doc.data();
-      console.log('📅 [LASTDAY] Active entry debug:', {
-        id: doc.id,
-        customerName: entry.customerName,
-        expiryDate: entry.expiryDate,
-        expiryDateType: typeof entry.expiryDate,
-        expiryDateObj: entry.expiryDate instanceof Date ? 'Date object' : 'Other',
-        expiryDateFormatted: entry.expiryDate instanceof Date ? entry.expiryDate.toISOString().split('T')[0] : 'N/A',
-        expiryDateTimestamp: entry.expiryDate && typeof entry.expiryDate === 'object' && entry.expiryDate._seconds ? 
-          new Date(entry.expiryDate._seconds * 1000 + entry.expiryDate._nanoseconds / 1000000).toISOString().split('T')[0] : 'N/A',
-        todayStartFormatted: todayStart.toISOString().split('T')[0],
-        todayEndFormatted: todayEnd.toISOString().split('T')[0],
-        matchesQuery: checkDateMatches(entry.expiryDate, todayStart, todayEnd)
-      });
-    }
+    // Filter entries that expire tomorrow (simple calendar date comparison)
+    const filteredDocs = filterEntriesByCalendarDate(allActiveSnapshot.docs, tomorrowDate);
+    const entriesSnapshot = createSnapshotFromDocs(filteredDocs);
     
-    // Query for entries expiring today (using range for reliability)
-    const entriesSnapshot = await db.collection('entries')
-      .where('status', '==', 'active')
-      .where('expiryDate', '>=', todayStart)
-      .where('expiryDate', '<', todayEnd)
-      .get();
-    
-    console.log('📅 [LASTDAY] Query details:');
-    console.log('📅 [LASTDAY] - Collection: entries');
-    console.log('📅 [LASTDAY] - Status filter: == active');
-    console.log('📅 [LASTDAY] - Expiry >=:', todayStart.toISOString());
-    console.log('📅 [LASTDAY] - Expiry <:', todayEnd.toISOString());
-    console.log('📅 [LASTDAY] - Query results:', entriesSnapshot.size, 'documents');
+    console.log('📅 [LASTDAY] - Target expiry date:', tomorrowDateStr);
+    console.log('📅 [LASTDAY] - Entries expiring tomorrow after filtering:', entriesSnapshot.size, 'documents');
     
     if (entriesSnapshot.empty) {
-      console.log('📅 [LASTDAY] No entries expiring today');
+      console.log('📅 [LASTDAY] No entries expiring tomorrow');
       return result;
     }
     
-    console.log(`📅 [LASTDAY] Found ${entriesSnapshot.size} entries expiring today`);
-    
-    // Debug: Log each matching entry's details
-    for (const doc of entriesSnapshot.docs) {
-      const entry = doc.data();
-      console.log('📅 [LASTDAY] Matching entry debug:', {
-        id: doc.id,
-        customerName: entry.customerName,
-        expiryDate: entry.expiryDate,
-        expiryDateType: typeof entry.expiryDate,
-        expiryDateObj: entry.expiryDate instanceof Date ? 'Date object' : 'Other',
-        expiryDateFormatted: entry.expiryDate instanceof Date ? entry.expiryDate.toISOString().split('T')[0] : 'N/A',
-        expiryDateTimestamp: entry.expiryDate && typeof entry.expiryDate === 'object' && entry.expiryDate._seconds ? 
-          new Date(entry.expiryDate._seconds * 1000 + entry.expiryDate._nanoseconds / 1000000).toISOString().split('T')[0] : 'N/A',
-        todayStartFormatted: todayStart.toISOString().split('T')[0],
-        todayEndFormatted: todayEnd.toISOString().split('T')[0],
-        matchesQuery: checkDateMatches(entry.expiryDate, todayStart, todayEnd)
-      });
-    }
+    console.log(`📅 [LASTDAY] Found ${entriesSnapshot.size} entries expiring tomorrow`);
     
     for (const doc of entriesSnapshot.docs) {
       const entry = doc.data();
@@ -748,7 +759,7 @@ async function processLastDayReminders() {
           const customerVariables = [
             entry.deceasedPersonName || entry.customerName,
             entry.locationName || 'Unknown Location',
-            todayStart.toISOString().split('T')[0],
+            tomorrowDateStr, // Simple date format: 2025-12-18
             ADMIN_CONFIG.mobile || 'N/A',
             entry.locationName || 'Unknown Location'
           ].join('|');
@@ -792,32 +803,6 @@ async function processLastDayReminders() {
 }
 
 /**
- * Helper function to check if a date matches today's range
- */
-function checkDateMatches(expiryDate: any, todayStart: Date, todayEnd: Date): boolean {
-  if (!expiryDate) return false;
-  
-  if (expiryDate instanceof Date) {
-    const expiryDateOnly = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), expiryDate.getDate());
-    return expiryDateOnly >= todayStart && expiryDateOnly < todayEnd;
-  }
-  
-  if (expiryDate && typeof expiryDate === 'object' && expiryDate._seconds) {
-    const expiryDateFromTimestamp = new Date(expiryDate._seconds * 1000 + expiryDate._nanoseconds / 1000000);
-    return expiryDateFromTimestamp >= todayStart && expiryDateFromTimestamp < todayEnd;
-  }
-  
-  // Handle string dates (YYYY-MM-DD format)
-  if (typeof expiryDate === 'string') {
-    const [year, month, day] = expiryDate.split('-').map(Number);
-    const expiryDateObj = new Date(year, month - 1, day); // month - 1 because Date months are 0-indexed
-    return expiryDateObj >= todayStart && expiryDateObj < todayEnd;
-  }
-  
-  return false;
-}
-
-/**
  * Process 60-day final disposal reminders
  */
 async function processFinalDisposalReminders() {
@@ -825,21 +810,23 @@ async function processFinalDisposalReminders() {
   
   try {
     const now = new Date();
+    // Calculate date 60 days ago
     const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
-    const sixtyDaysAgoStart = new Date(sixtyDaysAgo.getFullYear(), sixtyDaysAgo.getMonth(), sixtyDaysAgo.getDate());
-    const sixtyDaysAgoEnd = new Date(sixtyDaysAgo.getFullYear(), sixtyDaysAgo.getMonth(), sixtyDaysAgo.getDate() + 1); // Next day
+    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0];
     
-    console.log('📅 [60DAY] Checking for entries that expired between:', {
-      start: sixtyDaysAgoStart.toISOString(),
-      end: sixtyDaysAgoEnd.toISOString()
+    console.log('📅 [60DAY] Checking for entries that expired 60 days ago:', {
+      sixtyDaysAgo: sixtyDaysAgo.toISOString(),
+      sixtyDaysAgoStr: sixtyDaysAgoStr
     });
     
-    // Query for entries expired 60+ days ago and still active (using range for reliability)
-    const entriesSnapshot = await db.collection('entries')
+    // Query for all active entries, then filter by expiry date in memory
+    const sixtyDayActiveSnapshot = await db.collection('entries')
       .where('status', '==', 'active')
-      .where('expiryDate', '<=', sixtyDaysAgoStart)
-      .where('expiryDate', '>=', sixtyDaysAgoEnd)
       .get();
+    
+    // Filter entries that expired 60+ days ago (using the same timezone-aware logic)
+    const filteredDocs = filterEntriesExpiredByCalendarDate(sixtyDayActiveSnapshot.docs, sixtyDaysAgo);
+    const entriesSnapshot = createSnapshotFromDocs(filteredDocs);
     
     if (entriesSnapshot.empty) {
       console.log('📅 [60DAY] No entries expired 60 days ago');
@@ -1056,89 +1043,58 @@ export const sendExpiry = functions
             };
           }
 
-          // Send SMS to both admin and customer
-          const smsResults = await sendSMSToBothParties(
-            entry.contactNumber || '',
-            adminTemplateKey,
-            customerTemplateKey,
-            customerVariables,
-            adminVariables,
-            entry.id
-          );
-          
-          if (smsResults.success) {
-            successCount++;
-            console.log(`✅ [MANUAL] Reminder sent for entry: ${entry.id}`);
+          // Send SMS to customer
+          const customerTemplate = smsTemplates.getTemplateByKey(customerTemplateKey);
+          if (customerTemplate && entry.customerMobile) {
+            const customerVars = [
+              entry.deceasedPersonName || entry.customerName,
+              entry.locationName || 'Unknown Location',
+              entry.expiryDate || '',
+              ADMIN_CONFIG.mobile || 'N/A',
+              entry.locationName || 'Unknown Location'
+            ].join('|');
             
-            // Update entry to mark reminder sent
-            const updateData: any = {
-              [`${reminderType}ReminderSent`]: true,
-              [`${reminderType}ReminderSentAt`]: admin.firestore.FieldValue.serverTimestamp(),
-              [`${reminderType}ReminderSentBy`]: context.auth.uid
-            };
-            
-            await doc.ref.update(updateData);
+            try {
+              const smsResults = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVars);
+              
+              if (smsResults.success) {
+                successCount++;
+                console.log(`✅ [MANUAL] Successfully sent ${reminderType} reminder to ${entry.customerName} (${entry.customerMobile})`);
+                
+                // Update entry to mark reminder sent
+                const updateData: any = {
+                  [`${reminderType}ReminderSent`]: true,
+                  [`${reminderType}ReminderSentAt`]: admin.firestore.FieldValue.serverTimestamp(),
+                  [`${reminderType}ReminderSentBy`]: context.auth.uid
+                };
+                
+                await doc.ref.update(updateData);
 
-            // Log customer SMS
-            if (smsResults.customerSMS?.success) {
-              await smsLogs.logSMS({
-                type: customerTemplateKey,
-                recipient: entry.contactNumber,
-                templateId: getTemplateIdByKey(customerTemplateKey),
-                message: smsTemplates.getTemplateByKey(customerTemplateKey)?.name || 'Manual Reminder',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
+                // Log customer SMS
+                await smsLogs.logSMS({
+                  type: customerTemplateKey,
+                  recipient: entry.customerMobile,
+                  templateId: customerTemplate.id,
+                  message: customerTemplate.name || 'Manual Reminder',
+                  status: 'sent',
+                  entryId: doc.id,
+                  customerId: entry.customerId,
+                  locationId: entry.locationId,
+                  timestamp: new Date(),
+                  retryCount: 0
+                });
+              } else {
+                failureCount++;
+                console.error(`❌ [MANUAL] Failed to send ${reminderType} reminder to ${entry.customerName}:`, smsResults.error);
+              }
+            } catch (error) {
+              failureCount++;
+              console.error(`❌ [MANUAL] Failed to send ${reminderType} reminder for entry: ${doc.id}`, error);
             }
-
-            // Log admin SMS
-            if (smsResults.adminSMS?.success) {
-              await smsLogs.logSMS({
-                type: adminTemplateKey,
-                recipient: ADMIN_CONFIG.mobile!,
-                templateId: getTemplateIdByKey(adminTemplateKey),
-                message: smsTemplates.getTemplateByKey(adminTemplateKey)?.name || 'Manual Admin Reminder',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
-            }
-
-            results.push({
-              entryId: entry.id,
-              success: true,
-              customerSMS: smsResults.customerSMS?.success || false,
-              adminSMS: smsResults.adminSMS?.success || false
-            });
-
           } else {
             failureCount++;
-            console.error(`❌ [MANUAL] Failed to send reminder for entry: ${entry.id}`, smsResults.errors);
-            
-            results.push({
-              entryId: entry.id,
-              success: false,
-              errors: smsResults.errors
-            });
+            console.error(`❌ [MANUAL] Missing template or customer mobile for entry ${doc.id}`);
           }
-
-        } catch (error) {
-          failureCount++;
-          console.error(`❌ [MANUAL] Error processing entry ${entry.id}:`, error);
-          
-          results.push({
-            entryId: entry.id,
-            success: false,
-            errors: [error instanceof Error ? error.message : 'Unknown error']
-          });
-        }
       }
 
       console.log(`📊 [MANUAL] Manual expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
@@ -1149,7 +1105,6 @@ export const sendExpiry = functions
         processed: entriesSnapshot.size,
         successful: successCount,
         failed: failureCount,
-        results,
         timestamp: new Date().toISOString()
       };
 
@@ -1392,24 +1347,32 @@ export const sendExpiryReminders = functions
   .pubsub.schedule('0 10 * * *')
   .timeZone(TIME_ZONE)
   .onRun(async (context) => {
-    console.log('🔔 [SCHEDULED] Starting expiry reminders check...');
+    console.log('🔔 [SCHEDULED] Starting 3-day expiry reminders check...');
     
     try {
       const now = new Date();
+      // Calculate date 3 days from now
       const reminderDate = new Date(now.getTime() + (EXPIRY_REMINDER_DAYS * 24 * 60 * 60 * 1000));
+      const reminderDateStr = reminderDate.toISOString().split('T')[0];
       
-      console.log('📅 [SCHEDULED] Checking for entries expiring on:', reminderDate.toISOString());
+      console.log('📅 [SCHEDULED] Checking for entries expiring in 3 days:', {
+        reminderDate: reminderDate.toISOString(),
+        reminderDateStr: reminderDateStr
+      });
 
-      // Query for entries expiring in 3 days
-      const expiringEntries = await db.collection('entries')
-        .where('expiryDate', '==', reminderDate.toISOString().split('T')[0])
+      // Query for all active entries, then filter by expiry date in memory using timezone-aware logic
+      const allActiveEntries = await db.collection('entries')
         .where('status', '==', 'active')
         .get();
 
-      console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring in ${EXPIRY_REMINDER_DAYS} days`);
+      // Filter entries that expire in 3 days (using the same timezone-aware logic)
+      const filteredDocs = filterEntriesByCalendarDate(allActiveEntries.docs, reminderDate);
+      const expiringEntries = createSnapshotFromDocs(filteredDocs);
+
+      console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring in 3 days after filtering`);
 
       if (expiringEntries.empty) {
-        console.log('✅ [SCHEDULED] No entries require expiry reminders');
+        console.log('✅ [SCHEDULED] No entries require 3-day expiry reminders');
         return null;
       }
 
@@ -1421,109 +1384,155 @@ export const sendExpiryReminders = functions
         const entry = doc.data();
         
         try {
-          console.log(`🔄 [SCHEDULED] Processing entry: ${entry.id}`);
+          console.log(`🔄 [SCHEDULED] Processing 3-day reminder for entry: ${doc.id}`);
 
-          let customerTemplateKey: keyof typeof TEMPLATE_IDS;
-          let adminTemplateKey: keyof typeof TEMPLATE_IDS;
-
-          // Prepare variables for customer SMS
-          const customerVariables = {
-            var1: entry.deceasedName || '',
-            var2: entry.location || '',
-            var3: entry.expiryDate || '',
-            var4: entry.contactNumber || '',
-            var5: entry.location || '' // Repeated location
-          };
-
-          // Prepare variables for admin SMS
-          const adminVariables = {
-            var1: entry.location || '',
-            var2: entry.deceasedName || ''
-          };
-
-          customerTemplateKey = 'threeDayReminder';
-          adminTemplateKey = 'finalDisposalReminderAdmin';
-          
-          // Send SMS to both admin and customer
-          const results = await sendSMSToBothParties(
-            entry.contactNumber || '',
-            adminTemplateKey,
-            customerTemplateKey,
-            customerVariables,
-            adminVariables,
-            entry.id
-          );
-          
-          if (results.success) {
-            successCount++;
-            console.log(`✅ [SCHEDULED] Reminder sent for entry: ${entry.id}`);
+          // Send 3-day reminder to customer
+          const customerTemplate = smsTemplates.getTemplateByKey('threeDayReminder');
+          if (customerTemplate && entry.customerMobile) {
+            const customerVariables = [
+              entry.deceasedPersonName || entry.customerName,
+              entry.locationName || 'Unknown Location',
+              reminderDateStr, // Simple date format: 2025-12-20
+              ADMIN_CONFIG.mobile || 'N/A',
+              entry.locationName || 'Unknown Location'
+            ].join('|');
             
-            // Update entry to mark reminder sent
-            await doc.ref.update({
-              reminderSent: true,
-              reminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
-              reminderSentBy: 'system'
-            });
-
-            // Log customer SMS
-            if (results.customerSMS?.success) {
-              await smsLogs.logSMS({
-                type: 'threeDayReminder',
-                recipient: entry.contactNumber,
-                templateId: getTemplateIdByKey('threeDayReminder'),
-                message: smsTemplates.getTemplateByKey('threeDayReminder')?.name || 'Three Day Reminder',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
+            const customerResult = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVariables);
+            if (customerResult.success) {
+              successCount++;
+              console.log(`✅ [SCHEDULED] Successfully sent 3-day reminder to ${entry.customerName} (${entry.customerMobile})`);
+            } else {
+              failureCount++;
+              console.error(`❌ [SCHEDULED] Failed to send 3-day reminder to ${entry.customerName}:`, customerResult.error);
             }
-
-            // Log admin SMS
-            if (results.adminSMS?.success) {
-              await smsLogs.logSMS({
-                type: 'finalDisposalReminderAdmin',
-                recipient: ADMIN_CONFIG.mobile!,
-                templateId: getTemplateIdByKey('finalDisposalReminderAdmin'),
-                message: smsTemplates.getTemplateByKey('finalDisposalReminderAdmin')?.name || 'Final Disposal Reminder Admin',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
-            }
-
           } else {
             failureCount++;
-            console.error(`❌ [SCHEDULED] Failed to send reminder for entry: ${entry.id}`, results.errors);
+            console.error(`❌ [SCHEDULED] Missing template or customer mobile for entry ${doc.id}`);
           }
 
         } catch (error) {
           failureCount++;
-          console.error(`❌ [SCHEDULED] Error processing entry ${entry.id}:`, error);
+          console.error(`❌ [SCHEDULED] Failed to send 3-day reminder for entry: ${doc.id}`, error);
         }
       }
-
-      console.log(`📊 [SCHEDULED] Expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
+      
+      console.log(`📊 [SCHEDULED] 3-day expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
       
       return {
-        success: true,
-        processed: expiringEntries.size,
-        successful: successCount,
-        failed: failureCount,
+        success: successCount > 0,
+        message: `Processed ${successCount + failureCount} entries`,
+        successCount,
+        failureCount,
         timestamp: new Date().toISOString()
       };
-
+      
     } catch (error) {
-      console.error('💥 [CRITICAL] Expiry reminders failed:', error);
-      throw new functions.https.HttpsError(
-        'internal',
-        `Expiry reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      console.error('🔔 [SCHEDULED] Error in 3-day expiry reminders:', error);
+      return {
+        success: false,
+        message: 'Error processing 3-day reminders: ' + error.message,
+        successCount: 0,
+        failureCount: 1,
+        timestamp: new Date().toISOString()
+      };
+    }
+  });
+
+/**
+ * Scheduled function to check for entries that expired 60 days ago and send final disposal reminders
+ * Runs daily at 10 AM Asia/Kolkata time
+ */
+
+export const sendFinalDisposalReminders = functions
+  .runWith({
+    memory: '256MB',
+    timeoutSeconds: 540, // 9 minutes
+  })
+  .pubsub.schedule('0 10 * * *')
+  .timeZone(TIME_ZONE)
+  .onRun(async (context) => {
+    console.log('🔔 [SCHEDULED] Starting final disposal reminders check...');
+    
+    try {
+      const now = new Date();
+      const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0]; // 60 days ago in YYYY-MM-DD format
+      
+      console.log('📅 [SCHEDULED] Checking for entries that expired 60+ days ago:', sixtyDaysAgoStr);
+
+      // Query for all active entries, then filter by expiry date in memory using timezone-aware logic
+      const allActiveEntries = await db.collection('entries')
+        .where('status', '==', 'active')
+        .get();
+
+      // Filter entries that expired 60+ days ago (using the same timezone-aware logic)
+      const filteredDocs = filterEntriesExpiredByCalendarDate(allActiveEntries.docs, sixtyDaysAgo);
+      const expiredEntries = createSnapshotFromDocs(filteredDocs);
+
+      console.log(`📊 [SCHEDULED] Found ${expiredEntries.size} entries expired 60+ days ago after filtering`);
+
+      if (expiredEntries.empty) {
+        console.log('✅ [SCHEDULED] No entries require final disposal reminders');
+        return null;
+      }
+
+      let successCount = 0;
+      let failureCount = 0;
+
+      // Process each expired entry
+      for (const doc of expiredEntries.docs) {
+        const entry = doc.data();
+        
+        try {
+          console.log(`🔄 [SCHEDULED] Processing final disposal reminder for entry: ${doc.id}`);
+
+          // Send final disposal reminder to customer
+          const customerTemplate = smsTemplates.getTemplateByKey('finalDisposalReminder');
+          if (customerTemplate && entry.customerMobile) {
+            const customerVariables = [
+              entry.deceasedPersonName || entry.customerName,
+              entry.locationName || 'Unknown Location',
+              entry.locationName || 'Unknown Location'
+            ].join('|');
+            
+            const customerResult = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVariables);
+            if (customerResult.success) {
+              successCount++;
+              console.log(`✅ [SCHEDULED] Successfully sent final disposal reminder to ${entry.customerName} (${entry.customerMobile})`);
+            } else {
+              failureCount++;
+              console.error(`❌ [SCHEDULED] Failed to send final disposal reminder to ${entry.customerName}:`, customerResult.error);
+            }
+          } else {
+            failureCount++;
+            console.error(`❌ [SCHEDULED] Missing template or customer mobile for entry ${doc.id}`);
+          }
+
+        } catch (error) {
+          failureCount++;
+          console.error(`❌ [SCHEDULED] Failed to send final disposal reminder for entry: ${doc.id}`, error);
+        }
+      }
+      
+      console.log(`📊 [SCHEDULED] Final disposal reminders completed: ${successCount} successful, ${failureCount} failed`);
+      
+      return {
+        success: successCount > 0,
+        message: `Processed ${successCount + failureCount} entries`,
+        successCount,
+        failureCount,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error('🔔 [SCHEDULED] Error in final disposal reminders:', error);
+      return {
+        success: false,
+        message: 'Error processing final disposal reminders: ' + error.message,
+        successCount: 0,
+        failureCount: 1,
+        timestamp: new Date().toISOString()
+      };
     }
   });
 
@@ -1543,17 +1552,27 @@ export const sendLastDayReminders = functions
     
     try {
       const now = new Date();
-      const today = now.toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+      // For last day reminder, we want entries expiring TOMORROW
+      const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const tomorrowDateStr = tomorrowDate.toISOString().split('T')[0];
       
-      console.log('📅 [SCHEDULED] Checking for entries expiring today:', today);
+      console.log('📅 [SCHEDULED] Checking for entries expiring tomorrow (last day reminder):', {
+        tomorrowDate: tomorrowDate.toISOString(),
+        tomorrowDateStr: tomorrowDateStr
+      });
 
-      // Query for entries expiring today
-      const expiringEntries = await db.collection('entries')
-        .where('expiryDate', '==', today)
+      // Query for all active entries, then filter by expiry date in memory
+      const allActiveEntries = await db.collection('entries')
         .where('status', '==', 'active')
         .get();
 
-      console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring today`);
+      console.log(`📊 [SCHEDULED] Found ${allActiveEntries.size} total active entries`);
+
+      // Filter entries that expire tomorrow (simple calendar date comparison)
+      const filteredDocs = filterEntriesByCalendarDate(allActiveEntries.docs, tomorrowDate);
+      const expiringEntries = createSnapshotFromDocs(filteredDocs);
+
+      console.log(`📊 [SCHEDULED] Found ${expiringEntries.size} entries expiring tomorrow after filtering`);
 
       if (expiringEntries.empty) {
         console.log('✅ [SCHEDULED] No entries require last day expiry reminders');
@@ -1568,103 +1587,48 @@ export const sendLastDayReminders = functions
         const entry = doc.data();
         
         try {
-          console.log(`🔄 [SCHEDULED] Processing last day reminder for entry: ${entry.id}`);
+          console.log(`🔄 [SCHEDULED] Processing last day reminder for entry: ${doc.id}`);
 
-          let customerTemplateKey: keyof typeof TEMPLATE_IDS;
-          let adminTemplateKey: keyof typeof TEMPLATE_IDS;
-
-          // Prepare variables for customer SMS
-          const customerVariables = {
-            var1: entry.deceasedName || '',
-            var2: entry.location || '',
-            var3: today,
-            var4: entry.contactNumber || '',
-            var5: entry.location || '' // Repeated location
-          };
-
-          // Prepare variables for admin SMS
-          const adminVariables = {
-            var1: entry.location || '',
-            var2: entry.deceasedName || ''
-          };
-
-          customerTemplateKey = 'lastdayRenewal';
-          adminTemplateKey = 'finalDisposalReminderAdmin';
-          
-          // Send SMS to both admin and customer
-          const results = await sendSMSToBothParties(
-            entry.contactNumber || '',
-            adminTemplateKey,
-            customerTemplateKey,
-            customerVariables,
-            adminVariables,
-            entry.id
-          );
-          
-          if (results.success) {
-            successCount++;
-            console.log(`✅ [SCHEDULED] Last day reminder sent for entry: ${entry.id}`);
+          // Send last-day reminder to customer
+          const customerTemplate = smsTemplates.getTemplateByKey('lastdayRenewal');
+          if (customerTemplate && entry.customerMobile) {
+            const customerVariables = [
+              entry.deceasedPersonName || entry.customerName,
+              entry.locationName || 'Unknown Location',
+              tomorrowDateStr, // Simple date format: 2025-12-18
+              ADMIN_CONFIG.mobile || 'N/A',
+              entry.locationName || 'Unknown Location'
+            ].join('|');
             
-            // Update entry to mark last day reminder sent
-            await doc.ref.update({
-              lastDayReminderSent: true,
-              lastDayReminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
-              lastDayReminderSentBy: 'system'
-            });
-
-            // Log customer SMS
-            if (results.customerSMS?.success) {
-              await smsLogs.logSMS({
-                type: 'lastdayRenewal',
-                recipient: entry.contactNumber,
-                templateId: getTemplateIdByKey('lastdayRenewal'),
-                message: smsTemplates.getTemplateByKey('lastdayRenewal')?.name || 'Last Day Renewal Reminder',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
+            const customerResult = await sendSMSAPI(entry.customerMobile, customerTemplate.id, customerVariables);
+            if (customerResult.success) {
+              successCount++;
+              console.log(`✅ [SCHEDULED] Successfully sent last day reminder to ${entry.customerName} (${entry.customerMobile})`);
+            } else {
+              failureCount++;
+              console.error(`❌ [SCHEDULED] Failed to send last day reminder to ${entry.customerName}:`, customerResult.error);
             }
-
-            // Log admin SMS
-            if (results.adminSMS?.success) {
-              await smsLogs.logSMS({
-                type: 'finalDisposalReminderAdmin',
-                recipient: ADMIN_CONFIG.mobile!,
-                templateId: getTemplateIdByKey('finalDisposalReminderAdmin'),
-                message: smsTemplates.getTemplateByKey('finalDisposalReminderAdmin')?.name || 'Final Disposal Reminder Admin',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
-            }
-
           } else {
             failureCount++;
-            console.error(`❌ [SCHEDULED] Failed to send last day reminder for entry: ${entry.id}`, results.errors);
+            console.error(`❌ [SCHEDULED] Missing template or customer mobile for entry ${doc.id}`);
           }
 
         } catch (error) {
           failureCount++;
-          console.error(`❌ [SCHEDULED] Error processing last day reminder for entry ${entry.id}:`, error);
+          console.error(`❌ [SCHEDULED] Failed to send last day reminder for entry: ${doc.id}`, error);
         }
       }
-
+      
       console.log(`📊 [SCHEDULED] Last day expiry reminders completed: ${successCount} successful, ${failureCount} failed`);
       
       return {
-        success: true,
-        processed: expiringEntries.size,
-        successful: successCount,
-        failed: failureCount,
+        success: successCount > 0,
+        message: `Processed ${successCount + failureCount} entries`,
+        successCount,
+        failureCount,
         timestamp: new Date().toISOString()
       };
-
+      
     } catch (error) {
       console.error('💥 [CRITICAL] Last day expiry reminders failed:', error);
       throw new functions.https.HttpsError(
@@ -1674,298 +1638,6 @@ export const sendLastDayReminders = functions
     }
   });
 
-/**
- * Scheduled function to check for entries that expired 60 days ago and send final disposal reminders
- * Runs daily at 10 AM Asia/Kolkata time
- */
-export const sendFinalDisposalReminders = functions
-  .runWith({
-    memory: '256MB',
-    timeoutSeconds: 540, // 9 minutes
-  })
-  .pubsub.schedule('0 10 * * *')
-  .timeZone(TIME_ZONE)
-  .onRun(async (context) => {
-    console.log('🔔 [SCHEDULED] Starting final disposal reminders check...');
-    
-    try {
-      const now = new Date();
-      const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
-      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split('T')[0]; // 60 days ago in YYYY-MM-DD format
-      
-      console.log('📅 [SCHEDULED] Checking for entries that expired 60 days ago:', sixtyDaysAgoStr);
-
-      // Query for entries that expired 60 days ago and are still active
-      const expiredEntries = await db.collection('entries')
-        .where('expiryDate', '==', sixtyDaysAgoStr)
-        .where('status', '==', 'active')
-        .get();
-
-      console.log(`📊 [SCHEDULED] Found ${expiredEntries.size} entries expired 60 days ago`);
-
-      if (expiredEntries.empty) {
-        console.log('✅ [SCHEDULED] No entries require final disposal reminders');
-        return null;
-      }
-
-      let successCount = 0;
-      let failureCount = 0;
-
-      // Process each expired entry
-      for (const doc of expiredEntries.docs) {
-        const entry = doc.data();
-        
-        try {
-          console.log(`🔄 [SCHEDULED] Processing final disposal reminder for entry: ${entry.id}`);
-
-          let customerTemplateKey: keyof typeof TEMPLATE_IDS;
-          let adminTemplateKey: keyof typeof TEMPLATE_IDS;
-
-          // Prepare variables for customer SMS
-          const customerVariables = {
-            var1: entry.deceasedName || '',
-            var2: entry.location || '',
-            var3: entry.location || '' // Repeated location
-          };
-
-          // Prepare variables for admin SMS
-          const adminVariables = {
-            var1: entry.location || '',
-            var2: entry.deceasedName || ''
-          };
-
-          customerTemplateKey = 'finalDisposalReminder';
-          adminTemplateKey = 'finalDisposalReminderAdmin';
-          
-          // Send SMS to both admin and customer
-          const results = await sendSMSToBothParties(
-            entry.contactNumber || '',
-            adminTemplateKey,
-            customerTemplateKey,
-            customerVariables,
-            adminVariables,
-            entry.id
-          );
-          
-          if (results.success) {
-            successCount++;
-            console.log(`✅ [SCHEDULED] Final disposal reminder sent for entry: ${entry.id}`);
-            
-            // Update entry to mark final disposal reminder sent
-            await doc.ref.update({
-              finalDisposalReminderSent: true,
-              finalDisposalReminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
-              finalDisposalReminderSentBy: 'system'
-            });
-
-            // Log customer SMS
-            if (results.customerSMS?.success) {
-              await smsLogs.logSMS({
-                type: 'finalDisposalReminder',
-                recipient: entry.contactNumber,
-                templateId: getTemplateIdByKey('finalDisposalReminder'),
-                message: smsTemplates.getTemplateByKey('finalDisposalReminder')?.name || 'Final Disposal Reminder',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
-            }
-
-            // Log admin SMS
-            if (results.adminSMS?.success) {
-              await smsLogs.logSMS({
-                type: 'finalDisposalReminderAdmin',
-                recipient: ADMIN_CONFIG.mobile!,
-                templateId: getTemplateIdByKey('finalDisposalReminderAdmin'),
-                message: smsTemplates.getTemplateByKey('finalDisposalReminderAdmin')?.name || 'Final Disposal Reminder Admin',
-                status: 'sent',
-                entryId: entry.id,
-                customerId: entry.customerId,
-                locationId: entry.locationId,
-                timestamp: new Date(),
-                retryCount: 0
-              });
-            }
-
-          } else {
-            failureCount++;
-            console.error(`❌ [SCHEDULED] Failed to send final disposal reminder for entry: ${entry.id}`, results.errors);
-          }
-
-        } catch (error) {
-          failureCount++;
-          console.error(`❌ [SCHEDULED] Error processing final disposal reminder for entry ${entry.id}:`, error);
-        }
-      }
-
-      console.log(`📊 [SCHEDULED] Final disposal reminders completed: ${successCount} successful, ${failureCount} failed`);
-      
-      return {
-        success: true,
-        processed: expiredEntries.size,
-        successful: successCount,
-        failed: failureCount,
-        timestamp: new Date().toISOString()
-      };
-
-    } catch (error) {
-      console.error('💥 [CRITICAL] Final disposal reminders failed:', error);
-      throw new functions.https.HttpsError(
-        'internal',
-        `Final disposal reminders failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  });
-
-// Helper function to send SMS to both admin and customer (updated version)
-async function sendSMSToBothParties(customerMobile: string, adminTemplateKey: string, customerTemplateKey: string, customerVariables: any, adminVariables: any, entryId?: string) {
-  const results = {
-    customerSMS: null as any,
-    adminSMS: null as any,
-    success: false,
-    errors: [] as string[]
-  };
-
-  try {
-    validateFastSMSConfig();
-    validateAdminConfig();
-
-    // Send SMS to customer first
-    if (customerMobile && customerTemplateKey && customerVariables) {
-      try {
-        const customerTemplateId = getTemplateIdByKey(customerTemplateKey);
-        const customerFormattedVariables = formatVariablesForAPI(customerTemplateKey, customerVariables);
-        
-        console.log('📱 [DEBUG] Sending customer SMS to:', customerMobile.substring(0, 4) + '****' + customerMobile.substring(-4));
-        results.customerSMS = await sendSMSAPI(customerMobile, customerTemplateId, customerFormattedVariables);
-        
-        if (results.customerSMS.success) {
-          console.log('✅ [DEBUG] Customer SMS sent successfully');
-        } else {
-          results.errors.push(`Customer SMS failed: ${results.customerSMS.error?.message || 'Unknown error'}`);
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error sending customer SMS';
-        results.errors.push(errorMessage);
-        console.error('❌ [DEBUG] Error sending customer SMS:', error);
-      }
-    }
-
-    // Send SMS to admin
-    if (ADMIN_CONFIG.mobile && adminTemplateKey && adminVariables) {
-      try {
-        const adminTemplateId = getTemplateIdByKey(adminTemplateKey);
-        const adminFormattedVariables = formatVariablesForAPI(adminTemplateKey, adminVariables);
-        
-        console.log('📱 [DEBUG] Sending admin SMS to:', ADMIN_CONFIG.mobile.substring(0, 4) + '****' + ADMIN_CONFIG.mobile.substring(-4));
-        results.adminSMS = await sendSMSAPI(ADMIN_CONFIG.mobile!, adminTemplateId, adminFormattedVariables);
-        
-        if (results.adminSMS.success) {
-          console.log('✅ [DEBUG] Admin SMS sent successfully');
-        } else {
-          results.errors.push(`Admin SMS failed: ${results.adminSMS.error?.message || 'Unknown error'}`);
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error sending admin SMS';
-        results.errors.push(errorMessage);
-        console.error('❌ [DEBUG] Error sending admin SMS:', error);
-      }
-    }
-
-    // Set overall success if at least one SMS was sent successfully
-    results.success = (results.customerSMS?.success || results.adminSMS?.success);
-
-    return results;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error in sendSMSToBothParties';
-    results.errors.push(errorMessage);
-    console.error('❌ [DEBUG] Error in sendSMSToBothParties:', error);
-    return results;
-  }
-}
-
-// Helper function to get template ID by key with enhanced validation
-function getTemplateIdByKey(templateKey: string): string {
-  console.log('🔍 [DEBUG] Getting template ID for key:', templateKey);
-  
-  const template = smsTemplates.getTemplateByKey(templateKey as any);
-  if (!template) {
-    console.error('🔍 [DEBUG] Template not found for key:', templateKey);
-    throw new Error(`Template not found: ${templateKey}`);
-  }
-  
-  // Enhanced template validation
-  console.log('🔍 [DEBUG] Template details:', {
-    key: template.key,
-    id: template.id,
-    name: template.name,
-    variableCount: template.variableCount,
-    isActive: template.isActive,
-    idLength: template.id.length,
-    idFormat: /^\d+$/.test(template.id) ? 'NUMERIC' : 'INVALID'
-  });
-
-  // Validate template ID format (should be numeric for Fast2SMS)
-  if (!/^\d+$/.test(template.id)) {
-    console.error('🔍 [DEBUG] Invalid template ID format (should be numeric):', template.id);
-    throw new Error(`Invalid template ID format: ${template.id}. Template IDs must be numeric for Fast2SMS compliance.`);
-  }
-
-  // Validate template ID length (Fast2SMS Message IDs are typically 6 digits)
-  if (template.id.length !== 6) {
-    console.warn('🔍 [DEBUG] Unusual template ID length (expected 6 digits for Fast2SMS):', template.id.length);
-  }
-
-  // Check if template is active
-  if (!template.isActive) {
-    console.error('🔍 [DEBUG] Template is not active:', template.key);
-    throw new Error(`Template is not active: ${templateKey}`);
-  }
-  
-  console.log('🔍 [DEBUG] Template validation passed, returning ID:', template.id);
-  return template.id;
-}
-
-// Helper function to format variables for API with enhanced validation
-function formatVariablesForAPI(templateKey: string, variables: any): string {
-  console.log('🔍 [DEBUG] Formatting variables for API:', {
-    templateKey,
-    variables,
-    variableKeys: Object.keys(variables || {}),
-    variableValues: Object.values(variables || {})
-  });
-
-  // Validate variables before formatting
-  const validation = smsTemplates.validateTemplateVariables ? 
-    smsTemplates.validateTemplateVariables(templateKey as any, variables) : 
-    { isValid: true, errors: [] };
-
-  if (!validation.isValid) {
-    console.error('🔍 [DEBUG] Template variable validation failed:', validation.errors);
-    throw new Error(`Template variable validation failed: ${validation.errors.join(', ')}`);
-  }
-
-  const formattedVariables = smsTemplates.formatVariablesForAPI ? 
-    smsTemplates.formatVariablesForAPI(templateKey as any, variables) :
-    Object.values(variables || {}).join('|');
-  
-  console.log('🔍 [DEBUG] Formatted variables result:', {
-    originalVariables: variables,
-    formattedVariables,
-    variableCount: formattedVariables.split('|').length,
-    isEmpty: formattedVariables === ''
-  });
-
-  return formattedVariables;
-}
-
-/**
- * Test Expiry Reminders - HTTPS callable function for testing all expiry reminders
- * This function can be called manually from the admin dashboard to test all reminder types
- */
 export const testExpiryReminders = functions
   .runWith({
     memory: '256MB',
@@ -2031,6 +1703,131 @@ export const testExpiryReminders = functions
   });
 
 /**
+ * Debug Expiry Dates - Inspect actual expiry dates in the database
+ */
+export const debugExpiryDates = functions
+  .runWith({
+    memory: '256MB',
+    timeoutSeconds: 60
+  })
+  .https.onCall(async (data, context) => {
+    console.log('🔍 [DEBUG_EXPIRY] Starting expiry date debug...');
+    
+    // Check if user is authenticated
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        'The function must be called while authenticated.'
+      );
+    }
+    
+    try {
+      const now = new Date();
+      const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const tomorrowDateStr = tomorrowDate.toISOString().split('T')[0];
+      
+      console.log('🔍 [DEBUG_EXPIRY] Current UTC time:', now.toISOString());
+      console.log('🔍 [DEBUG_EXPIRY] Tomorrow date (UTC):', tomorrowDate.toISOString());
+      console.log('🔍 [DEBUG_EXPIRY] Tomorrow date string:', tomorrowDateStr);
+      
+      // Query for all active entries
+      const allActiveSnapshot = await db.collection('entries')
+        .where('status', '==', 'active')
+        .get();
+      
+      console.log('🔍 [DEBUG_EXPIRY] Found', allActiveSnapshot.size, 'active entries');
+      
+      const expiryDateAnalysis = {
+        totalEntries: allActiveSnapshot.size,
+        entriesWithExpiryDate: 0,
+        entriesWithoutExpiryDate: 0,
+        entriesExpiringTomorrow: 0,
+        expiryDateFormats: {},
+        sampleEntries: []
+      };
+      
+      allActiveSnapshot.docs.forEach((doc, index) => {
+        const entry = doc.data();
+        const expiryDate = entry.expiryDate;
+        
+        if (!expiryDate) {
+          expiryDateAnalysis.entriesWithoutExpiryDate++;
+          return;
+        }
+        
+        expiryDateAnalysis.entriesWithExpiryDate++;
+        
+        // Analyze expiry date format
+        const format = typeof expiryDate;
+        if (!expiryDateAnalysis.expiryDateFormats[format]) {
+          expiryDateAnalysis.expiryDateFormats[format] = 0;
+        }
+        expiryDateAnalysis.expiryDateFormats[format]++;
+        
+        // Convert to date string for comparison using timezone-aware logic
+        let expiryDateStr = 'N/A';
+        if (expiryDate instanceof Date) {
+          const expiryDateObj = expiryDate;
+          const istOffset = 5.5 * 60 * 60 * 1000;
+          const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+          expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+        } else if (expiryDate && typeof expiryDate === 'object') {
+          try {
+            let expiryDateObj: Date;
+            if (expiryDate.toDate && typeof expiryDate.toDate === 'function') {
+              expiryDateObj = expiryDate.toDate();
+            } else if (expiryDate._seconds !== undefined) {
+              expiryDateObj = new Date(expiryDate._seconds * 1000 + (expiryDate._nanoseconds || 0) / 1000000);
+            } else {
+              expiryDateStr = 'Unknown format';
+              return;
+            }
+            const istOffset = 5.5 * 60 * 60 * 1000;
+            const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+            expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+          } catch (error) {
+            expiryDateStr = 'Conversion error';
+            return;
+          }
+        }
+        
+        // Check if expires tomorrow
+        if (expiryDateStr === tomorrowDateStr) {
+          expiryDateAnalysis.entriesExpiringTomorrow++;
+        }
+        
+        // Add sample entries (first 5)
+        if (index < 5) {
+          expiryDateAnalysis.sampleEntries.push({
+            id: doc.id,
+            customerName: entry.customerName,
+            expiryDate: expiryDate,
+            expiryDateType: typeof expiryDate,
+            expiryDateStr: expiryDateStr,
+            expiresTomorrow: expiryDateStr === tomorrowDateStr,
+            status: entry.status
+          });
+        }
+      });
+      
+      console.log('🔍 [DEBUG_EXPIRY] Analysis complete:', expiryDateAnalysis);
+      
+      return {
+        success: true,
+        message: 'Debug completed successfully',
+        analysis: expiryDateAnalysis
+      };
+      
+    } catch (error) {
+      console.error('🔍 [DEBUG_EXPIRY] Error:', error);
+      throw new functions.https.HttpsError(
+        'internal',
+        'Error debugging expiry dates: ' + error.message
+      );
+    }
+  });
+
+/**
  * Add Test Entry - Create test entries for debugging expiry reminders
  */
 export const addTestEntry = functions
@@ -2052,23 +1849,23 @@ export const addTestEntry = functions
     try {
       const { testType = 'today' } = data || {};
       const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       let testEntry;
       
       if (testType === 'today') {
-        // Create entry that expires TODAY for testing last-day reminders
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        // Create entry that expires TOMORROW for testing last-day reminders
+        const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         
         testEntry = {
-          customerName: 'Test Today Expiry',
+          customerName: 'Test Tomorrow Expiry',
           mobile: '+919014882779',
-          deceasedPersonName: 'Test Today Expiry',
-          customerId: 'test_customer_today',
+          deceasedPersonName: 'Test Tomorrow Expiry',
+          customerId: 'test_customer_tomorrow',
           locationId: 'bNjk6zT0Nd3w87Bv1yQI',
           locationName: 'ఇన్నీసుపేట – కైలాసభూమి',
           entryDate: todayStart,
-          expiryDate: todayStart, // Expires TODAY for last-day test
+          expiryDate: tomorrowDate, // Expires TOMORROW for last-day test
           status: 'active',
           totalPots: 1,
           remainingPots: 1,
@@ -2218,6 +2015,14 @@ export const debugEntries = functions
       const entries = [];
       for (const doc of allEntriesSnapshot.docs) {
         const entry = doc.data();
+        
+        // Convert Firestore timestamp to readable date for debugging
+        let readableExpiryDate = 'N/A';
+        if (entry.expiryDate && typeof entry.expiryDate === 'object' && entry.expiryDate._seconds) {
+          const expiryDateFromTimestamp = new Date(entry.expiryDate._seconds * 1000 + entry.expiryDate._nanoseconds / 1000000);
+          readableExpiryDate = expiryDateFromTimestamp.toISOString().split('T')[0];
+        }
+        
         entries.push({
           id: doc.id,
           customerName: entry.customerName,
@@ -2225,6 +2030,7 @@ export const debugEntries = functions
           expiryDate: entry.expiryDate,
           expiryDateType: typeof entry.expiryDate,
           expiryDateObj: entry.expiryDate instanceof Date ? 'Date object' : 'Other',
+          readableExpiryDate: readableExpiryDate,
           locationName: entry.locationName,
           status: entry.status
         });
@@ -2232,8 +2038,8 @@ export const debugEntries = functions
       
       // Test date calculations
       const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
       
       return {
@@ -2243,22 +2049,113 @@ export const debugEntries = functions
         dateTests: {
           threeDaysFromNow: {
             calculation: '+3 days',
-            result: threeDaysFromNow.toISOString(),
-            entryMatches: entries.filter(e => e.expiryDate === threeDaysFromNow.toISOString().split('T')[0]).length
+            targetDate: threeDaysFromNow.toISOString().split('T')[0],
+            entryMatches: entries.filter(e => {
+              // Use the same timezone-aware logic as the main functions
+              let expiryDateObj: Date;
+              if (e.expiryDate instanceof Date) {
+                expiryDateObj = e.expiryDate;
+              } else if (e.expiryDate && typeof e.expiryDate === 'object' && e.expiryDate._seconds !== undefined) {
+                expiryDateObj = new Date(e.expiryDate._seconds * 1000 + (e.expiryDate._nanoseconds || 0) / 1000000);
+              } else {
+                return false;
+              }
+              
+              // Convert to IST for comparison
+              const istOffset = 5.5 * 60 * 60 * 1000;
+              const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+              const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+              const targetDateStr = threeDaysFromNow.toISOString().split('T')[0];
+              return expiryDateStr === targetDateStr;
+            }).length
+          },
+          tomorrow: {
+            calculation: 'Tomorrow (Last Day Reminder)',
+            targetDate: tomorrowDate.toISOString().split('T')[0],
+            entryMatches: entries.filter(e => {
+              // Use the same timezone-aware logic as the main functions
+              let expiryDateObj: Date;
+              if (e.expiryDate instanceof Date) {
+                expiryDateObj = e.expiryDate;
+              } else if (e.expiryDate && typeof e.expiryDate === 'object' && e.expiryDate._seconds !== undefined) {
+                expiryDateObj = new Date(e.expiryDate._seconds * 1000 + (e.expiryDate._nanoseconds || 0) / 1000000);
+              } else {
+                return false;
+              }
+              
+              // Convert to IST for comparison
+              const istOffset = 5.5 * 60 * 60 * 1000;
+              const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+              const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+              const targetDateStr = tomorrowDate.toISOString().split('T')[0];
+              return expiryDateStr === targetDateStr;
+            }).length
           },
           today: {
-            calculation: 'Today range',
-            start: todayStart.toISOString(),
-            end: todayEnd.toISOString(),
+            calculation: 'Today (Expiring Today)',
+            targetDate: todayDate.toISOString().split('T')[0],
             entryMatches: entries.filter(e => {
-              const expiry = e.expiryDate;
-              return expiry >= todayStart.toISOString().split('T')[0] && expiry < todayEnd.toISOString().split('T')[0];
+              // Use the same timezone-aware logic as the main functions
+              let expiryDateObj: Date;
+              if (e.expiryDate instanceof Date) {
+                expiryDateObj = e.expiryDate;
+              } else if (e.expiryDate && typeof e.expiryDate === 'object' && e.expiryDate._seconds !== undefined) {
+                expiryDateObj = new Date(e.expiryDate._seconds * 1000 + (e.expiryDate._nanoseconds || 0) / 1000000);
+              } else {
+                return false;
+              }
+              
+              // Convert to IST for comparison
+              const istOffset = 5.5 * 60 * 60 * 1000;
+              const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+              const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+              const targetDateStr = todayDate.toISOString().split('T')[0];
+              return expiryDateStr === targetDateStr;
+            }).length
+          },
+          expired: {
+            calculation: 'Expired (before today)',
+            targetDate: todayDate.toISOString().split('T')[0],
+            entryMatches: entries.filter(e => {
+              // Use the same timezone-aware logic as the main functions
+              let expiryDateObj: Date;
+              if (e.expiryDate instanceof Date) {
+                expiryDateObj = e.expiryDate;
+              } else if (e.expiryDate && typeof e.expiryDate === 'object' && e.expiryDate._seconds !== undefined) {
+                expiryDateObj = new Date(e.expiryDate._seconds * 1000 + (e.expiryDate._nanoseconds || 0) / 1000000);
+              } else {
+                return false;
+              }
+              
+              // Convert to IST for comparison
+              const istOffset = 5.5 * 60 * 60 * 1000;
+              const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+              const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+              const targetDateStr = todayDate.toISOString().split('T')[0];
+              return expiryDateStr < targetDateStr;
             }).length
           },
           sixtyDaysAgo: {
-            calculation: '-60 days',
-            result: sixtyDaysAgo.toISOString(),
-            entryMatches: entries.filter(e => e.expiryDate <= sixtyDaysAgo.toISOString().split('T')[0]).length
+            calculation: '-60 days (60+ days ago)',
+            targetDate: sixtyDaysAgo.toISOString().split('T')[0],
+            entryMatches: entries.filter(e => {
+              // Use the same timezone-aware logic as the main functions
+              let expiryDateObj: Date;
+              if (e.expiryDate instanceof Date) {
+                expiryDateObj = e.expiryDate;
+              } else if (e.expiryDate && typeof e.expiryDate === 'object' && e.expiryDate._seconds !== undefined) {
+                expiryDateObj = new Date(e.expiryDate._seconds * 1000 + (e.expiryDate._nanoseconds || 0) / 1000000);
+              } else {
+                return false;
+              }
+              
+              // Convert to IST for comparison
+              const istOffset = 5.5 * 60 * 60 * 1000;
+              const expiryDateIST = new Date(expiryDateObj.getTime() + istOffset);
+              const expiryDateStr = expiryDateIST.toISOString().split('T')[0];
+              const targetDateStr = sixtyDaysAgo.toISOString().split('T')[0];
+              return expiryDateStr <= targetDateStr;
+            }).length
           }
         },
         entries: entries,
