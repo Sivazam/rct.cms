@@ -183,7 +183,35 @@ export default function AdminDashboard() {
       const allEntries = await getEntries({
         locationId: locationId
       });
-      const recent = allEntries.slice(0, 5);
+      
+      // Get recent transactions including both entries and dispatches
+      const { getUnifiedDispatchRecords } = await import('@/lib/unified-dispatch-service');
+      const recentDispatches = await getUnifiedDispatchRecords({ 
+        locationId: locationId,
+        dateRange: { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() } // Last 30 days
+      });
+      
+      // Combine entries and dispatches for recent transactions
+      const recentTransactions = [
+        // Add entries with payments
+        ...allEntries.filter(entry => entry.payments && entry.payments.length > 0).map(entry => ({
+          id: entry.id,
+          customerName: entry.customerName,
+          customerPhone: entry.customerMobile,
+          amount: entry.payments[entry.payments.length - 1].amount, // Latest payment
+          date: entry.payments[entry.payments.length - 1].date,
+          type: entry.payments[entry.payments.length - 1].type
+        })),
+        // Add dispatches
+        ...recentDispatches.map(dispatch => ({
+          id: dispatch.id,
+          customerName: dispatch.customerInfo.name,
+          customerPhone: dispatch.customerInfo.mobile,
+          amount: dispatch.dispatchInfo.paymentAmount,
+          date: dispatch.dispatchInfo.dispatchDate,
+          type: 'dispatch'
+        }))
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
       
       const expiring = await getEntries({
         locationId: locationId,
@@ -204,7 +232,7 @@ export default function AdminDashboard() {
       });
       
       setExpiringEntries(expiring);
-      setRecentEntries(recent);
+      setRecentEntries(recentTransactions);
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -617,28 +645,32 @@ export default function AdminDashboard() {
                       <div className="mt-6">
                         <h4 className="font-medium text-foreground mb-3">Recent Transactions</h4>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
-                          {recentEntries.slice(0, 10).map((entry) => (
-                            <div key={entry.id} className="flex items-center justify-between p-2 border-b border-accent">
+                          {recentEntries.map((transaction) => (
+                            <div key={transaction.id} className="flex items-center justify-between p-2 border-b border-accent">
                               <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
-                                  <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  transaction.type === 'dispatch' ? 'bg-blue-100' : 'bg-green-100'
+                                }`}>
+                                  {transaction.type === 'dispatch' ? (
+                                    <Truck className="h-4 w-4 text-blue-600" />
+                                  ) : (
+                                    <IndianRupee className="h-4 w-4 text-green-600" />
+                                  )}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-foreground">{entry.customerName}</p>
-                                  <p className="text-xs text-muted-foreground">{entry.customerPhone}</p>
+                                  <p className="text-sm font-medium text-foreground">{transaction.customerName}</p>
+                                  <p className="text-xs text-muted-foreground">{transaction.customerPhone}</p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                {entry.payments && entry.payments.length > 0 && (
-                                  <>
-                                    <p className="text-sm font-medium text-green-600">
-                                      ₹{entry.payments[0].amount.toLocaleString()}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {entry.payments[0].date ? formatFirestoreDate(entry.payments[0].date) : 'N/A'}
-                                    </p>
-                                  </>
-                                )}
+                                <p className={`text-sm font-medium ${
+                                  transaction.type === 'dispatch' ? 'text-blue-600' : 'text-green-600'
+                                }`}>
+                                  ₹{transaction.amount.toLocaleString()}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {transaction.date ? formatFirestoreDate(transaction.date) : 'N/A'}
+                                </p>
                               </div>
                             </div>
                           ))}

@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers, getCustomerByMobile, getDispatchedLockers } from '@/lib/firestore';
+import { useUnifiedDispatch } from '@/hooks/use-unified-dispatch';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
@@ -794,12 +795,10 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
   const filteredEntries = entries.filter(entry => {
     const customerName = entry.customerName || '';
     const customerMobile = entry.customerMobile || '';
-    const customerCity = entry.customerCity || '';
     
     const matchesSearch = 
       customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customerMobile.includes(searchTerm) ||
-      customerCity.toLowerCase().includes(searchTerm.toLowerCase());
+      customerMobile.includes(searchTerm);
     
     const matchesLocation = locationFilter === 'all' || entry.locationId === locationFilter;
     
@@ -1269,7 +1268,6 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         {typeInfo.icon}
                         <div>
                           <div className="font-medium">{entry.customerName}</div>
-                          <div className="text-sm text-muted-foreground">{entry.customerCity}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -1358,14 +1356,43 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {entry.payments && entry.payments.length > 0 ? (
-                          <div>
-                            <div className="font-medium">₹{entry.payments.reduce((sum, p) => sum + p.amount, 0)}</div>
-                            <div className="text-muted-foreground">{entry.payments.length} payment(s)</div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">No payments</span>
-                        )}
+                        {(() => {
+                          let paymentAmount = 0;
+                          let paymentCount = 0;
+                          
+                          if (type === 'dispatched') {
+                            // Handle dispatch records with different payment storage locations
+                            if (entry.dispatchedInfo?.paymentAmount) {
+                              // From dispatchedLockers collection
+                              paymentAmount = entry.dispatchedInfo.paymentAmount;
+                              paymentCount = entry.dispatchedInfo.paymentAmount > 0 ? 1 : 0;
+                            } else if (entry.amountPaid !== undefined) {
+                              // From deliveries collection
+                              paymentAmount = entry.amountPaid;
+                              paymentCount = entry.amountPaid > 0 ? 1 : 0;
+                            } else if (entry.payments && entry.payments.length > 0) {
+                              // From entries collection (delivery payments)
+                              const deliveryPayments = entry.payments.filter(p => p.type === 'delivery');
+                              paymentAmount = deliveryPayments.reduce((sum, p) => sum + p.amount, 0);
+                              paymentCount = deliveryPayments.length;
+                            }
+                          } else {
+                            // Handle regular entries
+                            if (entry.payments && entry.payments.length > 0) {
+                              paymentAmount = entry.payments.reduce((sum, p) => sum + p.amount, 0);
+                              paymentCount = entry.payments.length;
+                            }
+                          }
+                          
+                          return paymentAmount > 0 ? (
+                            <div>
+                              <div className="font-medium">₹{paymentAmount.toLocaleString()}</div>
+                              <div className="text-muted-foreground">{paymentCount} payment(s)</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">No payments</span>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                   </motion.tr>
@@ -1408,7 +1435,6 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     {typeInfo.icon}
                     <div>
                       <h4 className="font-medium">{entry.customerName}</h4>
-                      <p className="text-sm text-muted-foreground">{entry.customerCity}</p>
                     </div>
                   </div>
                   <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
@@ -1939,8 +1965,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         value={dispatchAmount}
                         onChange={(e) => {
                           const value = e.target.value;
-                          // Only allow numbers and empty string
-                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                          // Only allow positive integers and empty string
+                          if (value === '' || /^[0-9]+$/.test(value)) {
                             setDispatchAmount(value);
                           }
                         }}
@@ -1950,7 +1976,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         className="h-9 sm:h-10 text-sm sm:text-base"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Service-based collection - enter any amount
+                        Enter amount to collect (Calculated due: ₹{calculateDueAmount(selectedEntryForDispatch)})
                       </p>
                     </div>
 
@@ -2024,7 +2050,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     rows={3}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Required if collecting less than standard amount
+                    Required if collecting less than calculated due amount
                   </p>
                 </div>
 
@@ -2076,19 +2102,19 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                 )}
 
                 {/* Validation for Reason - Only show for pending entries */}
-                {type !== 'active' && dispatchAmount && parseFloat(dispatchAmount) < 300 && !dispatchReason && (
+                {type !== 'active' && dispatchAmount && parseFloat(dispatchAmount) < calculateDueAmount(selectedEntryForDispatch) && parseFloat(dispatchAmount) > 0 && !dispatchReason && (
                   <Alert variant="destructive">
                     <AlertDescription className="text-sm">
-                      <strong>Required:</strong> Please provide a reason for collecting less than the standard amount (₹300).
+                      <strong>Required:</strong> Please provide a reason for collecting less than the calculated due amount (₹{calculateDueAmount(selectedEntryForDispatch)}).
                     </AlertDescription>
                   </Alert>
                 )}
 
                 {/* Validation for Amount - Only show for pending entries */}
-                {type !== 'active' && dispatchAmount && parseFloat(dispatchAmount) > 300 && (
+                {type !== 'active' && dispatchAmount && parseFloat(dispatchAmount) > calculateDueAmount(selectedEntryForDispatch) && (
                   <Alert variant="destructive">
                     <AlertDescription className="text-sm">
-                      <strong>Invalid:</strong> Cannot collect more than the standard amount (₹300).
+                      <strong>Invalid:</strong> Cannot collect more than the calculated due amount (₹{calculateDueAmount(selectedEntryForDispatch)}).
                     </AlertDescription>
                   </Alert>
                 )}
@@ -2105,16 +2131,25 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                 <Button 
                   onClick={handleSendOTPForDispatch}
                   disabled={
-                    type === 'active' 
+                    isProcessing || // Disable during processing
+                    (type === 'active' 
                       ? !handoverPersonName.trim() || !handoverPersonMobile.trim() // Require handover person for active entries
                       : !dispatchAmount || 
-                        parseFloat(dispatchAmount) > 300 ||
-                        (parseFloat(dispatchAmount) < 300 && !dispatchReason.trim()) ||
+                        parseFloat(dispatchAmount) > calculateDueAmount(selectedEntryForDispatch) ||
+                        (parseFloat(dispatchAmount) < calculateDueAmount(selectedEntryForDispatch) && parseFloat(dispatchAmount) > 0 && !dispatchReason.trim()) ||
                         !handoverPersonName.trim() || !handoverPersonMobile.trim() // Require handover person for all entries
+                    )
                   }
                   className="flex-1 order-1 sm:order-2"
                 >
-                  {type === 'active' ? 'Verify and Submit (Free Dispatch)' : 'Verify and Submit (Dispatch)'}
+                  {isProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    type === 'active' ? 'Verify and Submit (Free Dispatch)' : 'Verify and Submit (Dispatch)'
+                  )}
                 </Button>
               </div>
             </div>

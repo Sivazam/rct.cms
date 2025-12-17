@@ -851,10 +851,11 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     // Get all entries first
     let entries = await getEntries({ locationId });
     
-    // Get dispatched lockers from separate collection
+    // Get dispatched lockers from separate collection using unified service
     console.log('🔍 [DEBUG] getSystemStats: About to call getDispatchedLockers with locationId:', locationId);
-    const dispatchedLockers = await getDispatchedLockers({ locationId });
-    console.log('🔍 [DEBUG] getSystemStats: Received dispatchedLockers:', dispatchedLockers.length);
+    const { getUnifiedDispatchRecords } = await import('./unified-dispatch-service');
+    const unifiedDispatchRecords = await getUnifiedDispatchRecords({ locationId, dateRange });
+    console.log('🔍 [DEBUG] getSystemStats: Received unified dispatch records:', unifiedDispatchRecords.length);
     
     // Calculate statistics from actual entries
     let totalRenewalCollections = 0;
@@ -909,13 +910,27 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       }
     });
     
-    // Count dispatched lockers from dispatchedLockers collection (more accurate)
-    totalDeliveries = dispatchedLockers.length;
+    // Use unified dispatch records for more accurate delivery counting and revenue
+    const deliveryRevenueFromUnified = unifiedDispatchRecords.reduce((sum, record) => {
+      const paymentDate = new Date(record.dispatchInfo.dispatchDate);
+      const isInDateRange = !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
+      return isInDateRange ? sum + record.dispatchInfo.paymentAmount : sum;
+    }, 0);
+
+    // Count unique deliveries from unified records
+    const uniqueDeliveries = unifiedDispatchRecords.filter(record => {
+      const paymentDate = new Date(record.dispatchInfo.dispatchDate);
+      return !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
+    }).length;
+    
+    // Use the more accurate unified data
+    totalDeliveries = uniqueDeliveries;
+    totalDeliveryCollections = deliveryRevenueFromUnified;
     
     const stats = {
       totalEntries: totalActiveEntries, // This now represents active entries within date range
       totalRenewals: totalRenewals,
-      totalDeliveries: totalDeliveries, // Now from dispatchedLockers collection
+      totalDeliveries: totalDeliveries, // Now from unified dispatch records
       currentActive: entries.filter(e => e.status === 'active').length, // Total active regardless of date range
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
@@ -924,7 +939,7 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       lastUpdated: serverTimestamp()
     };
     
-    console.log('Calculated stats:', stats);
+    console.log('Calculated stats with unified dispatch data:', stats);
     return stats;
   } catch (error) {
     console.error('Error getting system stats:', error);
