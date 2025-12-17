@@ -279,7 +279,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
             id: dispatchedLocker.id, // Use dispatched locker record ID
             dispatchedInfo: dispatchedLocker.dispatchInfo,
             // Map to expected fields for display with proper fallbacks
-            customerName: dispatchedLocker.originalEntryData?.customerName === 'praveen' ? 'praveen' : (dispatchedLocker.originalEntryData?.customerName || 'Unknown'),
+            customerName: dispatchedLocker.originalEntryData?.customerName || 'Unknown',
             customerMobile: dispatchedLocker.originalEntryData?.customerMobile || 'Unknown',
             customerCity: dispatchedLocker.originalEntryData?.customerCity || 'Unknown',
             locationName: locationMap.get(locationId) || dispatchedLocker.originalEntryData?.locationName || 'Unknown',
@@ -1297,11 +1297,12 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                         <span>
                           {(() => {
                             if (type === 'dispatched') {
-                              // For dispatched entries, show dispatched amount / total
-                              const dispatchedPots = entry.dispatchInfo?.potsDispatched || 0;
-                              // Use the total from original entry data, not current entry data
-                              const totalPots = entry.originalEntryData?.totalPots || entry.totalPots || entry.numberOfPots || 0;
-                              return `${dispatchedPots}/${totalPots}`;
+                              // For dispatched entries, show dispatched amount / remaining pots after dispatch
+                              const dispatchedPots = entry.dispatchedInfo?.potsDispatched || 0;
+                              // Use remaining pots after dispatch from dispatch info
+                              const remainingPotsAfterDispatch = entry.dispatchedInfo?.remainingPotsInLocker || 0;
+                              // Show as dispatched/remaining_after_dispatch
+                              return `${dispatchedPots}/${remainingPotsAfterDispatch}`;
                             } else {
                               // For active and pending entries, show remaining/total
                               const remainingPots = entry.lockerDetails 
@@ -1352,7 +1353,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     )}
                     <TableCell>
                       <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
-                        {entry.status}
+                        {type === 'dispatched' ? (entry.dispatchedInfo?.dispatchType || 'dispatched') : entry.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -1411,7 +1412,7 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     </div>
                   </div>
                   <Badge variant={typeInfo.badgeVariant} className={getStatusColor(entry.status)}>
-                    {entry.status}
+                    {type === 'dispatched' ? (entry.dispatchedInfo?.dispatchType || 'dispatched') : entry.status}
                   </Badge>
                 </div>
                 
@@ -1425,10 +1426,12 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     <span>
                       {(() => {
                         if (type === 'dispatched') {
-                          // For dispatched entries, show dispatched amount / total
-                          const dispatchedPots = entry.dispatchInfo?.potsDispatched || 0;
-                          const totalPots = entry.totalPots || entry.numberOfPots || 0;
-                          return `${dispatchedPots}/${totalPots} pots`;
+                          // For dispatched entries, show dispatched amount / remaining pots after dispatch
+                          const dispatchedPots = entry.dispatchedInfo?.potsDispatched || 0;
+                          // Use remaining pots after dispatch from dispatch info
+                          const remainingPotsAfterDispatch = entry.dispatchedInfo?.remainingPotsInLocker || 0;
+                          // Show as dispatched/remaining_after_dispatch
+                          return `${dispatchedPots}/${remainingPotsAfterDispatch} pots`;
                         } else {
                           // For active and pending entries, show remaining/total
                           const remainingPots = entry.lockerDetails 
@@ -1464,17 +1467,17 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                     <div className="text-muted-foreground">{getDispatchReason(entry)}</div>
                     <div className="font-medium text-foreground mb-1 mt-2">Dispatch Details:</div>
                     <div className="text-muted-foreground space-y-1">
-                      <div>Pots Dispatched: {entry.dispatchInfo?.potsDispatched || 0}</div>
-                      <div>Pots Remaining: {entry.dispatchInfo?.totalRemainingPots || 0}</div>
+                      <div>Pots Dispatched: {entry.dispatchedInfo?.potsDispatched || 0}</div>
+                      <div>Pots Remaining: {entry.dispatchedInfo?.totalRemainingPots || 0}</div>
                       {/* Enhanced pot tracking - handle both old and new records */}
-                      {entry.dispatchInfo?.potsInLockerBeforeDispatch !== undefined ? (
-                        <div>Pots In Locker Before Dispatch: {entry.dispatchInfo?.potsInLockerBeforeDispatch || 0}</div>
+                      {entry.dispatchedInfo?.potsInLockerBeforeDispatch !== undefined ? (
+                        <div>Pots In Locker Before Dispatch: {entry.dispatchedInfo?.potsInLockerBeforeDispatch || 0}</div>
                       ) : (
                         <div className="text-muted-foreground text-xs italic">
                           (Historical data not available for this record)
                         </div>
                       )}
-                      <div>Dispatch Type: {entry.dispatchInfo?.dispatchType || 'unknown'}</div>
+                      <div>Dispatch Type: {entry.dispatchedInfo?.dispatchType || 'unknown'}</div>
                     </div>
                   </div>
                 )}

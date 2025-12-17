@@ -88,6 +88,19 @@ export default function PartialDispatchDialog({
       return;
     }
 
+    // Check if dispatching all remaining pots
+    const currentLocker = getCurrentLocker();
+    const isDispatchingAllPots = currentLocker && parseInt(formData.potsToDispatch) === currentLocker.remainingPots;
+    
+    if (isDispatchingAllPots) {
+      // Show confirmation for full dispatch
+      const confirmMessage = `You are dispatching all remaining ${formData.potsToDispatch} pots. This will be marked as a FULL dispatch (not partial). Continue?`;
+      if (!window.confirm(confirmMessage)) {
+        setSubmitting(false);
+        return;
+      }
+    }
+
     try {
       const response = await fetch('/api/dispatches/partial', {
         method: 'POST',
@@ -98,7 +111,7 @@ export default function PartialDispatchDialog({
           entryId: entry.id,
           lockerNumber: getCurrentLocker().lockerNumber,
           potsToDispatch: parseInt(formData.potsToDispatch),
-          dispatchReason: formData.dispatchReason || 'Partial collection',
+          dispatchReason: formData.dispatchReason || (isDispatchingAllPots ? 'Full collection - all pots dispatched' : 'Partial collection'),
           handoverPersonName: formData.handoverPersonName,
           handoverPersonMobile: formData.handoverPersonMobile,
           paymentMethod: formData.paymentMethod,
@@ -365,15 +378,25 @@ export default function PartialDispatchDialog({
               <SelectContent>
                 {currentLocker && Array.from({ length: currentLocker.remainingPots }, (_, i) => i + 1).map((num) => (
                   <SelectItem key={num} value={num.toString()}>
-                    {num} pot{num > 1 ? 's' : ''}
+                    {num} pot{num > 1 ? 's' : ''} {num === currentLocker.remainingPots && '(ALL REMAINING)'}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {currentLocker && (
-              <p className="text-sm text-muted-foreground">
-                Maximum {currentLocker.remainingPots} pots can be dispatched from this locker
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Maximum {currentLocker.remainingPots} pots can be dispatched from this locker
+                </p>
+                {formData.potsToDispatch && parseInt(formData.potsToDispatch) === currentLocker.remainingPots && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Full Dispatch Alert:</strong> You are dispatching all remaining pots. This will be marked as a <strong>FULL dispatch</strong> (not partial).
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
             )}
           </div>
 
@@ -411,7 +434,10 @@ export default function PartialDispatchDialog({
               ) : (
                 <>
                   <Truck className="h-4 w-4 mr-2" />
-                  Process Partial Dispatch
+                  {(() => {
+                    const isDispatchingAllPots = currentLocker && parseInt(formData.potsToDispatch) === currentLocker.remainingPots;
+                    return isDispatchingAllPots ? 'Process Full Dispatch' : 'Process Partial Dispatch';
+                  })()}
                 </>
               )}
             </Button>
