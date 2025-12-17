@@ -306,8 +306,8 @@ exports.FASTSMS_TEMPLATES = [
             },
             {
                 name: 'var3',
-                description: 'Total number of pots that stored when entry made',
-                example: '5',
+                description: 'Remaining number of pots after dispatch',
+                example: '3',
                 required: true,
                 position: 3
             },
@@ -373,8 +373,8 @@ exports.FASTSMS_TEMPLATES = [
             },
             {
                 name: 'var3',
-                description: 'Total number of pots that stored when entry made',
-                example: '5',
+                description: 'Remaining number of pots after dispatch',
+                example: '3',
                 required: true,
                 position: 3
             },
