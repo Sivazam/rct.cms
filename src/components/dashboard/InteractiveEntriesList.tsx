@@ -194,52 +194,53 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log(`Fetching ${type} entries...`);
+      console.log(`🔍 [InteractiveEntriesList] Fetching ${type} entries...`);
+      console.log(`🔍 [InteractiveEntriesList] Location filter:`, navbarLocation || locationId);
+      console.log(`🔍 [InteractiveEntriesList] Date range:`, dateRange);
       
-      // Determine filter based on type
-      let statusFilter;
-      switch (type) {
-        case 'active':
-          statusFilter = 'active';
-          break;
-        case 'pending':
-          // For pending, we want entries that need renewal (expired but still active)
-          statusFilter = 'active'; // We'll filter client-side for expired entries
-          break;
-        case 'dispatched':
-          statusFilter = 'dispatched';
-          break;
-        default:
-          statusFilter = 'active';
-      }
-
-      const [entriesData, locationsData, usersData, dispatchedLockersData] = await Promise.all([
-        type === 'dispatched' 
-          ? getDispatchedLockers({
-              locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
-              dateRange: dateRange
-            }).catch(err => {
-              console.error('Error fetching dispatched lockers:', err);
-              return []; // Return empty array on error
-            })
-          : getEntries({
-              locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
-              status: statusFilter
-            }).catch(err => {
-              console.error('Error fetching entries:', err);
-              return []; // Return empty array on error
-            }),
+      // Fetch locations and users data first (needed for all types)
+      const [locationsData, usersData] = await Promise.all([
         getLocations().catch(err => {
-          console.error('Error fetching locations:', err);
+          console.error('🔍 [InteractiveEntriesList] Error fetching locations:', err);
           return []; // Return empty array on error
         }),
         getUsers().catch(err => {
-          console.error('Error fetching users:', err);
+          console.error('🔍 [InteractiveEntriesList] Error fetching users:', err);
           return []; // Return empty array on error
         })
       ]);
       
-      console.log(`${type} entries found:`, type === 'dispatched' ? (dispatchedLockersData || []).length : (entriesData || []).length);
+      let entriesData, dispatchedLockersData;
+      
+      if (type === 'dispatched') {
+        // Fetch dispatched lockers data
+        dispatchedLockersData = await getDispatchedLockers({
+          locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
+          dateRange: dateRange
+        }).catch(err => {
+          console.error('🔍 [InteractiveEntriesList] Error fetching dispatched lockers:', err);
+          return []; // Return empty array on error
+        });
+        entriesData = []; // Set empty entries data for dispatched type
+      } else {
+        // Fetch regular entries data
+        entriesData = await getEntries({
+          locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
+          status: type === 'active' ? 'active' : 'active' // For pending, we'll filter client-side
+        }).catch(err => {
+          console.error('🔍 [InteractiveEntriesList] Error fetching entries:', err);
+          return []; // Return empty array on error
+        });
+        dispatchedLockersData = []; // Set empty dispatched data for other types
+      }
+      
+      console.log(`🔍 [InteractiveEntriesList] ${type} entries found:`, type === 'dispatched' ? (dispatchedLockersData || []).length : (entriesData || []).length);
+      
+      if (type === 'dispatched') {
+        console.log('🔍 [InteractiveEntriesList] Raw dispatchedLockersData:', dispatchedLockersData);
+        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData type:', typeof dispatchedLockersData);
+        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData is array:', Array.isArray(dispatchedLockersData));
+      }
       
       // Create location mapping
       const locationMap = new Map();
@@ -253,43 +254,66 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         operatorMap.set(user.id, user.name);
       });
       
+      console.log('🔍 [InteractiveEntriesList] Location map created:', locationMap.size, 'locations');
+      console.log('🔍 [InteractiveEntriesList] Operator map created:', operatorMap.size, 'operators');
+      
       // Add location names and operator names to entries
       let entriesWithDetails;
       
       if (type === 'dispatched') {
         // For dispatched lockers, use the dispatchedLockers data structure
-        console.log('Raw dispatchedLockersData:', dispatchedLockersData);
-        console.log('dispatchedLockersData type:', typeof dispatchedLockersData);
-        console.log('dispatchedLockersData is array:', Array.isArray(dispatchedLockersData));
+        console.log('🔍 [InteractiveEntriesList] Raw dispatchedLockersData:', dispatchedLockersData);
+        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData type:', typeof dispatchedLockersData);
+        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData is array:', Array.isArray(dispatchedLockersData));
         
         const dispatchedData = dispatchedLockersData || [];
         entriesWithDetails = dispatchedData.map(dispatchedLocker => {
-          console.log('Processing dispatchedLocker:', dispatchedLocker);
-          return {
+          console.log('🔍 [InteractiveEntriesList] Processing dispatchedLocker:', dispatchedLocker);
+          
+          // Get location and operator names from maps using IDs from the data
+          const locationId = dispatchedLocker.originalEntryData?.locationId || dispatchedLocker.locationId;
+          const operatorId = dispatchedLocker.originalEntryData?.operatorId || dispatchedLocker.operatorId;
+          
+          const processedEntry = {
             ...dispatchedLocker.originalEntryData,
             id: dispatchedLocker.id, // Use dispatched locker record ID
             dispatchedInfo: dispatchedLocker.dispatchInfo,
-            // Map to expected fields for display
-            customerName: dispatchedLocker.originalEntryData?.customerName || 'Unknown',
+            // Map to expected fields for display with proper fallbacks
+            customerName: dispatchedLocker.originalEntryData?.customerName === 'praveen' ? 'praveen' : (dispatchedLocker.originalEntryData?.customerName || 'Unknown'),
             customerMobile: dispatchedLocker.originalEntryData?.customerMobile || 'Unknown',
             customerCity: dispatchedLocker.originalEntryData?.customerCity || 'Unknown',
-            locationName: dispatchedLocker.originalEntryData?.locationName || 'Unknown',
-            operatorName: dispatchedLocker.originalEntryData?.operatorName || 'Unknown',
+            locationName: locationMap.get(locationId) || dispatchedLocker.originalEntryData?.locationName || 'Unknown',
+            operatorName: operatorMap.get(operatorId) || dispatchedLocker.originalEntryData?.operatorName || 'Unknown Operator',
             // Use dispatch info for display
             deliveryDate: dispatchedLocker.dispatchInfo?.dispatchDate,
             dispatchReason: dispatchedLocker.dispatchInfo?.dispatchReason,
             // For pots display, show dispatched info
             totalPots: dispatchedLocker.originalEntryData?.totalPots || 0,
             numberOfPots: dispatchedLocker.originalEntryData?.totalPots || 0,
-            // Show dispatched pots in display
+            // Show dispatched pots in display with enhanced tracking
             lockerDetails: [{
               lockerNumber: dispatchedLocker.dispatchInfo?.lockerNumber || 1,
               totalPots: dispatchedLocker.originalEntryData?.potsPerLocker || 0,
               remainingPots: dispatchedLocker.dispatchInfo?.remainingPotsInLocker || 0,
-              dispatchedPots: Array.from({ length: dispatchedLocker.dispatchInfo?.potsDispatched || 0 }, (_, i) => `pot-${i + 1}`)
+              dispatchedPots: Array.from({ length: dispatchedLocker.dispatchInfo?.potsDispatched || 0 }, (_, i) => `pot-${i + 1}`),
+              // NEW: Enhanced pot tracking information
+              potsInLockerBeforeDispatch: dispatchedLocker.dispatchInfo?.potsInLockerBeforeDispatch || 0,
+              totalRemainingPots: dispatchedLocker.dispatchInfo?.totalRemainingPots || 0,
+              dispatchType: dispatchedLocker.dispatchInfo?.dispatchType || 'unknown'
             }]
           };
+          console.log('🔍 [InteractiveEntriesList] Processed entry:', processedEntry);
+          console.log('🔍 [InteractiveEntriesList] Mappings:', {
+            locationId,
+            operatorId,
+            mappedLocation: locationMap.get(locationId),
+            mappedOperator: operatorMap.get(operatorId),
+            originalLocationName: dispatchedLocker.originalEntryData?.locationName,
+            originalOperatorName: dispatchedLocker.originalEntryData?.operatorName
+          });
+          return processedEntry;
         });
+        console.log('🔍 [InteractiveEntriesList] Final entriesWithDetails for dispatched:', entriesWithDetails);
       } else {
         // For active and pending entries, use original entries data
         entriesWithDetails = entriesData.map(entry => ({
@@ -1275,7 +1299,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                             if (type === 'dispatched') {
                               // For dispatched entries, show dispatched amount / total
                               const dispatchedPots = entry.dispatchInfo?.potsDispatched || 0;
-                              const totalPots = entry.totalPots || entry.numberOfPots || 0;
+                              // Use the total from original entry data, not current entry data
+                              const totalPots = entry.originalEntryData?.totalPots || entry.totalPots || entry.numberOfPots || 0;
                               return `${dispatchedPots}/${totalPots}`;
                             } else {
                               // For active and pending entries, show remaining/total
@@ -1437,6 +1462,20 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
                   <div className="mb-3 p-2 bg-muted rounded text-xs">
                     <div className="font-medium text-foreground mb-1">Reason:</div>
                     <div className="text-muted-foreground">{getDispatchReason(entry)}</div>
+                    <div className="font-medium text-foreground mb-1 mt-2">Dispatch Details:</div>
+                    <div className="text-muted-foreground space-y-1">
+                      <div>Pots Dispatched: {entry.dispatchInfo?.potsDispatched || 0}</div>
+                      <div>Pots Remaining: {entry.dispatchInfo?.totalRemainingPots || 0}</div>
+                      {/* Enhanced pot tracking - handle both old and new records */}
+                      {entry.dispatchInfo?.potsInLockerBeforeDispatch !== undefined ? (
+                        <div>Pots In Locker Before Dispatch: {entry.dispatchInfo?.potsInLockerBeforeDispatch || 0}</div>
+                      ) : (
+                        <div className="text-muted-foreground text-xs italic">
+                          (Historical data not available for this record)
+                        </div>
+                      )}
+                      <div>Dispatch Type: {entry.dispatchInfo?.dispatchType || 'unknown'}</div>
+                    </div>
                   </div>
                 )}
 

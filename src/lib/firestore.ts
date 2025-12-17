@@ -500,6 +500,14 @@ export const partialDispatch = async (entryId: string, dispatchData: {
       throw new Error('Entry not found');
     }
 
+    // Get all users to create operator map
+    const usersSnapshot = await getDocs(query(collection(db, 'users')));
+    const operatorMap = new Map();
+    usersSnapshot.docs.forEach(doc => {
+      const userData = doc.data();
+      operatorMap.set(doc.id, userData.name || 'Unknown Operator');
+    });
+
     // Find the specified locker
     const lockerDetail = entry.lockerDetails?.find((locker: any) => locker.lockerNumber === dispatchData.lockerNumber);
     if (!lockerDetail) {
@@ -570,13 +578,15 @@ export const partialDispatch = async (entryId: string, dispatchData: {
         totalPots: entry.totalPots,
         entryDate: entry.entryDate,
         operatorId: entry.operatorId,
-        operatorName: entry.operatorName || 'Unknown Operator' // Add fallback for undefined
+        operatorName: operatorMap.get(entry.operatorId) || entry.operatorName || 'Unknown Operator' // Use operator map
       },
       dispatchInfo: {
         lockerNumber: dispatchData.lockerNumber,
         potsDispatched: dispatchData.potsToDispatch,
         remainingPotsInLocker: updatedLockerDetails.find(ld => ld.lockerNumber === dispatchData.lockerNumber)?.remainingPots || 0,
         totalRemainingPots: totalRemainingPots,
+        // NEW: Record pots remaining BEFORE this dispatch for historical accuracy
+        potsInLockerBeforeDispatch: lockerDetail.remainingPots || 0,
         dispatchType: totalRemainingPots === 0 ? 'full' : 'partial',
         dispatchDate: new Date(),
         dispatchReason: dispatchData.dispatchReason || 'Partial collection',
@@ -610,6 +620,22 @@ export const getDispatchedLockers = async (filters?: {
   try {
     console.log('🔍 [DEBUG] getDispatchedLockers called with filters:', filters);
     
+    // Get locations data for mapping
+    const locationsSnapshot = await getDocs(query(collection(db, 'locations')));
+    const locationMap = new Map();
+    locationsSnapshot.docs.forEach(doc => {
+      const locationData = doc.data();
+      locationMap.set(doc.id, locationData.venueName || 'Unknown Location');
+    });
+    
+    // Get users data for operator mapping
+    const usersSnapshot = await getDocs(query(collection(db, 'users')));
+    const operatorMap = new Map();
+    usersSnapshot.docs.forEach(doc => {
+      const userData = doc.data();
+      operatorMap.set(doc.id, userData.name || 'Unknown Operator');
+    });
+    
     // Fetch from both collections: 'dispatchedLockers' and 'deliveries'
     const [dispatchedLockersSnapshot, deliveriesSnapshot] = await Promise.all([
       getDocs(query(collection(db, 'dispatchedLockers'))),
@@ -618,7 +644,9 @@ export const getDispatchedLockers = async (filters?: {
 
     console.log('🔍 [DEBUG] Raw data counts:', {
       dispatchedLockers: dispatchedLockersSnapshot.docs.length,
-      deliveries: deliveriesSnapshot.docs.length
+      deliveries: deliveriesSnapshot.docs.length,
+      locations: locationsSnapshot.docs.length,
+      operators: usersSnapshot.docs.length
     });
 
     // Process dispatchedLockers collection data
@@ -639,15 +667,21 @@ export const getDispatchedLockers = async (filters?: {
       return {
         id: doc.id,
         sourceCollection: 'deliveries',
+        // Keep root level fields for filtering
+        locationId: data.locationId || '',
+        operatorId: data.operatorId || '',
+        // Create originalEntryData for consistency with proper mapping
         originalEntryData: {
           customerName: data.customerName || '',
           customerMobile: data.customerMobile || '',
           customerCity: data.customerCity || '',
-          locationName: data.locationName || '',
+          locationName: locationMap.get(data.locationId) || data.locationName || '',
           locationId: data.locationId || '', // Add locationId for proper filtering
-          operatorName: data.operatorName || '',
+          operatorName: operatorMap.get(data.operatorId) || data.operatorName || '',
+          operatorId: data.operatorId || '', // Add operatorId for consistency
           totalPots: data.pots || 0,
-          potsPerLocker: data.pots || 0
+          potsPerLocker: data.pots || 0,
+          entryDate: data.entryDate || data.createdAt // Add entryDate for consistency
         },
         dispatchInfo: {
           dispatchDate: data.deliveryDate,
@@ -655,6 +689,10 @@ export const getDispatchedLockers = async (filters?: {
           lockerNumber: 1, // Default for full deliveries
           potsDispatched: data.pots || 0,
           remainingPotsInLocker: 0, // 0 for full deliveries
+          // NEW: For full deliveries, all pots were dispatched, so remaining before was equal to total
+          potsInLockerBeforeDispatch: data.pots || 0,
+          totalRemainingPots: 0,
+          dispatchType: 'full',
           handoverPersonName: data.handoverPersonName || '',
           handoverPersonMobile: data.handoverPersonMobile || ''
         }
@@ -664,6 +702,7 @@ export const getDispatchedLockers = async (filters?: {
     // Combine both datasets
     const allDispatchedItems = [...dispatchedLockers, ...deliveries];
     console.log('🔍 [DEBUG] Combined items before filtering:', allDispatchedItems.length);
+    console.log('🔍 [DEBUG] Combined items sample:', allDispatchedItems.slice(0, 2));
     
     // Apply location filter if provided
     let filteredItems = allDispatchedItems;
@@ -681,12 +720,15 @@ export const getDispatchedLockers = async (filters?: {
           });
           return match;
         }
-        // For deliveries, filter by locationId in originalEntryData
+        // For deliveries, check both originalEntryData and root level (for backward compatibility)
         if (item.sourceCollection === 'deliveries') {
-          const match = item.originalEntryData?.locationId === filters.locationId;
+          const originalDataMatch = item.originalEntryData?.locationId === filters.locationId;
+          const rootLevelMatch = item.locationId === filters.locationId; // Check root level as well
+          const match = originalDataMatch || rootLevelMatch;
           console.log('🔍 [DEBUG] deliveries filter:', { 
             itemId: item.id, 
-            locationId: item.originalEntryData?.locationId, 
+            originalLocationId: item.originalEntryData?.locationId,
+            rootLocationId: item.locationId,
             filterId: filters.locationId, 
             match 
           });
@@ -698,8 +740,12 @@ export const getDispatchedLockers = async (filters?: {
     
     // Sort by dispatch date (newest first)
     filteredItems.sort((a, b) => {
-      const aTime = a.dispatchInfo?.dispatchDate?.toDate?.() || new Date(a.dispatchInfo?.dispatchDate);
-      const bTime = b.dispatchInfo?.dispatchDate?.toDate?.() || new Date(b.dispatchInfo?.dispatchDate);
+      const aTime = a.dispatchInfo?.dispatchDate?.toDate?.() || 
+                   new Date(a.dispatchInfo?.dispatchDate) || 
+                   new Date(0);
+      const bTime = b.dispatchInfo?.dispatchDate?.toDate?.() || 
+                   new Date(b.dispatchInfo?.dispatchDate) || 
+                   new Date(0);
       return bTime.getTime() - aTime.getTime();
     });
     
@@ -707,7 +753,9 @@ export const getDispatchedLockers = async (filters?: {
     if (filters?.dateRange) {
       console.log('🔍 [DEBUG] Applying date range filter:', filters.dateRange);
       filteredItems = filteredItems.filter(item => {
-        const dispatchDate = item.dispatchInfo?.dispatchDate?.toDate?.() || new Date(item.dispatchInfo?.dispatchDate);
+        const dispatchDate = item.dispatchInfo?.dispatchDate?.toDate?.() || 
+                           new Date(item.dispatchInfo?.dispatchDate) || 
+                           new Date(0);
         const inRange = dispatchDate >= filters.dateRange.from && dispatchDate <= filters.dateRange.to;
         console.log('🔍 [DEBUG] Date range filter:', { 
           itemId: item.id, 
@@ -721,6 +769,7 @@ export const getDispatchedLockers = async (filters?: {
     }
     
     console.log(`🔍 [DEBUG] Final result: ${filteredItems.length} dispatched items (${dispatchedLockers.length} from dispatchedLockers, ${deliveries.length} from deliveries)`);
+    console.log('🔍 [DEBUG] Final result sample:', filteredItems.slice(0, 2));
     
     return filteredItems;
   } catch (error) {
