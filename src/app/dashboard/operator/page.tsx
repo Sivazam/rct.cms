@@ -31,7 +31,6 @@ import {
   Clock,
   Phone,
   Calendar,
-  Plus,
   Building2,
   User,
   LogOut,
@@ -353,6 +352,7 @@ export default function OperatorDashboard() {
               <nav className="-mb-px flex space-x-8">
                 {[
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+                  { id: 'entries', label: 'New Entry', icon: Package },
                   { id: 'profile', label: 'Profile', icon: User }
                 ].map((tab) => (
                   <button
@@ -752,6 +752,9 @@ export default function OperatorDashboard() {
 
               {/* Profile Tab */}
               {activeTab === 'profile' && <OperatorProfile />}
+
+              {/* Entries Tab */}
+              {activeTab === 'entries' && <CustomerEntrySystem />}
             </div>
           )}
         </main>

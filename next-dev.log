@@ -1,92 +1,24 @@
    ▲ Next.js 15.3.5
    - Local:        http://localhost:3000
-   - Network:      http://21.0.10.200:3000
+   - Network:      http://0.0.0.0:3000
 
  ✓ Starting...
- ✓ Ready in 1763ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 2.5s
  ○ Compiling / ...
- ✓ Compiled / in 9.4s (1909 modules)
- GET / 200 in 10764ms
- GET / 200 in 1403ms
- GET / 200 in 1592ms
- GET / 200 in 81ms
- GET / 200 in 1790ms
- ○ Compiling /_not-found ...
- ✓ Compiled /_not-found in 1283ms (1895 modules)
- ✓ Compiled in 576ms (1881 modules)
- GET /sw.js 404 in 2158ms
- GET / 200 in 824ms
- ○ Compiling /login ...
- ✓ Compiled /login in 1167ms (1910 modules)
- GET /login 200 in 1244ms
- ✓ Compiled in 571ms (827 modules)
- ✓ Compiled in 553ms (827 modules)
- ✓ Compiled in 576ms (827 modules)
- ✓ Compiled in 564ms (827 modules)
- ✓ Compiled in 566ms (827 modules)
- ✓ Compiled in 565ms (827 modules)
- ✓ Compiled in 677ms (824 modules)
- ✓ Compiled in 130ms (810 modules)
- ✓ Compiled in 561ms (824 modules)
- ✓ Compiled in 562ms (824 modules)
- ✓ Compiled in 1222ms (824 modules)
- ✓ Compiled in 133ms (810 modules)
- ✓ Compiled in 622ms (824 modules)
- ✓ Compiled in 256ms (824 modules)
- ✓ Compiled in 566ms (824 modules)
- ✓ Compiled in 670ms (824 modules)
- ✓ Compiled in 144ms (810 modules)
- ✓ Compiled in 168ms (810 modules)
- ✓ Compiled in 581ms (824 modules)
- ✓ Compiled in 585ms (824 modules)
- ✓ Compiled in 602ms (824 modules)
- ✓ Compiled in 1138ms (824 modules)
- ✓ Compiled in 697ms (810 modules)
- ✓ Compiled in 138ms (810 modules)
- ✓ Compiled in 707ms (824 modules)
- ✓ Compiled in 442ms (810 modules)
- ✓ Compiled in 759ms (824 modules)
- ✓ Compiled in 755ms (810 modules)
- ✓ Compiled in 761ms (824 modules)
- ✓ Compiled in 813ms (810 modules)
- ✓ Compiled in 158ms (810 modules)
- ✓ Compiled in 615ms (824 modules)
- ✓ Compiled in 1615ms (824 modules)
- ✓ Compiled in 969ms (824 modules)
- ✓ Compiled in 848ms (810 modules)
- ✓ Compiled in 150ms (810 modules)
- ✓ Compiled in 634ms (824 modules)
- ✓ Compiled in 474ms (810 modules)
- GET / 200 in 346ms
- ○ Compiling /_not-found ...
- ✓ Compiled /_not-found in 2.4s (1894 modules)
- ✓ Compiled in 1390ms (1894 modules)
- GET /sw.js 404 in 4017ms
- ✓ Compiled in 254ms (813 modules)
- ✓ Compiled in 112ms (813 modules)
- ✓ Compiled /login in 338ms (1097 modules)
- GET /login 200 in 786ms
- ✓ Compiled in 1940ms (824 modules)
- ✓ Compiled in 177ms (810 modules)
- ✓ Compiled in 166ms (810 modules)
- GET /login 200 in 697ms
- ✓ Compiled in 597ms (824 modules)
- GET /login 200 in 911ms
- ✓ Compiled in 892ms (824 modules)
- ✓ Compiled in 193ms (810 modules)
- GET /login 200 in 394ms
- ✓ Compiled in 578ms (824 modules)
- GET /login 200 in 44ms
- ✓ Compiled in 648ms (824 modules)
- GET /login 200 in 724ms
- ✓ Compiled in 600ms (824 modules)
- GET /login 200 in 989ms
- ✓ Compiled in 664ms (824 modules)
- GET /login 200 in 983ms
- ✓ Compiled in 734ms (824 modules)
- GET /login 200 in 907ms
- ✓ Compiled in 1429ms (810 modules)
- ✓ Compiled in 168ms (810 modules)
- ✓ Compiled in 166ms (810 modules)
- ✓ Compiled in 160ms (810 modules)
- ✓ Compiled in 130ms (810 modules)
+ ✓ Compiled / in 12.8s (1909 modules)
+ GET / 200 in 14176ms
+ ✓ Compiled in 784ms (811 modules)
+ ✓ Compiled in 652ms (811 modules)
+ ✓ Compiled in 718ms (811 modules)
+ ✓ Compiled in 724ms (811 modules)
+ ✓ Compiled in 695ms (811 modules)
+ ✓ Compiled in 649ms (811 modules)
+ ✓ Compiled in 615ms (811 modules)
+ ✓ Compiled in 646ms (811 modules)
+ ✓ Compiled in 695ms (811 modules)
+ GET / 200 in 93ms

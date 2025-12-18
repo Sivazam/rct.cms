@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Settings,
   User,
-  LogOut
+  LogOut,
+  Package
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -63,6 +64,13 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
       isMain: true
     },
     {
+      id: 'entries',
+      label: 'New Entry',
+      icon: <Package className="h-5 w-5" />,
+      href: '/dashboard/admin?tab=entries',
+      isMain: true
+    },
+    {
       id: 'operators',
       label: 'Operators',
       icon: <Users className="h-5 w-5" />,
@@ -91,6 +99,13 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
       label: 'Dashboard',
       icon: <Home className="h-5 w-5" />,
       href: '/dashboard/operator?tab=overview',
+      isMain: true
+    },
+    {
+      id: 'entries',
+      label: 'New Entry',
+      icon: <Package className="h-5 w-5" />,
+      href: '/dashboard/operator?tab=entries',
       isMain: true
     },
     {
