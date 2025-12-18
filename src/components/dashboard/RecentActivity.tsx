@@ -81,6 +81,9 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
 
       const allActivities: Activity[] = [];
 
+      // Keep track of entries that are already marked as dispatched to avoid duplicates
+      const dispatchedEntryIds = new Set<string>();
+      
       // Process entries with renewals
       allEntries.forEach(entry => {
         // Add the initial entry as an activity
@@ -129,15 +132,20 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             status: entry.status,
             operatorName: entry.operatorName
           });
+          
+          // Mark this entry as dispatched to avoid duplicate from dispatchedLockers
+          dispatchedEntryIds.add(entry.id);
         }
       });
 
       // Process partial dispatches from dispatchedLockers collection
+      // Only include those that are not already marked as dispatched in entries
       dispatchedLockers.forEach((dispatchedLocker: any) => {
         const dispatchInfo = dispatchedLocker.dispatchInfo;
         const originalEntryData = dispatchedLocker.originalEntryData;
         
-        if (dispatchInfo && originalEntryData) {
+        // Skip if this entry is already marked as dispatched (to avoid duplicates)
+        if (dispatchInfo && originalEntryData && !dispatchedEntryIds.has(dispatchedLocker.entryId)) {
           allActivities.push({
             id: `partial-dispatch-${dispatchedLocker.id}`,
             type: 'partial-dispatch',
@@ -152,6 +160,9 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             potsDispatched: dispatchInfo.potsDispatched,
             remainingPots: dispatchInfo.totalRemainingPots
           });
+        } else if (dispatchInfo && originalEntryData && dispatchedEntryIds.has(dispatchedLocker.entryId)) {
+          // Log skipped duplicates for debugging
+          console.log(`🔄 [RecentActivity] Skipping duplicate dispatch entry for entry ${dispatchedLocker.entryId} - already marked as dispatched`);
         }
       });
 

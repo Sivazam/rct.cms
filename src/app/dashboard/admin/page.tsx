@@ -501,25 +501,25 @@ export default function AdminDashboard() {
                       className="group"
                     >
                       <Card 
-                        className="h-full hover:shadow-md transition-all duration-200 border cursor-pointer hover:scale-105"
+                        className="h-full hover:shadow-md transition-all duration-200 border cursor-pointer hover:scale-105 admin-overview-card"
                         onClick={() => handleCardClick(stat.type)}
                       >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
+                          <CardTitle className="text-sm font-medium">
                             {stat.title}
                           </CardTitle>
-                          <div className={`p-2 rounded-lg bg-${stat.color}-50`}>
-                            <stat.icon className={`h-4 w-4 text-${stat.color}-600`} />
+                          <div className="p-2 rounded-lg bg-white/20">
+                            <stat.icon className="h-4 w-4 text-white" />
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-foreground">
+                          <div className="text-2xl font-bold">
                             {stat.value}
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            <span className="text-green-600 font-medium">{stat.change}</span> from last month
+                          <p className="text-xs">
+                            <span className="font-medium">{stat.change}</span> from last month
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs mt-1">
                             Click to view details
                           </p>
                         </CardContent>
@@ -620,45 +620,45 @@ export default function AdminDashboard() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Monthly Revenue Summary */}
-                        <Card className="border-accent">
+                        <Card className="admin-overview-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Revenue</CardTitle>
+                            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold text-foreground">
+                            <div className="text-2xl font-bold">
                               ₹{stats.monthlyRevenue.toLocaleString()}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              <span className="text-green-600">+15%</span> from last month
+                            <p className="text-xs mt-1">
+                              <span className="font-medium">+15%</span> from last month
                             </p>
                           </CardContent>
                         </Card>
 
                         {/* Renewal Collections */}
-                        <Card className="border-green-100">
+                        <Card className="admin-overview-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-green-700">Renewal Collections</CardTitle>
+                            <CardTitle className="text-sm font-medium">Renewal Collections</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold text-green-900">
+                            <div className="text-2xl font-bold">
                               ₹{stats.renewalCollections.toLocaleString()}
                             </div>
-                            <p className="text-xs text-green-600 mt-1">
+                            <p className="text-xs mt-1">
                               From {stats.totalRenewals} renewals
                             </p>
                           </CardContent>
                         </Card>
 
                         {/* Delivery Collections */}
-                        <Card className="border-blue-100">
+                        <Card className="admin-overview-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-blue-700">Dispatch Collections</CardTitle>
+                            <CardTitle className="text-sm font-medium">Dispatch Collections</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold text-blue-900">
+                            <div className="text-2xl font-bold">
                               ₹{stats.deliveryCollections.toLocaleString()}
                             </div>
-                            <p className="text-xs text-blue-600 mt-1">
+                            <p className="text-xs mt-1">
                               From {stats.totalDeliveries} dispacthes
                             </p>
                           </CardContent>

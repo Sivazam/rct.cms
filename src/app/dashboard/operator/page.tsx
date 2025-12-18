@@ -189,37 +189,26 @@ export default function OperatorDashboard() {
           })
         ]);
         
-        // Filter entries to only show operator's own entries
+        // Use getSystemStats to get accurate statistics that avoid double counting
+        const statsData = await getSystemStats(locationId, dateRange) || {};
+        
+        // Filter entries to only show operator's own entries for display purposes
         const operatorEntries = allEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorActiveEntries = activeEntries.filter(entry => entry.operatorId === user?.uid);
         const operatorPendingRenewals = pendingRenewals.filter(entry => entry.operatorId === user?.uid);
         const operatorDeliveries = deliveries.filter(entry => entry.operatorId === user?.uid);
         const operatorExpiring = expiring.filter(entry => entry.operatorId === user?.uid);
         
-        // Calculate operator-specific revenue
-        const operatorMonthlyRevenue = operatorEntries.reduce((sum, entry) => {
-          return sum + (entry.payments?.reduce((paymentSum: number, payment: any) => {
-            const paymentDate = payment.date?.toDate ? payment.date.toDate() : new Date(payment.date);
-            const currentMonth = new Date();
-            currentMonth.setDate(1);
-            currentMonth.setHours(0, 0, 0, 0);
-            return paymentSum + (paymentDate >= currentMonth ? payment.amount : 0);
-          }, 0) || 0);
-        }, 0);
+        // Calculate operator-specific revenue from system stats
+        // Get the operator's share of revenue based on their entries vs total entries
+        const totalEntries = allEntries.length;
+        const operatorEntriesCount = operatorEntries.length;
+        const operatorRevenueRatio = totalEntries > 0 ? operatorEntriesCount / totalEntries : 0;
         
-        const operatorRenewalCollections = operatorEntries.reduce((sum, entry) => {
-          return sum + (entry.renewals?.reduce((renewalSum: number, renewal: any) => {
-            const renewalDate = renewal.date?.toDate ? renewal.date.toDate() : new Date(renewal.date);
-            const currentMonth = new Date();
-            currentMonth.setDate(1);
-            currentMonth.setHours(0, 0, 0, 0);
-            return renewalSum + (renewalDate >= currentMonth ? renewal.amount : 0);
-          }, 0) || 0);
-        }, 0);
-        
-        const operatorDeliveryCollections = operatorEntries.reduce((sum, entry) => {
-          return sum + (entry.status === 'dispatched' ? 500 : 0); // Fixed delivery fee
-        }, 0);
+        // Use system stats data but filter for operator's share
+        const operatorMonthlyRevenue = Math.round((statsData.monthlyRevenue || 0) * operatorRevenueRatio);
+        const operatorRenewalCollections = Math.round((statsData.renewalCollections || 0) * operatorRevenueRatio);
+        const operatorDeliveryCollections = Math.round((statsData.deliveryCollections || 0) * operatorRevenueRatio);
         
         setStats({
           totalEntries: operatorActiveEntries.length,

@@ -926,19 +926,40 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
           }
         });
       }
+      
+      // Also check if this entry has been dispatched and has a delivery payment
+      // If so, we need to ensure we don't count it again from unified dispatch records
+      if (entry.status === 'dispatched' && entry.payments && Array.isArray(entry.payments)) {
+        const hasDeliveryPayment = entry.payments.some((payment: any) => payment.type === 'delivery');
+        if (hasDeliveryPayment) {
+          // Mark this entry as having a delivery payment to avoid double counting
+          entry._hasDeliveryPayment = true;
+        }
+      }
     });
     
     // Use unified dispatch records for more accurate delivery counting and revenue
+    // But avoid double counting entries that already have delivery payments
+    const entriesWithDeliveryPayments = new Set(
+      entries.filter(entry => entry._hasDeliveryPayment).map(entry => entry.id)
+    );
+    
     const deliveryRevenueFromUnified = unifiedDispatchRecords.reduce((sum, record) => {
       const paymentDate = new Date(record.dispatchInfo.dispatchDate);
       const isInDateRange = !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
-      return isInDateRange ? sum + record.dispatchInfo.paymentAmount : sum;
+      
+      // Only count if this entry doesn't already have a delivery payment recorded
+      const shouldCount = !entriesWithDeliveryPayments.has(record.entryId);
+      
+      return isInDateRange && shouldCount ? sum + record.dispatchInfo.paymentAmount : sum;
     }, 0);
 
-    // Count unique deliveries from unified records
+    // Count unique deliveries from unified records, excluding those already counted
     const uniqueDeliveries = unifiedDispatchRecords.filter(record => {
       const paymentDate = new Date(record.dispatchInfo.dispatchDate);
-      return !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
+      const isInDateRange = !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
+      const shouldCount = !entriesWithDeliveryPayments.has(record.entryId);
+      return isInDateRange && shouldCount;
     }).length;
     
     // Use the more accurate unified data
@@ -949,7 +970,9 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       totalEntries: totalActiveEntries, // This now represents active entries within date range
       totalRenewals: totalRenewals,
       totalDeliveries: totalDeliveries, // Now from unified dispatch records
-      currentActive: entries.filter(e => e.status === 'active').length, // Total active regardless of date range
+      currentActive: locationId ? 
+        entries.filter(e => e.status === 'active' && e.locationId === locationId).length : 
+        entries.filter(e => e.status === 'active').length, // Filter by location if specified
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
       renewalCollections: totalRenewalCollections,

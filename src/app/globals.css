@@ -1,12 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Raleway", sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -180,10 +181,53 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    font-family: "Raleway", sans-serif !important;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Raleway", sans-serif !important;
   }
+}
+
+/* Admin dashboard font styling */
+.admin-dashboard * {
+  font-family: "Raleway", sans-serif !important;
+}
+
+/* Admin overview cards with red background and white text */
+.admin-overview-card {
+  background-color: #99031e !important;
+  color: white !important;
+}
+
+.admin-overview-card * {
+  color: white !important;
+}
+
+.admin-overview-card .text-foreground,
+.admin-overview-card .text-muted-foreground,
+.admin-overview-card .text-secondary-foreground,
+.admin-overview-card .text-accent-foreground,
+.admin-overview-card .text-card-foreground,
+.admin-overview-card .text-popover-foreground,
+.admin-overview-card .text-sidebar-foreground,
+.admin-overview-card h1,
+.admin-overview-card h2,
+.admin-overview-card h3,
+.admin-overview-card h4,
+.admin-overview-card h5,
+.admin-overview-card h6,
+.admin-overview-card p,
+.admin-overview-card span,
+.admin-overview-card div {
+  color: white !important;
+}
+
+/* Override icon colors for admin overview cards */
+.admin-overview-card svg,
+.admin-overview-card .lucide {
+  color: white !important;
+  stroke: white !important;
 }
 
 /* Custom styles for outlined cards with professional appearance */
