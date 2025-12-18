@@ -893,7 +893,18 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       // Process payments for collections - include entry, renewal and delivery payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
-          const paymentDate = payment.date?.toDate?.();
+          // Handle both Firestore Timestamp and JavaScript Date
+          let paymentDate: Date | null = null;
+          if (payment.date) {
+            if (typeof payment.date.toDate === 'function') {
+              paymentDate = payment.date.toDate();
+            } else if (payment.date instanceof Date) {
+              paymentDate = payment.date;
+            } else {
+              paymentDate = new Date(payment.date);
+            }
+          }
+          
           const amount = payment.amount || 0;
           
           // Only count payments within date range if specified
@@ -993,7 +1004,18 @@ export const getOperatorStats = async (operatorId: string) => {
       // Process payments
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
-          const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
+          // Handle both Firestore Timestamp and JavaScript Date
+          let paymentDate: Date | null = null;
+          if (payment.date) {
+            if (typeof payment.date.toDate === 'function') {
+              paymentDate = payment.date.toDate();
+            } else if (payment.date instanceof Date) {
+              paymentDate = payment.date;
+            } else {
+              paymentDate = new Date(payment.date);
+            }
+          }
+          
           const amount = payment.amount || 0;
           
           totalRevenue += amount;
@@ -1117,7 +1139,17 @@ export const getOperatorTransactions = async (
     entries.forEach(entry => {
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any, index: number) => {
-          const paymentDate = payment.date?.toDate ? payment.date.toDate() : null;
+          // Handle both Firestore Timestamp and JavaScript Date
+          let paymentDate: Date | null = null;
+          if (payment.date) {
+            if (typeof payment.date.toDate === 'function') {
+              paymentDate = payment.date.toDate();
+            } else if (payment.date instanceof Date) {
+              paymentDate = payment.date;
+            } else {
+              paymentDate = new Date(payment.date);
+            }
+          }
           
           // Check if payment is within the specified date range
           if (paymentDate && paymentDate >= fromDate && paymentDate <= toDate) {

@@ -31,6 +31,7 @@ import { formatFirestoreDate } from '@/lib/date-utils';
 import { 
   Users, 
   MapPin, 
+  Plus, 
   RefreshCw, 
   AlertTriangle,
   TrendingUp,
@@ -198,7 +199,19 @@ export default function AdminDashboard() {
           
           // Check if the latest payment is within the date range
           const latestPayment = entry.payments[entry.payments.length - 1];
-          const paymentDate = latestPayment.date?.toDate?.() || new Date(latestPayment.date);
+          // Handle both Firestore Timestamp and JavaScript Date
+          let paymentDate: Date | null = null;
+          if (latestPayment.date) {
+            if (typeof latestPayment.date.toDate === 'function') {
+              paymentDate = latestPayment.date.toDate();
+            } else if (latestPayment.date instanceof Date) {
+              paymentDate = latestPayment.date;
+            } else {
+              paymentDate = new Date(latestPayment.date);
+            }
+          } else {
+            paymentDate = new Date();
+          }
           
           if (dateRange) {
             return paymentDate >= dateRange.from && paymentDate <= dateRange.to;
@@ -360,7 +373,6 @@ export default function AdminDashboard() {
               <nav className="-mb-px flex space-x-8">
                 {[
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
-                  { id: 'entries', label: 'New Entry', icon: Package },
                   { id: 'operators', label: 'Operators', icon: Users },
                   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
                   { id: 'settings', label: 'Settings', icon: SettingsIcon }
@@ -739,7 +751,6 @@ export default function AdminDashboard() {
             )}
 
             {/* Other Tabs */}
-            {activeTab === 'entries' && <CustomerEntrySystem />}
             {activeTab === 'operators' && <OperatorManagement />}
             {activeTab === 'analytics' && <OperatorPerformance />}
             {activeTab === 'settings' && <AdminSettings />}

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getEntries, getLocations, getUsers, getCustomerByMobile, getDispatchedLockers } from '@/lib/firestore';
+import { getEntries, getLocations, getUsers, getCustomerByMobile, getDispatchedLockers, addCustomer } from '@/lib/firestore';
 import { useUnifiedDispatch } from '@/hooks/use-unified-dispatch';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
@@ -21,6 +21,7 @@ import RenewalSystem from '@/components/renewals/RenewalSystem';
 import RenewalForm from '@/components/renewals/RenewalForm';
 import RenewalConfirmation from '@/components/renewals/RenewalConfirmation';
 import CustomerEntryForm from '@/components/entries/CustomerEntryForm';
+import NewCustomerModal, { NewCustomerData } from '@/components/entries/NewCustomerModal';
 import SendSMSButton from '@/components/admin/SendSMSButton';
 import SMSService from '@/lib/sms-service';
 import { useAdminMobile } from '@/stores/adminConfigStore';
@@ -182,6 +183,9 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
   const [isProcessing, setIsProcessing] = useState(false); // New loading state for dispatch/renewal
   const [showPartialDispatchDialog, setShowPartialDispatchDialog] = useState(false);
   const [selectedEntryForPartialDispatch, setSelectedEntryForPartialDispatch] = useState<Entry | null>(null);
+  // New customer modal states
+  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+  const [creatingNewCustomer, setCreatingNewCustomer] = useState(false);
   const RENEWAL_RATE_PER_MONTH = 300;
 
   // Determine if location filter should be shown
@@ -396,9 +400,9 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
         setShowMobileDialog(false);
         setShowCustomerFoundDialog(true);
       } else {
-        // New customer - show entry form directly
+        // New customer - show new customer modal first
         setShowMobileDialog(false);
-        setShowNewEntry(true);
+        setShowNewCustomerModal(true);
       }
     } catch (error: any) {
       setCustomerError(error.message || 'Failed to search customer');
@@ -410,6 +414,30 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
   const handleCreateNewCustomerEntry = () => {
     setShowCustomerFoundDialog(false);
     setShowNewEntry(true);
+  };
+
+  const handleCreateNewCustomer = async (customerData: NewCustomerData) => {
+    setCreatingNewCustomer(true);
+    try {
+      const customerId = await addCustomer(customerData);
+      const newCustomer = {
+        id: customerId,
+        name: customerData.name,
+        mobile: customerData.mobile,
+        city: customerData.city,
+        additionalDetails: customerData.additionalDetails,
+        createdAt: new Date()
+      };
+      
+      // Close new customer modal and set up for entry creation
+      setShowNewCustomerModal(false);
+      setFoundCustomer(newCustomer);
+      setShowNewEntry(true);
+    } catch (error: any) {
+      setCustomerError(error.message || 'Failed to create customer');
+    } finally {
+      setCreatingNewCustomer(false);
+    }
   };
 
   const handleRenewClick = (entry: Entry) => {
@@ -2166,6 +2194,15 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           setSelectedEntryForPartialDispatch(null);
         }}
         onSuccess={handlePartialDispatchSuccess}
+      />
+
+      {/* New Customer Modal */}
+      <NewCustomerModal
+        isOpen={showNewCustomerModal}
+        onClose={() => setShowNewCustomerModal(false)}
+        onSubmit={handleCreateNewCustomer}
+        initialMobile={mobileNumber}
+        isLoading={creatingNewCustomer}
       />
     </div>
   );
