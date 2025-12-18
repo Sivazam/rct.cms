@@ -670,6 +670,7 @@ export const getDispatchedLockers = async (filters?: {
         // Keep root level fields for filtering
         locationId: data.locationId || '',
         operatorId: data.operatorId || '',
+        amountPaid: data.amountPaid || 0, // Add amountPaid at root level for display logic
         // Create originalEntryData for consistency with proper mapping
         originalEntryData: {
           customerName: data.customerName || '',
@@ -694,7 +695,12 @@ export const getDispatchedLockers = async (filters?: {
           totalRemainingPots: 0,
           dispatchType: 'full',
           handoverPersonName: data.handoverPersonName || '',
-          handoverPersonMobile: data.handoverPersonMobile || ''
+          handoverPersonMobile: data.handoverPersonMobile || '',
+          // Add payment information
+          paymentAmount: data.amountPaid || 0,
+          dueAmount: data.dueAmount || 0,
+          paymentMethod: 'cash', // Default payment method
+          paymentType: data.paymentType || 'free'
         }
       };
     });
@@ -890,7 +896,8 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
         }
       }
       
-      // Process payments for collections - include entry, renewal and delivery payments
+      // Process payments for collections - include entry and renewal payments ONLY
+      // Delivery payments will be handled separately from unified dispatch records to avoid double counting
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
           // Handle both Firestore Timestamp and JavaScript Date
@@ -913,9 +920,9 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
               totalRenewalCollections += amount; // Add entry payments to collections
             } else if (payment.type === 'renewal') {
               totalRenewalCollections += amount;
-            } else if (payment.type === 'delivery') {
-              totalDeliveryCollections += amount;
             }
+            // NOTE: We deliberately skip 'delivery' payments here to avoid double counting
+            // Delivery payments are handled via unified dispatch records below
           }
         });
       }

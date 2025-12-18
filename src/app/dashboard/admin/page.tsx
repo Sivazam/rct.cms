@@ -184,50 +184,76 @@ export default function AdminDashboard() {
         locationId: locationId
       });
       
-      // Get recent transactions including both entries and dispatches
+      // Get recent transactions using unified dispatch records for dispatches
+      // and entry payments for entry/renewal payments only (to avoid duplicates)
       const { getUnifiedDispatchRecords } = await import('@/lib/unified-dispatch-service');
       const recentDispatches = await getUnifiedDispatchRecords({ 
         locationId: locationId,
         dateRange: dateRange || { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() } // Use selected date range or default to last 30 days
       });
       
-      // Combine entries and dispatches for recent transactions
-      const recentTransactions = [
-        // Add entries with payments filtered by date range
-        ...allEntries.filter(entry => {
-          if (!entry.payments || entry.payments.length === 0) return false;
-          
-          // Check if the latest payment is within the date range
-          const latestPayment = entry.payments[entry.payments.length - 1];
-          // Handle both Firestore Timestamp and JavaScript Date
-          let paymentDate: Date | null = null;
-          if (latestPayment.date) {
-            if (typeof latestPayment.date.toDate === 'function') {
-              paymentDate = latestPayment.date.toDate();
-            } else if (latestPayment.date instanceof Date) {
-              paymentDate = latestPayment.date;
-            } else {
-              paymentDate = new Date(latestPayment.date);
-            }
+      // Get entry/renewal payments only (exclude delivery payments to avoid duplicates)
+      const entryRenewalTransactions = allEntries.filter(entry => {
+        if (!entry.payments || entry.payments.length === 0) return false;
+        
+        // Skip dispatched entries entirely - their payments are handled via unified dispatch records
+        if (entry.status === 'dispatched') return false;
+        
+        // Only include entries with entry or renewal payments (not delivery payments)
+        const hasEntryOrRenewalPayment = entry.payments.some(payment => 
+          payment.type === 'entry' || payment.type === 'renewal'
+        );
+        
+        if (!hasEntryOrRenewalPayment) return false;
+        
+        // Find the latest entry or renewal payment
+        const entryRenewalPayments = entry.payments.filter(payment => 
+          payment.type === 'entry' || payment.type === 'renewal'
+        );
+        
+        const latestPayment = entryRenewalPayments[entryRenewalPayments.length - 1];
+        
+        // Handle both Firestore Timestamp and JavaScript Date
+        let paymentDate: Date | null = null;
+        if (latestPayment.date) {
+          if (typeof latestPayment.date.toDate === 'function') {
+            paymentDate = latestPayment.date.toDate();
+          } else if (latestPayment.date instanceof Date) {
+            paymentDate = latestPayment.date;
           } else {
-            paymentDate = new Date();
+            paymentDate = new Date(latestPayment.date);
           }
-          
-          if (dateRange) {
-            return paymentDate >= dateRange.from && paymentDate <= dateRange.to;
-          } else {
-            // Default to last 30 days if no date range selected
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            return paymentDate >= thirtyDaysAgo;
-          }
-        }).map(entry => ({
+        } else {
+          paymentDate = new Date();
+        }
+        
+        if (dateRange) {
+          return paymentDate >= dateRange.from && paymentDate <= dateRange.to;
+        } else {
+          // Default to last 30 days if no date range selected
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          return paymentDate >= thirtyDaysAgo;
+        }
+      }).map(entry => {
+        // Find the latest entry or renewal payment
+        const entryRenewalPayments = entry.payments.filter(payment => 
+          payment.type === 'entry' || payment.type === 'renewal'
+        );
+        const latestPayment = entryRenewalPayments[entryRenewalPayments.length - 1];
+        
+        return {
           id: entry.id,
           customerName: entry.customerName,
           customerPhone: entry.customerMobile,
-          amount: entry.payments[entry.payments.length - 1].amount, // Latest payment
-          date: entry.payments[entry.payments.length - 1].date,
-          type: entry.payments[entry.payments.length - 1].type
-        })),
+          amount: latestPayment.amount,
+          date: latestPayment.date,
+          type: latestPayment.type
+        };
+      });
+      
+      // Combine entry/renewal transactions with dispatch transactions
+      const recentTransactions = [
+        ...entryRenewalTransactions,
         // Add dispatches (already filtered by dateRange in getUnifiedDispatchRecords)
         ...recentDispatches.map(dispatch => ({
           id: dispatch.id,

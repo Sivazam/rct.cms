@@ -416,12 +416,35 @@ export async function getUnifiedDispatchRecords(filters?: {
     const transformedDispatchedEntries = transformDispatchedEntriesData(entriesData);
     const transformedDeliveries = transformDeliveriesData(deliveriesData);
 
-    // Combine all records
+    // Combine all records and remove duplicates
     let allRecords = [...transformedDispatchedLockers, ...transformedDispatchedEntries, ...transformedDeliveries];
-
-    // Apply additional filters
+    
+    // Remove duplicate records based on entryId (each entry should only have one dispatch)
+    const uniqueRecords = new Map();
+    const deduplicatedRecords = [];
+    
+    for (const record of allRecords) {
+      if (!uniqueRecords.has(record.entryId)) {
+        uniqueRecords.set(record.entryId, record);
+        deduplicatedRecords.push(record);
+      } else {
+        // If we find a duplicate, prefer record from deliveries collection (most complete)
+        const existingRecord = uniqueRecords.get(record.entryId);
+        if (record.sourceCollection === 'deliveries' && existingRecord.sourceCollection !== 'deliveries') {
+          // Replace with deliveries collection record
+          const index = deduplicatedRecords.findIndex(r => r === existingRecord);
+          deduplicatedRecords[index] = record;
+          uniqueRecords.set(record.entryId, record);
+        }
+        // If both are from same collection type, keep the first one (no change needed)
+      }
+    }
+    
+    console.log(`🔍 [UnifiedDispatchService] Deduplicated ${allRecords.length} records to ${deduplicatedRecords.length} unique records`);
+    
+    // Apply additional filters to deduplicated records
     if (filters) {
-      allRecords = allRecords.filter(record => {
+      allRecords = deduplicatedRecords.filter(record => {
         // Location filter
         if (filters.locationId && record.locationInfo.id !== filters.locationId) {
           return false;
@@ -449,6 +472,8 @@ export async function getUnifiedDispatchRecords(filters?: {
 
         return true;
       });
+    } else {
+      allRecords = deduplicatedRecords;
     }
 
     // Sort by dispatch date (newest first)
