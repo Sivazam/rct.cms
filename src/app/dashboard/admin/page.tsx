@@ -188,13 +188,27 @@ export default function AdminDashboard() {
       const { getUnifiedDispatchRecords } = await import('@/lib/unified-dispatch-service');
       const recentDispatches = await getUnifiedDispatchRecords({ 
         locationId: locationId,
-        dateRange: { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() } // Last 30 days
+        dateRange: dateRange || { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), to: new Date() } // Use selected date range or default to last 30 days
       });
       
       // Combine entries and dispatches for recent transactions
       const recentTransactions = [
-        // Add entries with payments
-        ...allEntries.filter(entry => entry.payments && entry.payments.length > 0).map(entry => ({
+        // Add entries with payments filtered by date range
+        ...allEntries.filter(entry => {
+          if (!entry.payments || entry.payments.length === 0) return false;
+          
+          // Check if the latest payment is within the date range
+          const latestPayment = entry.payments[entry.payments.length - 1];
+          const paymentDate = latestPayment.date?.toDate?.() || new Date(latestPayment.date);
+          
+          if (dateRange) {
+            return paymentDate >= dateRange.from && paymentDate <= dateRange.to;
+          } else {
+            // Default to last 30 days if no date range selected
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            return paymentDate >= thirtyDaysAgo;
+          }
+        }).map(entry => ({
           id: entry.id,
           customerName: entry.customerName,
           customerPhone: entry.customerMobile,
@@ -202,7 +216,7 @@ export default function AdminDashboard() {
           date: entry.payments[entry.payments.length - 1].date,
           type: entry.payments[entry.payments.length - 1].type
         })),
-        // Add dispatches
+        // Add dispatches (already filtered by dateRange in getUnifiedDispatchRecords)
         ...recentDispatches.map(dispatch => ({
           id: dispatch.id,
           customerName: dispatch.customerInfo.name,
@@ -211,7 +225,7 @@ export default function AdminDashboard() {
           date: dispatch.dispatchInfo.dispatchDate,
           type: 'dispatch'
         }))
-      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
       
       const expiring = await getEntries({
         locationId: locationId,

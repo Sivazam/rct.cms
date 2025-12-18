@@ -41,10 +41,11 @@ interface RecentActivityProps {
   limit?: number;
 }
 
-export default function RecentActivity({ locationId, dateRange, limit = 10 }: RecentActivityProps) {
+export default function RecentActivity({ locationId, dateRange, limit = 5 }: RecentActivityProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<any[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     fetchLocations();
@@ -170,8 +171,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         });
       }
 
-      // Use a higher limit when showing all activities
-      const activityLimit = showAll ? 100 : limit;
+      // Always fetch more data but limit display
+      const activityLimit = 100; // Fetch more data for better sorting
       setActivities(filteredActivities.slice(0, activityLimit));
     } catch (error) {
       console.error('Error fetching activities:', error);
@@ -259,14 +260,14 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-96 overflow-y-auto">
           {activities.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">No recent activity found</p>
             </div>
           ) : (
-            activities.map((activity, index) => (
+            activities.slice(0, showAll ? activities.length : limit).map((activity, index) => (
               <motion.div
                 key={activity.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -332,24 +333,15 @@ export default function RecentActivity({ locationId, dateRange, limit = 10 }: Re
           )}
         </div>
         
-        {activities.length > 0 && (
+        {activities.length > limit && (
           <div className="mt-4 pt-4 border-t">
             <Button 
               variant="outline" 
               size="sm" 
               className="w-full"
-              onClick={() => {
-                // Toggle between showing limited and all activities
-                if (activities.length >= 100) {
-                  // Currently showing all, show limited
-                  fetchActivities(false);
-                } else {
-                  // Currently showing limited, show all
-                  fetchActivities(true);
-                }
-              }}
+              onClick={() => setShowAll(!showAll)}
             >
-              {activities.length >= 100 ? 'Show Less Activity' : 'View All Activity'}
+              {showAll ? 'Show Less Activity' : 'View All Activity'}
             </Button>
           </div>
         )}

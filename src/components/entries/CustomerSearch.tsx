@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, Plus, User, Phone, MapPin, Calendar, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getCustomerByMobile } from '@/lib/firestore';
+import { getCustomerByMobile, addCustomer } from '@/lib/firestore';
 import { formatFirestoreDate } from '@/lib/date-utils';
+import NewCustomerModal, { NewCustomerData } from './NewCustomerModal';
 
 interface Customer {
   id: string;
@@ -34,6 +35,8 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [error, setError] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +52,17 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
     try {
       const foundCustomer = await getCustomerByMobile(mobile.trim());
       setCustomer(foundCustomer);
-      onCustomerFound(foundCustomer);
+      
+      if (foundCustomer) {
+        // Customer exists, show existing customer dialog
+        setIsDialogOpen(true);
+        onCustomerFound(foundCustomer);
+      } else {
+        // No customer found, open new customer modal
+        console.log('🔍 [SEARCH] No customer found, opening new customer modal for mobile:', mobile);
+        setIsNewCustomerModalOpen(true);
+        onCustomerFound(null);
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to search customer');
     } finally {
@@ -57,9 +70,34 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
     }
   };
 
+  const handleCreateNewCustomer = async (customerData: NewCustomerData) => {
+    setCreatingCustomer(true);
+    try {
+      const customerId = await addCustomer(customerData);
+      const newCustomer: Customer = {
+        id: customerId,
+        name: customerData.name,
+        mobile: customerData.mobile,
+        city: customerData.city,
+        additionalDetails: customerData.additionalDetails,
+        createdAt: new Date()
+      };
+      
+      // Close new customer modal and proceed with the new customer
+      setIsNewCustomerModalOpen(false);
+      setCustomer(newCustomer);
+      setIsDialogOpen(true);
+      onCustomerFound(newCustomer);
+    } catch (error: any) {
+      setError(error.message || 'Failed to create customer');
+    } finally {
+      setCreatingCustomer(false);
+    }
+  };
+
   const handleCreateNew = () => {
     setIsDialogOpen(false);
-    onCreateNew();
+    setIsNewCustomerModalOpen(true);
   };
 
   const handleClear = () => {
@@ -197,6 +235,15 @@ export default function CustomerSearch({ onCustomerFound, onCreateNew, loading =
             )}
           </DialogContent>
         </Dialog>
+
+        {/* New Customer Modal */}
+        <NewCustomerModal
+          isOpen={isNewCustomerModalOpen}
+          onClose={() => setIsNewCustomerModalOpen(false)}
+          onSubmit={handleCreateNewCustomer}
+          initialMobile={mobile}
+          isLoading={creatingCustomer}
+        />
       </CardContent>
     </Card>
   );

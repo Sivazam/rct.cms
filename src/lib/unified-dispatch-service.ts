@@ -5,11 +5,13 @@
  */
 
 import { getDispatchedLockers, getEntries } from './firestore';
+import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { db } from './firebase';
 
 export interface UnifiedDispatchRecord {
   id: string;
   entryId: string;
-  sourceCollection: 'dispatchedLockers' | 'deliveries' | 'entries';
+  sourceCollection: 'dispatchedLockers' | 'deliveries' | 'entries' | 'deliveryLogs';
   customerInfo: {
     name: string;
     mobile: string;
@@ -110,6 +112,163 @@ function transformDispatchedLockersData(rawData: any[]): UnifiedDispatchRecord[]
       updatedAt: item.updatedAt
     }
   }));
+}
+
+/**
+ * Fetches delivery logs from deliveryLogs collection
+ */
+async function getDeliveryLogs(filters?: {
+  locationId?: string;
+  operatorId?: string;
+  dateRange?: { from: Date; to: Date };
+}): Promise<any[]> {
+  try {
+    console.log('🔍 [UnifiedDispatchService] Getting delivery logs with filters:', filters);
+    
+    let deliveryLogsQuery = query(collection(db, 'deliveryLogs'));
+    
+    // Build query constraints
+    const constraints = [];
+    
+    if (filters?.locationId) {
+      // Need to get entry to find locationId for delivery logs
+      const entriesQuery = query(collection(db, 'entries'), where('locationId', '==', filters.locationId));
+      const entriesSnapshot = await getDocs(entriesQuery);
+      const entryIds = entriesSnapshot.docs.map(doc => doc.id);
+      
+      if (entryIds.length > 0) {
+        constraints.push(where('entryId', 'in', entryIds));
+      } else {
+        // No entries for this location, return empty array
+        return [];
+      }
+    }
+    
+    if (filters?.dateRange) {
+      constraints.push(where('timestamp', '>=', filters.dateRange.from));
+      constraints.push(where('timestamp', '<=', filters.dateRange.to));
+    }
+    
+    // Apply constraints if any
+    if (constraints.length > 0) {
+      deliveryLogsQuery = query(deliveryLogsQuery, ...constraints);
+    }
+
+    const querySnapshot = await getDocs(deliveryLogsQuery);
+    const deliveryLogs = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    console.log(`🔍 [UnifiedDispatchService] Found ${deliveryLogs.length} delivery logs`);
+    return deliveryLogs;
+  } catch (error) {
+    console.error('Error fetching delivery logs:', error);
+    return [];
+  }
+}
+
+/**
+ * Transforms delivery logs data to unified format
+ */
+function transformDeliveryLogsData(rawData: any[]): UnifiedDispatchRecord[] {
+  return rawData.map((item: any) => ({
+    id: item.id,
+    entryId: item.entryId,
+    sourceCollection: 'deliveryLogs' as const,
+    customerInfo: {
+      name: '', // Not available in delivery logs, would need entry lookup
+      mobile: item.customerMobile || '',
+      city: '', // Not available in delivery logs
+      id: '' // Not available in delivery logs
+    },
+    locationInfo: {
+      id: '', // Not available in delivery logs, would need entry lookup
+      name: '' // Not available in delivery logs, would need entry lookup
+    },
+    operatorInfo: {
+      id: item.operatorId || '',
+      name: '' // Not available in delivery logs, would need entry lookup
+    },
+    originalEntryData: {
+      entryDate: null, // Not available in delivery logs
+      expiryDate: null, // Not available in delivery logs
+      totalPots: 0, // Not available in delivery logs
+      status: 'dispatched',
+      renewalCount: 0
+    },
+    dispatchInfo: {
+      dispatchType: 'full', // Assume full dispatch for delivery logs
+      dispatchDate: item.timestamp,
+      potsDispatched: 0, // Not available in delivery logs
+      remainingPots: 0, // Not available in delivery logs
+      paymentAmount: item.amountPaid || 0,
+      dueAmount: item.dueAmount || 0,
+      paymentMethod: 'cash', // Default
+      paymentType: item.amountPaid > 0 ? 
+        (item.amountPaid < (item.dueAmount || 0) ? 'partial' : 'full') : 'free',
+      dispatchReason: item.reason || '',
+      handoverPersonName: '', // Not available in delivery logs
+      handoverPersonMobile: '', // Not available in delivery logs
+      lockerNumber: 1,
+      potsInLockerBeforeDispatch: 0,
+      totalRemainingPots: 0
+    },
+    metadata: {
+      createdAt: item.timestamp,
+      updatedAt: item.timestamp,
+      otpVerified: false, // Not tracked in delivery logs
+      smsSent: item.smsSent || false
+    }
+  }));
+}
+
+/**
+ * Fetches deliveries collection data
+ */
+async function getDeliveriesCollection(filters?: {
+  locationId?: string;
+  operatorId?: string;
+  dateRange?: { from: Date; to: Date };
+}): Promise<any[]> {
+  try {
+    console.log('🔍 [UnifiedDispatchService] Getting deliveries collection with filters:', filters);
+    
+    let deliveriesQuery = query(collection(db, 'deliveries'));
+    
+    // Build query constraints
+    const constraints = [];
+    
+    if (filters?.locationId) {
+      constraints.push(where('locationId', '==', filters.locationId));
+    }
+    
+    if (filters?.operatorId) {
+      constraints.push(where('operatorId', '==', filters.operatorId));
+    }
+    
+    if (filters?.dateRange) {
+      constraints.push(where('deliveryDate', '>=', filters.dateRange.from));
+      constraints.push(where('deliveryDate', '<=', filters.dateRange.to));
+    }
+    
+    // Apply constraints if any
+    if (constraints.length > 0) {
+      deliveriesQuery = query(deliveriesQuery, ...constraints);
+    }
+
+    const querySnapshot = await getDocs(deliveriesQuery);
+    const deliveries = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    console.log(`🔍 [UnifiedDispatchService] Found ${deliveries.length} deliveries`);
+    return deliveries;
+  } catch (error) {
+    console.error('Error fetching deliveries collection:', error);
+    return [];
+  }
 }
 
 /**
@@ -243,20 +402,22 @@ export async function getUnifiedDispatchRecords(filters?: {
     console.log('🔍 [UnifiedDispatchService] Getting unified dispatch records with filters:', filters);
 
     // Fetch data from all sources
-    const [dispatchedLockersData, entriesData] = await Promise.all([
+    const [dispatchedLockersData, entriesData, deliveriesData] = await Promise.all([
       getDispatchedLockers(filters),
       getEntries({
         locationId: filters?.locationId,
         status: 'dispatched'
-      })
+      }),
+      getDeliveriesCollection(filters)
     ]);
 
     // Transform data to unified format
     const transformedDispatchedLockers = transformDispatchedLockersData(dispatchedLockersData);
     const transformedDispatchedEntries = transformDispatchedEntriesData(entriesData);
+    const transformedDeliveries = transformDeliveriesData(deliveriesData);
 
     // Combine all records
-    let allRecords = [...transformedDispatchedLockers, ...transformedDispatchedEntries];
+    let allRecords = [...transformedDispatchedLockers, ...transformedDispatchedEntries, ...transformedDeliveries];
 
     // Apply additional filters
     if (filters) {

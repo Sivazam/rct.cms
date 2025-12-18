@@ -1,5 +1,6 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+import SMSLogsService from './sms-logs';
 
 // TODO: Replace with actual Fast2SMS integration when credentials are available
 // This function currently shows dialogs for client-side calls and logs for server-side calls
@@ -62,23 +63,28 @@ export const sendSMS = async (mobile: string, message: string, entryId: string |
       message: isClientSide ? 'SMS logged (client-side)' : 'SMS logged (server-side)'
     };
     
-    // TODO: Keep this logging for tracking SMS sends
-    // Log in Firestore for audit purposes (only if we have access to Firestore)
+      // TODO: Keep this for client-side simulation only
+    // Note: All actual SMS logging happens in Cloud Functions via SMSLogsService
+    // This function now only handles client-side simulation and shows dialogs
     try {
-      if (typeof db !== 'undefined') {
-        await addDoc(collection(db, 'smsLogs'), {
-          recipient: mobile,
-          message: message,
-          status: result.return ? 'sent' : 'failed',
-          entryId: entryId,
-          fast2smsResponse: result,
-          sentAt: serverTimestamp(),
-          isSimulated: true, // TODO: Remove this field when using real SMS
-          isClientSide: isClientSide
-        });
-      }
+      const smsLogs = SMSLogsService.getInstance();
+      await smsLogs.logSMS({
+        type: 'client_simulation',
+        recipient: mobile,
+        templateId: 'client_side', // Special template for client-side calls
+        message: message,
+        status: result.return ? 'sent' : 'failed',
+        errorMessage: result.return ? undefined : 'Client-side simulation failed',
+        timestamp: new Date(),
+        retryCount: 0,
+        entryId: entryId,
+        customerId: undefined, // Would need to be provided if available
+        locationId: undefined, // Would need to be provided if available
+        operatorId: undefined // Would need to be provided if available
+      });
+      console.log('✅ Client-side SMS simulation logged to smsLogs for audit purposes');
     } catch (logError) {
-      console.error('Failed to log SMS to Firestore:', logError);
+      console.error('❌ Failed to log client-side SMS simulation:', logError);
     }
     
     return result;

@@ -49,12 +49,15 @@ export default function CustomerEntrySystem() {
   });
 
   const handleCustomerFound = (customer: Customer | null) => {
+    console.log('🔍 [ENTRY_SYSTEM] Customer found:', customer ? 'YES' : 'NO');
     setSelectedCustomer(customer);
     if (customer) {
       // Customer found, will show dialog, then move to form
+      console.log('🔍 [ENTRY_SYSTEM] Existing customer, setting step to form');
       // The dialog will handle the transition
     } else {
-      // No customer found, go directly to form
+      // No customer found, should trigger new customer modal
+      console.log('🔍 [ENTRY_SYSTEM] No customer found, should trigger new customer modal');
       setCurrentStep('form');
     }
   };
