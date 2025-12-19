@@ -926,40 +926,22 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
           }
         });
       }
-      
-      // Also check if this entry has been dispatched and has a delivery payment
-      // If so, we need to ensure we don't count it again from unified dispatch records
-      if (entry.status === 'dispatched' && entry.payments && Array.isArray(entry.payments)) {
-        const hasDeliveryPayment = entry.payments.some((payment: any) => payment.type === 'delivery');
-        if (hasDeliveryPayment) {
-          // Mark this entry as having a delivery payment to avoid double counting
-          entry._hasDeliveryPayment = true;
-        }
-      }
     });
     
-    // Use unified dispatch records for more accurate delivery counting and revenue
-    // But avoid double counting entries that already have delivery payments
-    const entriesWithDeliveryPayments = new Set(
-      entries.filter(entry => entry._hasDeliveryPayment).map(entry => entry.id)
-    );
-    
+    // Use unified dispatch records for delivery counting and revenue
+    // The unified dispatch records now contain accurate payment information
     const deliveryRevenueFromUnified = unifiedDispatchRecords.reduce((sum, record) => {
       const paymentDate = new Date(record.dispatchInfo.dispatchDate);
       const isInDateRange = !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
       
-      // Only count if this entry doesn't already have a delivery payment recorded
-      const shouldCount = !entriesWithDeliveryPayments.has(record.entryId);
-      
-      return isInDateRange && shouldCount ? sum + record.dispatchInfo.paymentAmount : sum;
+      return isInDateRange ? sum + record.dispatchInfo.paymentAmount : sum;
     }, 0);
 
-    // Count unique deliveries from unified records, excluding those already counted
+    // Count unique deliveries from unified records
     const uniqueDeliveries = unifiedDispatchRecords.filter(record => {
       const paymentDate = new Date(record.dispatchInfo.dispatchDate);
       const isInDateRange = !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
-      const shouldCount = !entriesWithDeliveryPayments.has(record.entryId);
-      return isInDateRange && shouldCount;
+      return isInDateRange;
     }).length;
     
     // Use the more accurate unified data

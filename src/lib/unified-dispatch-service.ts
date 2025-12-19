@@ -274,57 +274,69 @@ async function getDeliveriesCollection(filters?: {
 /**
  * Transforms deliveries collection data to unified format
  */
-function transformDeliveriesData(rawData: any[]): UnifiedDispatchRecord[] {
-  return rawData.map((item: any) => ({
-    id: item.id,
-    entryId: item.entryId,
-    sourceCollection: 'deliveries' as const,
-    customerInfo: {
-      name: item.customerName || '',
-      mobile: item.customerMobile || '',
-      city: item.customerCity || '',
-      id: item.customerId
-    },
-    locationInfo: {
-      id: item.locationId || '',
-      name: item.locationName || ''
-    },
-    operatorInfo: {
-      id: item.operatorId || '',
-      name: item.operatorName || ''
-    },
-    originalEntryData: {
-      entryDate: item.entryDate,
-      expiryDate: item.expiryDate,
-      totalPots: item.pots || 0,
-      potsPerLocker: item.pots, // For full deliveries, all pots are in one locker
-      numberOfLockers: 1,
-      status: 'dispatched',
-      renewalCount: item.renewalCount
-    },
-    dispatchInfo: {
-      dispatchType: 'full',
-      dispatchDate: item.deliveryDate,
-      potsDispatched: item.pots || 0,
-      remainingPots: 0, // Full dispatch means 0 remaining
-      paymentAmount: item.amountPaid || 0,
-      dueAmount: item.dueAmount || 0,
-      paymentMethod: 'cash', // Default, as deliveries don't store this
-      paymentType: item.paymentType || 'free',
-      dispatchReason: item.reason || '',
-      handoverPersonName: item.handoverPersonName || '',
-      handoverPersonMobile: item.handoverPersonMobile || '',
-      lockerNumber: 1, // Default for full deliveries
-      potsInLockerBeforeDispatch: item.pots || 0,
-      totalRemainingPots: 0
-    },
-    metadata: {
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      otpVerified: item.otpVerified,
-      smsSent: item.smsSent
-    }
-  }));
+async function transformDeliveriesData(rawData: any[]): Promise<UnifiedDispatchRecord[]> {
+  // Get all entries to fetch payment information
+  const allEntries = await getEntries();
+  const entriesMap = new Map(allEntries.map(entry => [entry.id, entry]));
+  
+  return rawData.map((item: any) => {
+    const correspondingEntry = entriesMap.get(item.entryId);
+    
+    // Find the delivery payment from the corresponding entry
+    const deliveryPayment = correspondingEntry?.payments?.find((payment: any) => payment.type === 'delivery');
+    
+    return {
+      id: item.id,
+      entryId: item.entryId,
+      sourceCollection: 'deliveries' as const,
+      customerInfo: {
+        name: item.customerName || correspondingEntry?.customerName || '',
+        mobile: item.customerMobile || correspondingEntry?.customerMobile || '',
+        city: item.customerCity || correspondingEntry?.customerCity || '',
+        id: item.customerId
+      },
+      locationInfo: {
+        id: item.locationId || correspondingEntry?.locationId || '',
+        name: item.locationName || correspondingEntry?.locationName || ''
+      },
+      operatorInfo: {
+        id: item.operatorId || correspondingEntry?.operatorId || '',
+        name: item.operatorName || correspondingEntry?.operatorName || ''
+      },
+      originalEntryData: {
+        entryDate: item.entryDate || correspondingEntry?.entryDate,
+        expiryDate: item.expiryDate || correspondingEntry?.expiryDate,
+        totalPots: item.pots || correspondingEntry?.totalPots || correspondingEntry?.numberOfPots || 0,
+        potsPerLocker: item.pots || correspondingEntry?.potsPerLocker, // For full deliveries, all pots are in one locker
+        numberOfLockers: 1,
+        status: 'dispatched',
+        renewalCount: item.renewalCount || correspondingEntry?.renewalCount
+      },
+      dispatchInfo: {
+        dispatchType: 'full',
+        dispatchDate: item.deliveryDate,
+        potsDispatched: item.pots || 0,
+        remainingPots: 0, // Full dispatch means 0 remaining
+        paymentAmount: deliveryPayment?.amount || 0,
+        dueAmount: deliveryPayment?.dueAmount || 0,
+        paymentMethod: deliveryPayment?.method || 'cash',
+        paymentType: deliveryPayment?.amount > 0 ? 
+          (deliveryPayment?.amount < (deliveryPayment?.dueAmount || 0) ? 'partial' : 'full') : 'free',
+        dispatchReason: item.reason || deliveryPayment?.reason || '',
+        handoverPersonName: item.handoverPersonName || '',
+        handoverPersonMobile: item.handoverPersonMobile || '',
+        lockerNumber: 1, // Default for full deliveries
+        potsInLockerBeforeDispatch: item.pots || 0,
+        totalRemainingPots: 0
+      },
+      metadata: {
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        otpVerified: item.otpVerified,
+        smsSent: item.smsSent
+      }
+    };
+  });
 }
 
 /**
@@ -414,7 +426,7 @@ export async function getUnifiedDispatchRecords(filters?: {
     // Transform data to unified format
     const transformedDispatchedLockers = transformDispatchedLockersData(dispatchedLockersData);
     const transformedDispatchedEntries = transformDispatchedEntriesData(entriesData);
-    const transformedDeliveries = transformDeliveriesData(deliveriesData);
+    const transformedDeliveries = await transformDeliveriesData(deliveriesData);
 
     // Combine all records and remove duplicates
     let allRecords = [...transformedDispatchedLockers, ...transformedDispatchedEntries, ...transformedDeliveries];
@@ -443,8 +455,9 @@ export async function getUnifiedDispatchRecords(filters?: {
     console.log(`🔍 [UnifiedDispatchService] Deduplicated ${allRecords.length} records to ${deduplicatedRecords.length} unique records`);
     
     // Apply additional filters to deduplicated records
+    let filteredRecords = deduplicatedRecords;
     if (filters) {
-      allRecords = deduplicatedRecords.filter(record => {
+      filteredRecords = deduplicatedRecords.filter(record => {
         // Location filter
         if (filters.locationId && record.locationInfo.id !== filters.locationId) {
           return false;
@@ -473,18 +486,18 @@ export async function getUnifiedDispatchRecords(filters?: {
         return true;
       });
     } else {
-      allRecords = deduplicatedRecords;
+      filteredRecords = deduplicatedRecords;
     }
 
     // Sort by dispatch date (newest first)
-    allRecords.sort((a, b) => {
+    filteredRecords.sort((a, b) => {
       const dateA = new Date(a.dispatchInfo.dispatchDate).getTime();
       const dateB = new Date(b.dispatchInfo.dispatchDate).getTime();
       return dateB - dateA;
     });
 
-    console.log(`🔍 [UnifiedDispatchService] Returning ${allRecords.length} unified dispatch records`);
-    return allRecords;
+    console.log(`🔍 [UnifiedDispatchService] Returning ${filteredRecords.length} unified dispatch records`);
+    return filteredRecords;
 
   } catch (error) {
     console.error('Error in getUnifiedDispatchRecords:', error);
