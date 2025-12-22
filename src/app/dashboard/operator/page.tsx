@@ -165,6 +165,8 @@ export default function OperatorDashboard() {
         setRecentEntries([]);
       } else if (selectedLocation) {
         const locationId = selectedLocation === 'all' ? undefined : selectedLocation;
+                // Use getSystemStats to get accurate statistics that avoid double counting
+
         const statsData = await getSystemStats(locationId, dateRange) || {};
         
         const [activeEntries, pendingRenewals, deliveries, allEntries, expiring] = await Promise.all([
@@ -189,8 +191,7 @@ export default function OperatorDashboard() {
           })
         ]);
         
-        // Use getSystemStats to get accurate statistics that avoid double counting
-        const statsData = await getSystemStats(locationId, dateRange) || {};
+
         
         // Filter entries to only show operator's own entries for display purposes
         const operatorEntries = allEntries.filter(entry => entry.operatorId === user?.uid);
