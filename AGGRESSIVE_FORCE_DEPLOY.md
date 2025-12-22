@@ -8,6 +8,7 @@ The issue is that Firebase's change detection is based on:
 1. File content hashes
 2. File timestamps
 3. Build output comparison
+test
 
 Since we only made small comment changes, Firebase isn't considering them significant enough to redeploy.
 
