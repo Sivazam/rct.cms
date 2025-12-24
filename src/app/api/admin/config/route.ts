@@ -1,78 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { getAdminSettings, updateHelpDeskMobile } from '@/lib/admin-settings-firestore';
 
-const execAsync = promisify(exec);
-
-// GET endpoint to retrieve current admin config
+// GET endpoint to retrieve admin settings
 export async function GET() {
   try {
-    const { stdout } = await execAsync('firebase functions:config:get');
-    const config = JSON.parse(stdout);
+    const settings = await getAdminSettings();
     
     return NextResponse.json({
       success: true,
-      adminMobile: config.admin?.mobile || null,
-      fastsmsConfig: {
-        hasApiKey: !!config.fastsms?.api_key,
-        senderId: config.fastsms?.sender_id || null,
-        entityId: config.fastsms?.entity_id || null,
-      }
+      helpDeskMobile: settings?.helpDeskMobile || '+91 9395133359',
+      adminMobile: settings?.adminMobile || '+919014882779',
+      updatedAt: settings?.updatedAt
     });
   } catch (error) {
-    console.error('Error fetching Firebase config:', error);
+    console.error('Error fetching admin settings:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch admin config' },
+      { success: false, error: 'Failed to fetch admin settings' },
       { status: 500 }
     );
   }
 }
 
-// POST endpoint to update admin mobile number
+// POST endpoint to update help desk mobile number
 export async function POST(request: NextRequest) {
   try {
-    const { adminMobile } = await request.json();
+    const { helpDeskMobile } = await request.json();
     
-    if (!adminMobile) {
+    if (!helpDeskMobile) {
       return NextResponse.json(
-        { success: false, error: 'Admin mobile number is required' },
+        { success: false, error: 'Help desk mobile number is required' },
         { status: 400 }
       );
     }
 
     // Validate mobile number format
     const mobileRegex = /^\+91[6-9]\d{9}$/;
-    if (!mobileRegex.test(adminMobile)) {
+    if (!mobileRegex.test(helpDeskMobile)) {
       return NextResponse.json(
         { success: false, error: 'Invalid mobile number format. Must be in format +91XXXXXXXXXX' },
         { status: 400 }
       );
     }
 
-    // Update Firebase config
-    const command = `firebase functions:config:set admin.mobile="${adminMobile}"`;
-    const { stdout, stderr } = await execAsync(command);
-    
-    if (stderr && !stderr.includes('Deploy complete')) {
-      console.error('Firebase config update error:', stderr);
+    // Update Firestore
+    const success = await updateHelpDeskMobile(helpDeskMobile);
+
+    if (success) {
+      console.log('✅ Help desk mobile number updated successfully in Firestore:', helpDeskMobile);
+      return NextResponse.json({
+        success: true,
+        message: 'Help desk mobile number updated successfully',
+        helpDeskMobile
+      });
+    } else {
       return NextResponse.json(
-        { success: false, error: 'Failed to update Firebase config' },
+        { success: false, error: 'Failed to update help desk mobile number' },
         { status: 500 }
       );
     }
 
-    console.log('Firebase admin mobile updated successfully:', adminMobile);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Admin mobile number updated successfully in Firebase config',
-      adminMobile
-    });
-
   } catch (error) {
-    console.error('Error updating admin config:', error);
+    console.error('Error updating help desk mobile:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update admin config' },
+      { success: false, error: 'Failed to update help desk mobile' },
       { status: 500 }
     );
   }

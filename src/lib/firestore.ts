@@ -302,6 +302,13 @@ export const getCustomerByMobile = async (mobile: string) => {
   }
 };
 
+
+  // Helper function to check if a date is backdated (before today at 00:00:00)
+  const isDateBackdated = (date: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to midnight today
+    return date < today;
+  };
 // Entry Management
 export const addEntry = async (entryData: {
   customerId: string;
@@ -319,6 +326,14 @@ export const addEntry = async (entryData: {
 }) => {
   try {
     const entryDate = entryData.entryDate || new Date();
+    
+    // Validate entry date - prevent backdated entries
+    const isBackdated = isDateBackdated(entryDate);
+    if (isBackdated) {
+      console.error('❌ [addEntry] Backdated entry date not allowed:', entryDate);
+      throw new Error('Entry date cannot be in the past. Please use today\'s date or the past date for backdated entries.');
+    }
+    // Calculate expiry date
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     
     // Calculate total pots and payment - simplified to single locker per entry
@@ -336,7 +351,7 @@ export const addEntry = async (entryData: {
       entryDate: entryDate,
       expiryDate: expiryDate,
       status: 'active',
-      payments: [{
+      payments: isBackdated ? [] : [{
         amount: entryFee, // Fixed ₹500 per entry
         date: entryDate,
         type: 'entry',
@@ -874,17 +889,38 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
     const now = new Date();
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     
+    // Helper function to check if entry date is backdated (before today)
+    const isEntryDateBackdated = (entryDate: Date) => {
+      const entryDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
+      const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return entryDateOnly < todayOnly;
+    };
+    
     entries.forEach(entry => {
-      // Count active entries (ash pots) - only count if within date range or no date range specified
+      // Get entry date and check if backdated
       const entryDate = entry.entryDate?.toDate?.() || entry.createdAt?.toDate?.();
+      const isBackdated = entryDate && isEntryDateBackdated(entryDate);
+      
+      // Count active entries (ash pots) - only count valid entries (not backdated)
       const isEntryInRange = !dateRange || (entryDate && entryDate >= dateRange.from && entryDate <= dateRange.to);
       
-      if (entry.status === 'active' && isEntryInRange) {
+      // Skip backdated entries from all counts - they should be marked as dispatched
+      if (isBackdated && entry.status === 'active') {
+        console.log('⚠️ [getSystemStats] Skipping backdated entry:', {
+          id: entry.id,
+          customerName: entry.customerName,
+          entryDate: entryDate,
+          status: entry.status
+        });
+        return; // Skip this entry entirely
+      }
+      
+      if (entry.status === 'active' && isEntryInRange && !isBackdated) {
         totalActiveEntries += 1;
       }
       
       // Count pending renewals (expired but still active entries)
-      if (entry.status === 'active') {
+      if (entry.status === 'active' && !isBackdated) {
         const expiryDate = entry.expiryDate?.toDate?.() || new Date(entry.expiryDate);
         if (expiryDate <= now && isEntryInRange) {
           totalRenewals += 1; // Count as pending renewal

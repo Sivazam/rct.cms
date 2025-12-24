@@ -21,7 +21,7 @@ import { getEntries, getLocations, getDispatchedLockers } from '@/lib/firestore'
 
 interface Activity {
   id: string;
-  type: 'entry' | 'renewal' | 'delivery' | 'partial-dispatch';
+  type: 'entry' | 'renewal' | 'delivery' | 'partial-dispatch' | 'full-dispatch';
   title: string;
   description: string;
   customerName: string;
@@ -201,6 +201,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return <Truck className="h-4 w-4" />;
       case 'partial-dispatch':
+      case 'full-dispatch':
+        return 'secondary';
+      case 'full-dispatch':
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'full-dispatch':
+        return <Package className="h-4 w-4" />;
         return <Truck className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
@@ -216,6 +222,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
       case 'partial-dispatch':
+      case 'full-dispatch':
+        return 'secondary';
+      case 'full-dispatch':
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'full-dispatch':
+        return <Package className="h-4 w-4" />;
         return 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
       default:
         return 'bg-muted text-muted-foreground border-border';
@@ -231,6 +243,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return 'outline';
       case 'partial-dispatch':
+      case 'full-dispatch':
+        return 'secondary';
+      case 'full-dispatch':
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'full-dispatch':
+        return <Package className="h-4 w-4" />;
         return 'secondary';
       default:
         return 'secondary';

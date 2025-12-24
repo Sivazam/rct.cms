@@ -83,7 +83,8 @@ export async function POST(request: NextRequest) {
       operatorName,
       locationId: entryData.locationId || '',
       locationName: entryData.locationName || '',
-      pots: entryData.numberOfPots || entryData.pots || 1, // Handle both field names
+      potsDispatched: numberOfPots, // All pots dispatched for full dispatch
+      remainingPots: 0, // No pots remaining in full dispatch
       otpVerified: false, // No OTP verification needed
       smsSent: false, // Will be updated after sending SMS
       entryDate: entryData.entryDate,

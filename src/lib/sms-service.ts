@@ -2,8 +2,9 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
 import SMSTemplatesService, { TemplateVariables, SMSRequest, TEMPLATE_IDS, MobileNumberUtils } from './sms-templates';
+import { getAdminSettings } from './admin-settings-firestore';
 
-// Create a single instance of SMSTemplatesService using the singleton pattern
+// Create a single instance of SMSTemplatesService using singleton pattern
 const smsTemplates = SMSTemplatesService.getInstance();
 
 // SMS Service Result interface
@@ -126,7 +127,7 @@ class SMSService {
       // Call Firebase Functions securely
       const sendSMSFunction = httpsCallable(functions, 'sendSMSV2');
       
-      // Get the template to extract the actual Fast2SMS template ID
+      // Get template to extract the actual Fast2SMS template ID
       const template = smsTemplates.getTemplateByKey(request.templateKey);
       if (!template) {
         throw new Error(`Template ${request.templateKey} not found`);
@@ -202,6 +203,19 @@ class SMSService {
   }
 
   /**
+   * Get Help Desk Mobile from Firestore for customer SMS
+   */
+  private async getHelpDeskMobile(): Promise<string> {
+    try {
+      const settings = await getAdminSettings();
+      return settings?.helpDeskMobile || '+91 9395133359';
+    } catch (error) {
+      console.error('Error fetching help desk mobile, using default:', error);
+      return '+91 9395133359';
+    }
+  }
+
+  /**
    * Send 3-day expiry reminder
    */
   public async sendThreeDayReminder(
@@ -218,7 +232,7 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: expiryDate,
-      var4: customerMobile, // This will be validated and cleaned
+      var4: await this.getHelpDeskMobile(), // Help Desk Mobile from Firestore
       var5: locationName // Location name repeated as signature
     };
 
@@ -250,7 +264,7 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: expiryDate,
-      var4: customerMobile, // This will be validated and cleaned
+      var4: await this.getHelpDeskMobile(), // Help Desk Mobile from Firestore
       var5: locationName // Location name repeated as signature
     };
 
@@ -282,7 +296,7 @@ class SMSService {
       var1: deceasedPersonName,
       var2: locationName,
       var3: extendedExpiryDate,
-      var4: customerMobile, // This will be validated and cleaned
+      var4: await this.getHelpDeskMobile(), // Help Desk Mobile from Firestore
       var5: locationName // Location name repeated as signature
     };
 
@@ -355,7 +369,7 @@ class SMSService {
       var3: deliveryDate,
       var4: handoverPersonName,
       var5: handoverPersonMobile,
-      var6: customerMobile, // Admin mobile (customer mobile)
+      var6: await this.getHelpDeskMobile(), // Help Desk Mobile from Firestore
       var7: locationName // Location name repeated as signature
     };
 
@@ -529,151 +543,6 @@ class SMSService {
     return await this.sendSMSWithRetry({
       templateKey: 'finalDisposalReminder',
       recipient: customerMobile, // This will be cleaned and validated
-      variables,
-      entryId,
-      customerId,
-      locationId,
-      operatorId
-    });
-  }
-
-  /**
-   * Legacy method compatibility - send renewal notification (maps to renewal confirmation admin)
-   */
-  public async sendRenewalNotification(
-    deceasedPersonName: string,
-    locationName: string,
-    amount: number,
-    adminMobile: string, // Added admin mobile parameter
-    entryId?: string,
-    customerId?: string,
-    locationId?: string,
-    operatorId?: string
-  ): Promise<SMSServiceResult> {
-    const variables: TemplateVariables = {
-      var1: locationName,
-      var2: deceasedPersonName
-    };
-
-    return await this.sendSMSWithRetry({
-      templateKey: 'renewalConfirmAdmin',
-      recipient: adminMobile, // Use provided admin mobile
-      variables,
-      entryId,
-      customerId,
-      locationId,
-      operatorId
-    });
-  }
-
-  /**
-   * Legacy method compatibility - send entry reminder (maps to three day reminder)
-   */
-  public async sendEntryReminder(
-    customerMobile: string,
-    deceasedPersonName: string,
-    locationName: string,
-    expiryDate: string,
-    operatorName: string,
-    daysUntilExpiry: number,
-    entryId?: string,
-    customerId?: string,
-    locationId?: string,
-    operatorId?: string
-  ): Promise<SMSServiceResult> {
-    const variables: TemplateVariables = {
-      var1: deceasedPersonName,
-      var2: locationName,
-      var3: expiryDate,
-      var4: customerMobile, // This will be validated and cleaned
-      var5: locationName // Location name repeated as signature
-    };
-
-    // Choose template based on days until expiry
-    let templateKey: keyof typeof TEMPLATE_IDS;
-    if (daysUntilExpiry <= 0) {
-      templateKey = 'lastdayRenewal';
-    } else if (daysUntilExpiry <= 3) {
-      templateKey = 'threeDayReminder';
-    } else {
-      templateKey = 'threeDayReminder'; // Default to 3-day reminder
-    }
-
-    return await this.sendSMSWithRetry({
-      templateKey,
-      recipient: customerMobile, // This will be cleaned and validated
-      variables,
-      entryId,
-      customerId,
-      locationId,
-      operatorId
-    });
-  }
-
-  /**
-   * Send partial dispatch confirmation to customer
-   */
-  public async sendPartialDispatchConfirmationCustomer(
-    customerMobile: string,
-    deceasedPersonName: string,
-    partialPotsDispatched: number,
-    totalPotsStored: number,
-    dispatchDate: string,
-    handoverPersonName: string,
-    handoverPersonMobile: string,
-    adminMobile: string,
-    locationName: string,
-    entryId?: string,
-    customerId?: string,
-    locationId?: string,
-    operatorId?: string
-  ): Promise<SMSServiceResult> {
-    const variables: TemplateVariables = {
-      var1: deceasedPersonName,
-      var2: partialPotsDispatched.toString(),
-      var3: totalPotsStored.toString(),
-      var4: dispatchDate,
-      var5: handoverPersonName,
-      var6: handoverPersonMobile,
-      var7: adminMobile,
-      var8: locationName
-    };
-
-    return await this.sendSMSWithRetry({
-      templateKey: 'partialDispatchCustomer',
-      recipient: customerMobile,
-      variables,
-      entryId,
-      customerId,
-      locationId,
-      operatorId
-    });
-  }
-
-  /**
-   * Send partial dispatch notification to admin
-   */
-  public async sendPartialDispatchNotificationAdmin(
-    adminMobile: string,
-    deceasedPersonName: string,
-    partialPotsDispatched: number,
-    totalPotsStored: number,
-    locationName: string,
-    entryId?: string,
-    customerId?: string,
-    locationId?: string,
-    operatorId?: string
-  ): Promise<SMSServiceResult> {
-    const variables: TemplateVariables = {
-      var1: deceasedPersonName,
-      var2: partialPotsDispatched.toString(),
-      var3: totalPotsStored.toString(),
-      var4: locationName
-    };
-
-    return await this.sendSMSWithRetry({
-      templateKey: 'partialDispatchAdmin',
-      recipient: adminMobile,
       variables,
       entryId,
       customerId,

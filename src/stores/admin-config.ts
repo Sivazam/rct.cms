@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 
 interface AdminConfigState {
-  // Admin mobile number configuration
+  // Admin mobile number configuration (for receiving admin notifications)
   adminMobile: string;
+
+  // Help desk mobile number configuration (for customer support)
+  helpDeskMobile: string;
   
   // Actions
   setAdminMobile: (mobile: string) => void;
+  setHelpDeskMobile: (mobile: string) => void;
   
   // Reset to default
   resetToDefault: () => void;
@@ -14,8 +18,12 @@ interface AdminConfigState {
 // Default admin mobile number - can be updated through settings
 const DEFAULT_ADMIN_MOBILE = '+919014882779';
 
+// Default help desk mobile number - for customer support
+const DEFAULT_HELP_DESK_MOBILE = '+91 9395133359';
+
 export const useAdminConfigStore = create<AdminConfigState>((set) => ({
   adminMobile: DEFAULT_ADMIN_MOBILE,
+  helpDeskMobile: DEFAULT_HELP_DESK_MOBILE,
   
   setAdminMobile: (mobile: string) => {
     // Basic validation for mobile number format
@@ -46,14 +54,48 @@ export const useAdminConfigStore = create<AdminConfigState>((set) => ({
       console.error('❌ Invalid admin mobile number value:', mobile);
     }
   },
+
+  setHelpDeskMobile: (mobile: string) => {
+    // Basic validation for mobile number format
+    if (mobile && typeof mobile === 'string') {
+      // Remove any spaces, dashes, parentheses, or other formatting characters
+      let cleanedMobile = mobile.replace(/[\s\-\(\)]/g, '');
+      
+      // Remove leading + if present to validate core number
+      const coreNumber = cleanedMobile.replace(/^\+/, '');
+      
+      // Ensure we have only digits
+      const digitsOnly = coreNumber.replace(/\D/g, '');
+      
+      // More flexible validation - accept 10-12 digit numbers
+      if (digitsOnly.length >= 10 && digitsOnly.length <= 12) {
+        // Re-add + if it was there originally, otherwise add it
+        if (cleanedMobile.startsWith('+')) {
+          set({ helpDeskMobile: cleanedMobile });
+        } else {
+          set({ helpDeskMobile: `+${digitsOnly}` });
+        }
+        console.log('✅ Help desk mobile number updated to:', cleanedMobile);
+      } else {
+        console.error('❌ Invalid help desk mobile number format:', mobile);
+        console.error('❌ Must be 10-12 digits, got:', digitsOnly.length);
+      }
+    } else {
+      console.error('❌ Invalid help desk mobile number value:', mobile);
+    }
+  },
   
   resetToDefault: () => {
-    set({ adminMobile: DEFAULT_ADMIN_MOBILE });
+    set({ 
+      adminMobile: DEFAULT_ADMIN_MOBILE,
+      helpDeskMobile: DEFAULT_HELP_DESK_MOBILE 
+    });
     console.log('🔄 Admin mobile number reset to default:', DEFAULT_ADMIN_MOBILE);
+    console.log('🔄 Help desk mobile number reset to default:', DEFAULT_HELP_DESK_MOBILE);
   }
 }));
 
-// Export a hook for easy access to the admin mobile number
+// Export hooks for easy access to config
 export const useAdminMobile = () => {
   const adminMobile = useAdminConfigStore((state) => state.adminMobile);
   console.log('🔍 [STORE DEBUG] useAdminMobile called, returning:', adminMobile);
@@ -61,8 +103,19 @@ export const useAdminMobile = () => {
   return adminMobile;
 };
 
-// Export a hook for updating the admin mobile number
+export const useHelpDeskMobile = () => {
+  const helpDeskMobile = useAdminConfigStore((state) => state.helpDeskMobile);
+  console.log('🔍 [STORE DEBUG] useHelpDeskMobile called, returning:', helpDeskMobile);
+  console.log('🔍 [STORE DEBUG] useHelpDeskMobile type:', typeof helpDeskMobile);
+  return helpDeskMobile;
+};
+
 export const useSetAdminMobile = () => {
   const setAdminMobile = useAdminConfigStore((state) => state.setAdminMobile);
   return setAdminMobile;
+};
+
+export const useSetHelpDeskMobile = () => {
+  const setHelpDeskMobile = useAdminConfigStore((state) => state.setHelpDeskMobile);
+  return setHelpDeskMobile;
 };

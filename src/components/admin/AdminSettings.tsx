@@ -7,34 +7,27 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Save, RotateCcw, Smartphone, Shield, MapPin, MessageSquare, Clock, Play, TestTube } from 'lucide-react';
-import { useAdminConfigStore } from '@/stores/admin-config';
+import { Settings, Save, RotateCcw, Smartphone, Shield, MapPin, MessageSquare, Clock, Play, TestTube, Headphones } from 'lucide-react';
+import { useAdminConfigStore, useHelpDeskMobile, useSetHelpDeskMobile } from '@/stores/admin-config';
 import LocationManagement from './LocationManagement';
 import SMSLogsTable from './SMSLogsTable';
 import { functions, httpsCallable } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminSettings() {
-  const { adminMobile, setAdminMobile, resetToDefault } = useAdminConfigStore();
+  const helpDeskMobile = useHelpDeskMobile();
+  const setHelpDeskMobile = useSetHelpDeskMobile();
+  const { resetToDefault } = useAdminConfigStore();
   const { user } = useAuth();
-  const [inputMobile, setInputMobile] = useState(adminMobile);
+  const [inputMobile, setInputMobile] = useState(helpDeskMobile);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   
-  // Scheduler settings state
-  const [schedulerConfig, setSchedulerConfig] = useState({
-    hour: 10,
-    minute: 0,
-    enabled: true
-  });
-  const [isEditingScheduler, setIsEditingScheduler] = useState(false);
-  const [schedulerMessage, setSchedulerMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  // Sync input with global state when adminMobile changes
+  // Sync input with global state when helpDeskMobile changes
   useEffect(() => {
-    setInputMobile(adminMobile);
-  }, [adminMobile]);
+    setInputMobile(helpDeskMobile);
+  }, [helpDeskMobile]);
 
   // Real-time validation
   const validateMobile = (mobile: string): string | null => {
@@ -62,16 +55,16 @@ export default function AdminSettings() {
     
     try {
       // Update local state first
-      setAdminMobile(inputMobile);
+      setHelpDeskMobile(inputMobile);
       setValidationError(null);
       
-      // Also update Firebase config
+      // Also update Firestore config
       const response = await fetch('/api/admin/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ adminMobile: inputMobile }),
+        body: JSON.stringify({ helpDeskMobile: inputMobile }),
       });
 
       const result = await response.json();
@@ -79,21 +72,21 @@ export default function AdminSettings() {
       if (result.success) {
         setMessage({ 
           type: 'success', 
-          text: 'Admin mobile number updated successfully in both local state and Firebase config!' 
+          text: 'Help desk mobile number updated successfully!' 
         });
       } else {
         setMessage({ 
           type: 'error', 
-          text: `Local state updated but Firebase config failed: ${result.error}` 
+          text: `Failed to update help desk mobile: ${result.error}` 
         });
       }
       
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating admin mobile:', error);
+      console.error('Error updating help desk mobile:', error);
       setMessage({ 
         type: 'error', 
-        text: 'Failed to update admin mobile number. Please try again.' 
+        text: 'Failed to update help desk mobile number. Please try again.' 
       });
     }
     
@@ -106,8 +99,8 @@ export default function AdminSettings() {
 
   const handleReset = () => {
     resetToDefault();
-    setInputMobile(useAdminConfigStore.getState().adminMobile);
-    setMessage({ type: 'success', text: 'Admin mobile number reset to default!' });
+    setInputMobile(useAdminConfigStore.getState().helpDeskMobile);
+    setMessage({ type: 'success', text: 'Help desk mobile number reset to default!' });
     setIsEditing(false);
     
     // Clear message after 3 seconds
@@ -132,7 +125,7 @@ export default function AdminSettings() {
       });
       setIsEditingScheduler(false);
       
-      // Here you would typically update the pubsub schedule
+      // Here you would typically update of pubsub schedule
       // For demo purposes, we're just showing the configuration
       console.log('🕐 [SCHEDULER] Configuration updated:', {
         hour: schedulerConfig.hour,
@@ -255,17 +248,17 @@ export default function AdminSettings() {
         return;
       }
       
-      // Try to call the new test function (if deployed) or fallback to sendExpiry
+      // Try to call to new testExpiryReminders function (if deployed) or fallback to sendExpiry
       let result;
       try {
-        // First try the new testExpiryReminders function
+        // First try to new testExpiryReminders function
         const testExpiryReminders = httpsCallable(functions, 'testExpiryReminders');
         result = await testExpiryReminders({
           reminderTypes: ['3day', 'lastday', '60day']
         });
       } catch (error: any) {
         if (error.code === 'functions/not-found') {
-          // Fallback: inform user to deploy the new function
+          // Fallback: inform user to deploy to new function
           setSchedulerMessage({ 
             type: 'error', 
             text: '❌ Test function not deployed. Please run: cd functions && firebase deploy --only functions:testExpiryReminders' 
@@ -304,7 +297,7 @@ export default function AdminSettings() {
       } else if (error.code === 'permission-denied') {
         errorMessage = '❌ Permission denied. You need admin privileges to test reminders.';
       } else if (error.code === 'functions/not-found') {
-        errorMessage = '❌ Test function not deployed. Please deploy the testExpiryReminders function first.';
+        errorMessage = '❌ Test function not deployed. Please deploy to testExpiryReminders function first.';
       } else if (error.message) {
         errorMessage = `❌ Error: ${error.message}`;
       }
@@ -339,31 +332,31 @@ export default function AdminSettings() {
         <LocationManagement />
       </div>
 
-      {/* Admin Mobile Configuration */}
+      {/* Help Desk Mobile Configuration */}
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
-          <Smartphone className="h-5 w-5" />
-          <h3 className="text-xl font-semibold">Admin Mobile Configuration</h3>
+          <Headphones className="h-5 w-5" />
+          <h3 className="text-xl font-semibold">Help Desk Mobile Configuration</h3>
         </div>
         <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Smartphone className="h-5 w-5" />
-            <span>Admin Mobile Number</span>
+            <span>Help Desk Mobile Number</span>
             <Shield className="h-4 w-4 text-green-500" />
           </CardTitle>
           <CardDescription>
-            Configure the admin mobile number for SMS notifications. This number will receive 
-            administrative alerts and notifications from the system.
+            Configure the help desk mobile number for customer support. This number will be 
+            included in all SMS messages sent to customers for any queries.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Current Configuration */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900  rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div>
-              <Label className="text-sm font-medium text-gray-600 dark:text-gray-300">Current Admin Mobile</Label>
+              <Label className="text-sm font-medium text-gray-600 dark:text-gray-300">Current Help Desk Mobile</Label>
               <div className="flex items-center space-x-2 mt-1">
-                <span className="text-lg font-semibold">{formatMobileDisplay(adminMobile)}</span>
+                <span className="text-lg font-semibold">{formatMobileDisplay(helpDeskMobile)}</span>
                 <Badge variant="secondary" className="text-xs">
                   Active
                 </Badge>
@@ -382,23 +375,23 @@ export default function AdminSettings() {
           {isEditing && (
             <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/30 space-y-4">
               <div>
-                <Label htmlFor="adminMobile" className="text-sm font-medium">
-                  New Admin Mobile Number
+                <Label htmlFor="helpDeskMobile" className="text-sm font-medium">
+                  New Help Desk Mobile Number
                 </Label>
                 <Input
-                  id="adminMobile"
+                  id="helpDeskMobile"
                   type="tel"
                   value={inputMobile}
                   onChange={(e) => {
                     setInputMobile(e.target.value);
                     setValidationError(validateMobile(e.target.value));
                   }}
-                  placeholder="+919014882779"
+                  placeholder="+91 9395133359"
                   className={`mt-1 ${validationError ? 'border-red-500 focus:border-red-500' : ''}`}
                 />
                 <div className="space-y-1">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Enter the full mobile number with country code (e.g., +919014882779)
+                    Enter the full mobile number with country code (e.g., +91 9395133359)
                   </p>
                   {validationError && (
                     <p className="text-xs text-red-600 dark:text-red-400 font-medium">
@@ -433,17 +426,6 @@ export default function AdminSettings() {
               </AlertDescription>
             </Alert>
           )}
-
-          {/* Information */}
-          {/* <div className="p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">How this works:</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• The admin mobile number is stored in global state</li>
-              <li>• All SMS notifications to admin will use this number</li>
-              <li>• Changes take effect immediately across all components</li>
-              <li>• The backend continues to use Firebase config as before</li>
-            </ul>
-          </div> */}
         </CardContent>
       </Card>
       </div>
@@ -452,161 +434,9 @@ export default function AdminSettings() {
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <MessageSquare className="h-5 w-5" />
-          <h3 className="text-xl font-semibold">SMS Logs & Reports</h3>
+          <h3 className="text-xl font-semibold">SMS Logs</h3>
         </div>
         <SMSLogsTable />
-      </div>
-
-      {/* Scheduler Configuration Section */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Clock className="h-5 w-5" />
-          <h3 className="text-xl font-semibold">Scheduler Configuration</h3>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Clock className="h-5 w-5" />
-              <span>Expiry Reminders Scheduler</span>
-              <Badge variant={schedulerConfig.enabled ? "default" : "secondary"}>
-                {schedulerConfig.enabled ? 'Active' : 'Inactive'}
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Configure when automatic expiry reminders should be sent. This is currently for demo purposes 
-              - the actual PubSub scheduler runs at 10AM daily.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Current Configuration */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div>
-                <Label className="text-sm font-medium text-gray-600 dark:text-gray-300">Current Schedule</Label>
-                <div className="flex items-center space-x-2 mt-1">
-                  <span className="text-lg font-semibold">
-                    {schedulerConfig.hour.toString().padStart(2, '0')}:{schedulerConfig.minute.toString().padStart(2, '0')}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    Daily
-                  </Badge>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditingScheduler(!isEditingScheduler)}
-              >
-                {isEditingScheduler ? 'Cancel' : 'Configure'}
-              </Button>
-            </div>
-
-            {/* Edit Form */}
-            {isEditingScheduler && (
-              <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/30 space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    Daily Run Time (24-hour format)
-                  </Label>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <div className="flex items-center space-x-1">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="23"
-                        value={schedulerConfig.hour}
-                        onChange={(e) => setSchedulerConfig(prev => ({ 
-                          ...prev, 
-                          hour: Math.max(0, Math.min(23, parseInt(e.target.value) || 0))
-                        }))}
-                        className="w-16 text-center"
-                        placeholder="HH"
-                      />
-                      <span className="text-lg font-medium">:</span>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="59"
-                        value={schedulerConfig.minute}
-                        onChange={(e) => setSchedulerConfig(prev => ({ 
-                          ...prev, 
-                          minute: Math.max(0, Math.min(59, parseInt(e.target.value) || 0))
-                        }))}
-                        className="w-16 text-center"
-                        placeholder="MM"
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Format: HH:MM (e.g., 10:00 for 10AM)
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="schedulerEnabled"
-                    checked={schedulerConfig.enabled}
-                    onChange={(e) => setSchedulerConfig(prev => ({ 
-                      ...prev, 
-                      enabled: e.target.checked 
-                    }))}
-                    className="rounded"
-                  />
-                  <Label htmlFor="schedulerEnabled" className="text-sm">
-                    Enable automatic expiry reminders
-                  </Label>
-                </div>
-
-                <div className="flex space-x-2">
-                  <Button onClick={handleSaveScheduler} className="flex items-center space-x-1">
-                    <Save className="h-4 w-4" />
-                    <span>Save Schedule</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleTestReminders}
-                    className="flex items-center space-x-1"
-                  >
-                    <TestTube className="h-4 w-4" />
-                    <span>Test Now</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleDebugEntries}
-                    className="flex items-center space-x-1 ml-2"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Debug Data</span>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Status Message */}
-            {schedulerMessage && (
-              <Alert className={schedulerMessage.type === 'success' ? 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/30' : 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/30'}>
-                <AlertDescription className={schedulerMessage.type === 'success' ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}>
-                  {schedulerMessage.text}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Information */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-              <h4 className="font-medium mb-2 flex items-center space-x-2">
-                <Play className="h-4 w-4" />
-                <span>How it works:</span>
-              </h4>
-              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                <li>• <strong>3-Day Reminders:</strong> Sent to customers 3 days before expiry</li>
-                <li>• <strong>Last-Day Reminders:</strong> Sent to customers one day before expiry</li>
-                <li>• <strong>60-Day Final Disposal:</strong> Sent to customers and admin for entries expired 60+ days</li>
-                <li>• <strong>Demo Mode:</strong> Use "Test Now" to trigger all reminders immediately</li>
-                <li>• <strong>Production:</strong> Actual PubSub scheduler runs at configured time daily</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
