@@ -303,6 +303,20 @@ export const getCustomerByMobile = async (mobile: string) => {
 };
 
 
+  // Helper function to check if a date is backdated (before today at 00:00:00)
+  // Updated logic: backdated means strictly before yesterday, not today's date with time
+  const isDateBackdated = (date: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to midnight today
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(23, 59, 59, 999); // End of yesterday
+
+    // A date is backdated only if it's before end of yesterday (yesterday or earlier)
+    // Today's date at any time is allowed, even at midnight
+    return date.getTime() < yesterday.getTime();
+  };
 // Entry Management
 export const addEntry = async (entryData: {
   customerId: string;
@@ -322,7 +336,11 @@ export const addEntry = async (entryData: {
     const entryDate = entryData.entryDate || new Date();
     
     // Validate entry date - prevent backdated entries
- 
+    const isBackdated = isDateBackdated(entryDate);
+    if (isBackdated) {
+      console.error('❌ [addEntry] Backdated entry date not allowed:', entryDate);
+      throw new Error('Entry date cannot be in the past. Please use today\'s date or the past date for backdated entries.');
+    }
     // Calculate expiry date
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     
@@ -341,7 +359,7 @@ export const addEntry = async (entryData: {
       entryDate: entryDate,
       expiryDate: expiryDate,
       status: 'active',
-      payments: [{
+      payments: isBackdated ? [] : [{
         amount: entryFee, // Fixed ₹500 per entry
         date: entryDate,
         type: 'entry',

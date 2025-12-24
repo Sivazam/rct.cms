@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
 
       // Create delivery record with payment information
     const deliveryDate = new Date().toISOString();
+    const numberOfPots = entryData.totalPots || entryData.numberOfPots || entryData.pots || entryData.potsPerLocker || 0;
+
     const deliveryRecord = {
       entryId,
       customerId: entryData.customerId || '',

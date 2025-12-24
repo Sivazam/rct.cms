@@ -306,8 +306,8 @@ async function transformDeliveriesData(rawData: any[]): Promise<UnifiedDispatchR
       originalEntryData: {
         entryDate: item.entryDate || correspondingEntry?.entryDate,
         expiryDate: item.expiryDate || correspondingEntry?.expiryDate,
-        totalPots: item.pots || correspondingEntry?.totalPots || correspondingEntry?.numberOfPots || 0,
-        potsPerLocker: item.pots || correspondingEntry?.potsPerLocker, // For full deliveries, all pots are in one locker
+        totalPots: item.potsDispatched || correspondingEntry?.totalPots || correspondingEntry?.numberOfPots || 0,
+        potsPerLocker: item.potsDispatched || correspondingEntry?.potsPerLocker, // For full deliveries, all pots are in one locker
         numberOfLockers: 1,
         status: 'dispatched',
         renewalCount: item.renewalCount || correspondingEntry?.renewalCount
@@ -315,18 +315,18 @@ async function transformDeliveriesData(rawData: any[]): Promise<UnifiedDispatchR
       dispatchInfo: {
         dispatchType: 'full',
         dispatchDate: item.deliveryDate,
-        potsDispatched: item.pots || 0,
+        potsDispatched: item.potsDispatched || 0,
         remainingPots: 0, // Full dispatch means 0 remaining
         paymentAmount: deliveryPayment?.amount || 0,
         dueAmount: deliveryPayment?.dueAmount || 0,
         paymentMethod: deliveryPayment?.method || 'cash',
-        paymentType: deliveryPayment?.amount > 0 ? 
+        paymentType: deliveryPayment?.amount > 0 ?
           (deliveryPayment?.amount < (deliveryPayment?.dueAmount || 0) ? 'partial' : 'full') : 'free',
         dispatchReason: item.reason || deliveryPayment?.reason || '',
         handoverPersonName: item.handoverPersonName || '',
         handoverPersonMobile: item.handoverPersonMobile || '',
         lockerNumber: 1, // Default for full deliveries
-        potsInLockerBeforeDispatch: item.pots || 0,
+        potsInLockerBeforeDispatch: item.potsDispatched || 0,
         totalRemainingPots: 0
       },
       metadata: {

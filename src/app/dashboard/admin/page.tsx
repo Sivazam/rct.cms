@@ -61,6 +61,7 @@ export default function AdminDashboard() {
     totalRenewals: 0,
     totalDeliveries: 0,
     expiringIn7Days: 0,
+    pendingRenewals: 0,
     monthlyRevenue: 0,
     renewalCollections: 0,
     deliveryCollections: 0,
@@ -174,7 +175,9 @@ export default function AdminDashboard() {
         locationId: locationId,
         needsRenewal: true
       });
-      
+
+      console.log('📊 [Dashboard] Pending renewals found:', pendingRenewals.length);
+
       const deliveries = await getEntries({
         locationId: locationId,
         status: 'dispatched'
@@ -275,8 +278,9 @@ export default function AdminDashboard() {
         totalRenewals: statsData?.totalRenewals || 0,
         totalDeliveries: statsData?.totalDeliveries || 0,
         expiringIn7Days: statsData?.expiringIn7Days || 0,
-        monthlyRevenue: showWithDispatch ? 
-          ((statsData?.renewalCollections || 0) + (statsData?.deliveryCollections || 0)) : 
+        pendingRenewals: pendingRenewals?.length || 0,
+        monthlyRevenue: showWithDispatch ?
+          ((statsData?.renewalCollections || 0) + (statsData?.deliveryCollections || 0)) :
           (statsData?.renewalCollections || 0),
         renewalCollections: statsData?.renewalCollections || 0,
         deliveryCollections: statsData?.deliveryCollections || 0,
@@ -470,7 +474,7 @@ export default function AdminDashboard() {
                     },
                     {
                       title: 'Pending Renewals',
-                      value: stats.totalRenewals,
+                      value: stats.pendingRenewals,
                       icon: RefreshCw,
                       color: 'orange',
                       change: '+5%',
