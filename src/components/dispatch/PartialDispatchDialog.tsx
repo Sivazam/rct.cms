@@ -80,19 +80,39 @@ export default function PartialDispatchDialog({
 
     if (!user) {
       setError('User not authenticated');
+      setSubmitting(false);
       return;
     }
 
     if (!entry) {
       setError('No entry selected');
+      setSubmitting(false);
       return;
     }
 
     // Check if dispatching all remaining pots
     const currentLocker = getCurrentLocker();
     const isDispatchingAllPots = currentLocker && parseInt(formData.potsToDispatch) === currentLocker.remainingPots;
-    
+
     if (isDispatchingAllPots) {
+      // For full dispatch, handover person info is required
+      if (!formData.handoverPersonName || !formData.handoverPersonName.trim()) {
+        setError('Handover person name is required for full dispatch');
+        setSubmitting(false);
+        return;
+      }
+      if (!formData.handoverPersonMobile || !formData.handoverPersonMobile.trim()) {
+        setError('Handover person mobile number is required for full dispatch');
+        setSubmitting(false);
+        return;
+      }
+      // Validate mobile number format
+      if (!/^[6-9]\d{9}$/.test(formData.handoverPersonMobile)) {
+        setError('Please enter a valid 10-digit mobile number starting with 6-9');
+        setSubmitting(false);
+        return;
+      }
+
       // Show confirmation for full dispatch
       const confirmMessage = `You are dispatching all remaining ${formData.potsToDispatch} pots. This will be marked as a FULL dispatch (not partial). Continue?`;
       if (!window.confirm(confirmMessage)) {
@@ -102,33 +122,108 @@ export default function PartialDispatchDialog({
     }
 
     try {
-      const response = await fetch('/api/dispatches/partial', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          entryId: entry.id,
-          lockerNumber: getCurrentLocker().lockerNumber,
-          potsToDispatch: parseInt(formData.potsToDispatch),
-          dispatchReason: formData.dispatchReason || (isDispatchingAllPots ? 'Full collection - all pots dispatched' : 'Partial collection'),
-          handoverPersonName: formData.handoverPersonName,
-          handoverPersonMobile: formData.handoverPersonMobile,
-          paymentMethod: formData.paymentMethod,
-          operatorId: user.uid
-        }),
-      });
+      let response, data;
 
-      const data = await response.json();
+      if (isDispatchingAllPots) {
+        // Call full dispatch API when all pots are being dispatched
+        // This ensures the correct SMS templates are sent
+        response = await fetch('/api/deliveries', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            entryId: entry.id,
+            operatorId: user.uid,
+            operatorName: user.displayName || 'Operator',
+            otp: 'no_otp_required',
+            amountPaid: 0, // Payment is handled separately
+            dueAmount: calculatePendingAmount().pendingAmount,
+            reason: formData.dispatchReason || 'Full collection - all pots dispatched',
+            handoverPersonName: formData.handoverPersonName,
+            handoverPersonMobile: formData.handoverPersonMobile
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process partial dispatch');
+        data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to process full dispatch');
+        }
+
+        // Send SMS notifications after successful full dispatch
+        try {
+          const currentDate = new Date();
+          const formattedDate = currentDate.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+
+          // Send SMS to customer
+          const customerSMSResult = await smsService.sendDispatchConfirmationCustomer(
+            entry.customerMobile,
+            entry.deceasedPersonName || entry.customerName,
+            entry.locationName || 'Unknown Location',
+            formattedDate,
+            formData.handoverPersonName,
+            formData.handoverPersonMobile,
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
+
+          // Send SMS to admin
+          const adminSMSResult = await smsService.sendDeliveryConfirmationAdmin(
+            '+919014882779', // Admin mobile
+            entry.customerName,
+            entry.locationName || 'Unknown Location',
+            entry.id,
+            entry.customerId,
+            entry.locationId,
+            user.uid
+          );
+
+          console.log('SMS sent after full dispatch:', {
+            customerSMS: customerSMSResult.success,
+            adminSMS: adminSMSResult.success
+          });
+        } catch (smsError) {
+          console.error('Error sending SMS notifications:', smsError);
+          // Continue despite SMS error
+        }
+
+      } else {
+        // Call partial dispatch API for partial dispatches
+        response = await fetch('/api/dispatches/partial', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            entryId: entry.id,
+            lockerNumber: getCurrentLocker().lockerNumber,
+            potsToDispatch: parseInt(formData.potsToDispatch),
+            dispatchReason: formData.dispatchReason || 'Partial collection',
+            handoverPersonName: formData.handoverPersonName,
+            handoverPersonMobile: formData.handoverPersonMobile,
+            paymentMethod: formData.paymentMethod,
+            operatorId: user.uid
+          }),
+        });
+
+        data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to process partial dispatch');
+        }
       }
 
       onSuccess(data);
       onClose();
     } catch (error: any) {
-      setError(error.message || 'Failed to process partial dispatch');
+      setError(error.message || 'Failed to process dispatch');
     } finally {
       setSubmitting(false);
     }
@@ -337,9 +432,12 @@ export default function PartialDispatchDialog({
             </Select>
           </div>
 
-          {/* Handover Person Information - Optional */}
+          {/* Handover Person Information - Required for Full Dispatch */}
           <div className="space-y-4">
-            <Label>Handover Person Information (Optional)</Label>
+            <Label>
+              Handover Person Information
+              {formData.potsToDispatch && parseInt(formData.potsToDispatch) === currentLocker?.remainingPots ? ' * (Required for Full Dispatch)' : ' (Optional for Partial Dispatch)'}
+            </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="handoverPersonName">Handover Person Name</Label>
@@ -347,8 +445,9 @@ export default function PartialDispatchDialog({
                   id="handoverPersonName"
                   value={formData.handoverPersonName}
                   onChange={(e) => handleChange('handoverPersonName', e.target.value)}
-                  placeholder="Enter handover person name (optional)"
+                  placeholder="Enter handover person name"
                   disabled={submitting}
+                  required={formData.potsToDispatch && parseInt(formData.potsToDispatch) === currentLocker?.remainingPots}
                 />
               </div>
               <div className="space-y-2">
@@ -358,11 +457,18 @@ export default function PartialDispatchDialog({
                   type="tel"
                   value={formData.handoverPersonMobile}
                   onChange={(e) => handleChange('handoverPersonMobile', e.target.value)}
-                  placeholder="Enter handover person mobile (optional)"
+                  placeholder="Enter handover person mobile"
                   disabled={submitting}
+                  required={formData.potsToDispatch && parseInt(formData.potsToDispatch) === currentLocker?.remainingPots}
                 />
               </div>
             </div>
+            {formData.potsToDispatch && parseInt(formData.potsToDispatch) === currentLocker?.remainingPots && (
+              <p className="text-sm text-orange-600">
+                <AlertTriangle className="h-4 w-4 inline mr-1" />
+                Handover person information is required when dispatching all pots.
+              </p>
+            )}
           </div>
 
           {/* Pots to Dispatch */}
