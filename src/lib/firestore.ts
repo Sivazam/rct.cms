@@ -524,6 +524,39 @@ export const partialDispatch = async (entryId: string, dispatchData: {
       throw new Error(`Only ${lockerDetail.remainingPots} pots remaining in locker ${dispatchData.lockerNumber}`);
     }
 
+    // Check if entry is expired (pending renewal) vs active
+    const now = new Date();
+    const expiryDate = entry.expiryDate?.toDate?.() || new Date(entry.expiryDate);
+    const isExpired = expiryDate <= now;
+    const isPendingRenewal = isExpired && entry.status === 'active';
+
+    // According to business rules:
+    // - We collect payments for dispatches only for pending renewals (expired entries)
+    // - We do NOT collect payments for dispatches of active lockers
+    let actualPaymentAmount = dispatchData.paymentAmount || 0;
+
+    if (!isPendingRenewal && dispatchData.paymentAmount > 0) {
+      console.log('⚠️ [partialDispatch] Entry is not expired (pending renewal). Payment cannot be collected.', {
+        entryId,
+        customerName: entry.customerName,
+        expiryDate: expiryDate.toISOString(),
+        isExpired,
+        status: entry.status
+      });
+      // Zero out payment amount since entry is active
+      actualPaymentAmount = 0;
+    }
+
+    if (isPendingRenewal && dispatchData.paymentAmount > 0) {
+      console.log('✅ [partialDispatch] Entry is expired (pending renewal). Payment will be collected.', {
+        entryId,
+        customerName: entry.customerName,
+        expiryDate: expiryDate.toISOString(),
+        isExpired,
+        status: entry.status
+      });
+    }
+
     // Update locker details
     const updatedLockerDetails = entry.lockerDetails?.map((locker: any) => {
       if (locker.lockerNumber === dispatchData.lockerNumber) {
@@ -556,7 +589,7 @@ export const partialDispatch = async (entryId: string, dispatchData: {
       handoverPersonName: dispatchData.handoverPersonName,
       handoverPersonMobile: dispatchData.handoverPersonMobile,
       paymentMethod: dispatchData.paymentMethod,
-      paymentAmount: dispatchData.paymentAmount || 0,
+      paymentAmount: actualPaymentAmount, // Use validated payment amount (only for pending renewals)
       dispatchedBy: dispatchData.dispatchedBy
     };
 
@@ -598,7 +631,7 @@ export const partialDispatch = async (entryId: string, dispatchData: {
         handoverPersonName: dispatchData.handoverPersonName,
         handoverPersonMobile: dispatchData.handoverPersonMobile,
         paymentMethod: dispatchData.paymentMethod || 'cash', // Default to 'cash' if not provided
-        paymentAmount: dispatchData.paymentAmount || 0,
+        paymentAmount: actualPaymentAmount, // Use validated payment amount (only for pending renewals)
         dispatchedBy: dispatchData.dispatchedBy
       }
     };
@@ -893,23 +926,26 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       
       // Count active entries (ash pots) - only count valid entries (not backdated)
       const isEntryInRange = !dateRange || (entryDate && entryDate >= dateRange.from && entryDate <= dateRange.to);
-      
-      // Skip backdated entries from all counts - they should be marked as dispatched
-      if (isBackdated && entry.status === 'active') {
-        console.log('⚠️ [getSystemStats] Skipping backdated entry:', {
-          id: entry.id,
-          customerName: entry.customerName,
-          entryDate: entryDate,
-          status: entry.status
-        });
-        return; // Skip this entry entirely
-      }
-      
+
+      // Don't skip backdated entries entirely - just exclude them from counts
+      // Their payments should still be counted in revenue calculations
+      // Skip backdated entries from active and renewal counts only
+      // if (isBackdated && entry.status === 'active') {
+      //   console.log('⚠️ [getSystemStats] Skipping backdated entry:', {
+      //     id: entry.id,
+      //     customerName: entry.customerName,
+      //     entryDate: entryDate,
+      //     status: entry.status
+      //   });
+      //   return; // Skip this entry entirely
+      // }
+
       if (entry.status === 'active' && isEntryInRange && !isBackdated) {
         totalActiveEntries += 1;
       }
-      
+
       // Count pending renewals (expired but still active entries)
+      // Skip backdated entries from renewal count as they are already expired
       if (entry.status === 'active' && !isBackdated) {
         const expiryDate = entry.expiryDate?.toDate?.() || new Date(entry.expiryDate);
         if (expiryDate <= now && isEntryInRange) {
