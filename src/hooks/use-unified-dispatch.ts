@@ -117,6 +117,16 @@ export function useUnifiedDispatch(options: UseUnifiedDispatchOptions = {}): Use
 
       setRecords(fetchedRecords);
 
+      // Log for debugging
+      console.log('🔍 [useUnifiedDispatch] Records received:', fetchedRecords.map(r => ({
+        id: r.id,
+        entryId: r.entryId,
+        source: r.sourceCollection,
+        customer: r.customerInfo.name,
+        payment: r.dispatchInfo.paymentAmount,
+        date: r.dispatchInfo.dispatchDate
+      })));
+
       // Calculate stats
       const dispatchStats = await getUnifiedDispatchStats(filters);
       setStats(dispatchStats);

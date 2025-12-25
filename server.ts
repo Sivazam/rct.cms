@@ -1,8 +1,7 @@
 // server.ts - Next.js Standalone + Socket.IO
-import { setupSocket } from '@/lib/socket';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
-import next from 'next';
+import { Server as SocketServer } from 'socket.io';
+import { setupSocket } from '@/lib/socket';
 
 const dev = process.env.NODE_ENV !== 'production';
 const currentPort = 3000;
@@ -11,8 +10,11 @@ const hostname = '0.0.0.0';
 // Custom server with Socket.IO integration
 async function createCustomServer() {
   try {
+    // Dynamic import to avoid bun compatibility issues
+    const next = (await import('next')).default;
+
     // Create Next.js app
-    const nextApp = next({ 
+    const nextApp = next({
       dev,
       dir: process.cwd(),
       // In production, use the current directory where .next is located
@@ -32,7 +34,7 @@ async function createCustomServer() {
     });
 
     // Setup Socket.IO
-    const io = new Server(server, {
+    const io = new SocketServer(server, {
       path: '/api/socketio',
       cors: {
         origin: "*",

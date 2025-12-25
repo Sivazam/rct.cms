@@ -216,36 +216,20 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
       ]);
       
       let entriesData, dispatchedLockersData;
-      
+
       if (type === 'dispatched') {
-        // Fetch dispatched lockers data
-        dispatchedLockersData = await getDispatchedLockers({
+        // Fetch using unified dispatch service to get records from all sources
+        // (dispatchedLockers, deliveries, and entries with status='dispatched')
+        const dispatchedData = await getUnifiedDispatchRecords({
           locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
           dateRange: dateRange
         }).catch(err => {
-          console.error('🔍 [InteractiveEntriesList] Error fetching dispatched lockers:', err);
+          console.error('🔍 [InteractiveEntriesList] Error fetching unified dispatch records:', err);
           return []; // Return empty array on error
         });
+        dispatchedLockersData = dispatchedData; // Assign to display variable
         entriesData = []; // Set empty entries data for dispatched type
       } else {
-        // Fetch regular entries data
-        entriesData = await getEntries({
-          locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
-          status: type === 'active' ? 'active' : 'active' // For pending, we'll filter client-side
-        }).catch(err => {
-          console.error('🔍 [InteractiveEntriesList] Error fetching entries:', err);
-          return []; // Return empty array on error
-        });
-        dispatchedLockersData = []; // Set empty dispatched data for other types
-      }
-      
-      console.log(`🔍 [InteractiveEntriesList] ${type} entries found:`, type === 'dispatched' ? (dispatchedLockersData || []).length : (entriesData || []).length);
-      
-      if (type === 'dispatched') {
-        console.log('🔍 [InteractiveEntriesList] Raw dispatchedLockersData:', dispatchedLockersData);
-        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData type:', typeof dispatchedLockersData);
-        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData is array:', Array.isArray(dispatchedLockersData));
-      }
       
       // Create location mapping
       const locationMap = new Map();
@@ -361,10 +345,8 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
 
       // Apply date range filtering if specified
       if (dateRange) {
-        entriesWithDetails = entriesWithDetails.filter(entry => {
-          const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : new Date(entry.entryDate);
           return entryDate >= dateRange.from && entryDate <= dateRange.to;
-        });
+        };
       }
       
       setEntries(entriesWithDetails);

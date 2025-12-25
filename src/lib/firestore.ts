@@ -674,15 +674,15 @@ export const getDispatchedLockers = async (filters?: {
       operatorMap.set(doc.id, userData.name || 'Unknown Operator');
     });
     
-    // Fetch from both collections: 'dispatchedLockers' and 'deliveries'
-    const [dispatchedLockersSnapshot, deliveriesSnapshot] = await Promise.all([
-      getDocs(query(collection(db, 'dispatchedLockers'))),
-      getDocs(query(collection(db, 'deliveries')))
+    // Fetch from dispatchedLockers collection only
+    // Note: Deliveries are fetched separately in getDeliveriesCollection()
+    // to avoid duplicates in getUnifiedDispatchRecords()
+    const [dispatchedLockersSnapshot] = await Promise.all([
+      getDocs(query(collection(db, 'dispatchedLockers')))
     ]);
 
     console.log('🔍 [DEBUG] Raw data counts:', {
       dispatchedLockers: dispatchedLockersSnapshot.docs.length,
-      deliveries: deliveriesSnapshot.docs.length,
       locations: locationsSnapshot.docs.length,
       operators: usersSnapshot.docs.length
     });
@@ -698,90 +698,25 @@ export const getDispatchedLockers = async (filters?: {
       };
     });
 
-    // Process deliveries collection data and convert to similar structure
-    const deliveries = deliveriesSnapshot.docs.map(doc => {
-      const data = doc.data();
-      console.log('🔍 [DEBUG] Processing delivery:', { id: doc.id, data });
-      return {
-        id: doc.id,
-        sourceCollection: 'deliveries',
-        // Keep root level fields for filtering
-        locationId: data.locationId || '',
-        operatorId: data.operatorId || '',
-        amountPaid: data.amountPaid || 0, // Add amountPaid at root level for display logic
-        // Create originalEntryData for consistency with proper mapping
-        originalEntryData: {
-          customerName: data.customerName || '',
-          customerMobile: data.customerMobile || '',
-          customerCity: data.customerCity || '',
-          locationName: locationMap.get(data.locationId) || data.locationName || '',
-          locationId: data.locationId || '', // Add locationId for proper filtering
-          operatorName: operatorMap.get(data.operatorId) || data.operatorName || '',
-          operatorId: data.operatorId || '', // Add operatorId for consistency
-          totalPots: data.potsDispatched || 0,
-          potsPerLocker: data.potsDispatched || 0,
-          entryDate: data.entryDate || data.createdAt // Add entryDate for consistency
-        },
-        dispatchInfo: {
-          dispatchDate: data.deliveryDate,
-          dispatchReason: data.reason || '',
-          lockerNumber: 1, // Default for full deliveries
-          potsDispatched: data.potsDispatched || 0,
-          remainingPotsInLocker: 0, // 0 for full deliveries
-          // NEW: For full deliveries, all pots were dispatched, so remaining before was equal to total
-          potsInLockerBeforeDispatch: data.potsDispatched || 0,
-          totalRemainingPots: 0,
-          dispatchType: 'full',
-          handoverPersonName: data.handoverPersonName || '',
-          handoverPersonMobile: data.handoverPersonMobile || '',
-          // Add payment information
-          paymentAmount: data.amountPaid || 0,
-          dueAmount: data.dueAmount || 0,
-          paymentMethod: 'cash', // Default payment method
-          paymentType: data.paymentType || 'free'
-        }
-      };
-    });
+    console.log('🔍 [DEBUG] Total dispatchedLockers:', dispatchedLockers.length);
 
-    // Combine both datasets
-    const allDispatchedItems = [...dispatchedLockers, ...deliveries];
-    console.log('🔍 [DEBUG] Combined items before filtering:', allDispatchedItems.length);
-    console.log('🔍 [DEBUG] Combined items sample:', allDispatchedItems.slice(0, 2));
-    
     // Apply location filter if provided
-    let filteredItems = allDispatchedItems;
+    let filteredItems = dispatchedLockers;
     if (filters?.locationId) {
       console.log('🔍 [DEBUG] Applying location filter for:', filters.locationId);
-      filteredItems = allDispatchedItems.filter(item => {
-        // For dispatchedLockers, filter by locationId in originalEntryData
-        if (item.sourceCollection === 'dispatchedLockers') {
-          const match = item.originalEntryData?.locationId === filters.locationId;
-          console.log('🔍 [DEBUG] dispatchedLockers filter:', { 
-            itemId: item.id, 
-            locationId: item.originalEntryData?.locationId, 
-            filterId: filters.locationId, 
-            match 
-          });
-          return match;
-        }
-        // For deliveries, check both originalEntryData and root level (for backward compatibility)
-        if (item.sourceCollection === 'deliveries') {
-          const originalDataMatch = item.originalEntryData?.locationId === filters.locationId;
-          const rootLevelMatch = item.locationId === filters.locationId; // Check root level as well
-          const match = originalDataMatch || rootLevelMatch;
-          console.log('🔍 [DEBUG] deliveries filter:', { 
-            itemId: item.id, 
-            originalLocationId: item.originalEntryData?.locationId,
-            rootLocationId: item.locationId,
-            filterId: filters.locationId, 
-            match 
-          });
-          return match;
-        }
-        return false;
+      filteredItems = dispatchedLockers.filter(item => {
+        // Filter by locationId in originalEntryData
+        const match = item.originalEntryData?.locationId === filters.locationId;
+        console.log('🔍 [DEBUG] dispatchedLockers filter:', {
+          itemId: item.id,
+          locationId: item.originalEntryData?.locationId,
+          filterId: filters.locationId,
+          match
+        });
+        return match;
       });
     }
-    
+
     // Sort by dispatch date (newest first)
     filteredItems.sort((a, b) => {
       const aTime = a.dispatchInfo?.dispatchDate?.toDate?.() || 
@@ -812,7 +747,7 @@ export const getDispatchedLockers = async (filters?: {
       });
     }
     
-    console.log(`🔍 [DEBUG] Final result: ${filteredItems.length} dispatched items (${dispatchedLockers.length} from dispatchedLockers, ${deliveries.length} from deliveries)`);
+    console.log(`🔍 [DEBUG] Final result: ${filteredItems.length} dispatched items (from dispatchedLockers collection)`);
     console.log('🔍 [DEBUG] Final result sample:', filteredItems.slice(0, 2));
     
     return filteredItems;
@@ -960,6 +895,10 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       
       // Process payments for collections - include entry and renewal payments ONLY
       // Delivery payments will be handled separately from unified dispatch records to avoid double counting
+      console.log(`💰 [getSystemStats] Processing payments for entry: ${entry.customerName} (status: ${entry.status}, dispatched: ${entry.status === 'dispatched'})`);
+      let paymentsProcessed = 0;
+      let deliveryPaymentsSkipped = 0;
+
       if (entry.payments && Array.isArray(entry.payments)) {
         entry.payments.forEach((payment: any) => {
           // Handle both Firestore Timestamp and JavaScript Date
@@ -973,31 +912,47 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
               paymentDate = new Date(payment.date);
             }
           }
-          
+
           const amount = payment.amount || 0;
-          
+
           // Only count payments within date range if specified
           if (!dateRange || (paymentDate && paymentDate >= dateRange.from && paymentDate <= dateRange.to)) {
             if (payment.type === 'entry') {
               totalRenewalCollections += amount; // Add entry payments to collections
+              paymentsProcessed++;
+              console.log(`  ✓ Entry payment: ₹${amount} for ${entry.customerName}`);
             } else if (payment.type === 'renewal') {
               totalRenewalCollections += amount;
+              paymentsProcessed++;
+              console.log(`  ✓ Renewal payment: ₹${amount} for ${entry.customerName}`);
+            } else if (payment.type === 'delivery') {
+              deliveryPaymentsSkipped++;
+              console.log(`  ⊘ Skipped delivery payment: ₹${amount} for ${entry.customerName} (will be counted from unified dispatch records)`);
             }
             // NOTE: We deliberately skip 'delivery' payments here to avoid double counting
             // Delivery payments are handled via unified dispatch records below
           }
         });
+        console.log(`  → Processed: ${paymentsProcessed} payments, Skipped: ${deliveryPaymentsSkipped} delivery payments`);
       }
     });
     
     // Use unified dispatch records for delivery counting and revenue
     // The unified dispatch records now contain accurate payment information
+    console.log(`💰 [getSystemStats] Calculating delivery revenue from ${unifiedDispatchRecords.length} unified dispatch records`);
     const deliveryRevenueFromUnified = unifiedDispatchRecords.reduce((sum, record) => {
       const paymentDate = new Date(record.dispatchInfo.dispatchDate);
       const isInDateRange = !dateRange || (paymentDate >= dateRange.from && paymentDate <= dateRange.to);
-      
-      return isInDateRange ? sum + record.dispatchInfo.paymentAmount : sum;
+      const amount = record.dispatchInfo.paymentAmount || 0;
+
+      if (isInDateRange && amount > 0) {
+        console.log(`  ✓ Delivery payment: ₹${amount} for ${record.customerInfo.name} (entryId: ${record.entryId})`);
+      }
+
+      return isInDateRange ? sum + amount : sum;
     }, 0);
+
+    console.log(`💰 [getSystemStats] Total delivery revenue from unified dispatch records: ₹${deliveryRevenueFromUnified}`);
 
     // Count unique deliveries from unified records
     const uniqueDeliveries = unifiedDispatchRecords.filter(record => {
@@ -1014,8 +969,8 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       totalEntries: totalActiveEntries, // This now represents active entries within date range
       totalRenewals: totalRenewals,
       totalDeliveries: totalDeliveries, // Now from unified dispatch records
-      currentActive: locationId ? 
-        entries.filter(e => e.status === 'active' && e.locationId === locationId).length : 
+      currentActive: locationId ?
+        entries.filter(e => e.status === 'active' && e.locationId === locationId).length :
         entries.filter(e => e.status === 'active').length, // Filter by location if specified
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
@@ -1023,7 +978,13 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       deliveryCollections: totalDeliveryCollections,
       lastUpdated: serverTimestamp()
     };
-    
+
+    console.log(`💰 [getSystemStats] Final Revenue Calculation:
+  - Renewal Collections: ₹${totalRenewalCollections}
+  - Delivery Collections: ₹${totalDeliveryCollections}
+  - Total Revenue: ₹${totalRenewalCollections + totalDeliveryCollections}
+  - Total Dispatches: ${totalDeliveries}`);
+
     console.log('Calculated stats with unified dispatch data:', stats);
     return stats;
   } catch (error) {

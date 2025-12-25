@@ -284,6 +284,14 @@ async function transformDeliveriesData(rawData: any[]): Promise<UnifiedDispatchR
     
     // Find the delivery payment from the corresponding entry
     const deliveryPayment = correspondingEntry?.payments?.find((payment: any) => payment.type === 'delivery');
+
+    console.log(`🔍 [transformDeliveriesData] Processing delivery:`, {
+      entryId: item.entryId,
+      customerName: item.customerName,
+      amountPaid: item.amountPaid,
+      dueAmount: item.dueAmount,
+      deliveryPayment: deliveryPayment ? { amount: deliveryPayment.amount } : null
+    });
     
     return {
       id: item.id,
@@ -313,15 +321,15 @@ async function transformDeliveriesData(rawData: any[]): Promise<UnifiedDispatchR
         renewalCount: item.renewalCount || correspondingEntry?.renewalCount
       },
       dispatchInfo: {
-        dispatchType: 'full',
+        dispatchType: item.paymentType === 'partial' ? 'partial' : 'full',
         dispatchDate: item.deliveryDate,
         potsDispatched: item.potsDispatched || 0,
         remainingPots: 0, // Full dispatch means 0 remaining
-        paymentAmount: deliveryPayment?.amount || 0,
-        dueAmount: deliveryPayment?.dueAmount || 0,
+        paymentAmount: deliveryPayment?.amount ?? item.amountPaid ?? 0,
+        dueAmount: deliveryPayment?.dueAmount ?? item.dueAmount ?? 0,
         paymentMethod: deliveryPayment?.method || 'cash',
-        paymentType: deliveryPayment?.amount > 0 ?
-          (deliveryPayment?.amount < (deliveryPayment?.dueAmount || 0) ? 'partial' : 'full') : 'free',
+        paymentType: item.paymentType || (deliveryPayment?.amount ?? item.amountPaid ?? 0) > 0 ?
+          ((deliveryPayment?.amount ?? item.amountPaid ?? 0) < (deliveryPayment?.dueAmount ?? item.dueAmount ?? 0) ? 'partial' : 'full') : 'free',
         dispatchReason: item.reason || deliveryPayment?.reason || '',
         handoverPersonName: item.handoverPersonName || '',
         handoverPersonMobile: item.handoverPersonMobile || '',
@@ -413,15 +421,21 @@ export async function getUnifiedDispatchRecords(filters?: {
   try {
     console.log('🔍 [UnifiedDispatchService] Getting unified dispatch records with filters:', filters);
 
-    // Fetch data from all sources
-    const [dispatchedLockersData, entriesData, deliveriesData] = await Promise.all([
+    // Fetch data from multiple sources
+    const [dispatchedLockersData, deliveriesData] = await Promise.all([
       getDispatchedLockers(filters),
-      getEntries({
-        locationId: filters?.locationId,
-        status: 'dispatched'
-      }),
       getDeliveriesCollection(filters)
     ]);
+
+    // Get list of entry IDs that have delivery records (to avoid duplicates)
+    const deliveryEntryIds = new Set(deliveriesData.map(d => d.entryId));
+
+    // Fetch dispatched entries, excluding those that already have delivery records
+    // This prevents duplication since entries with delivery records represent the same dispatch
+    const entriesData = await getEntries({
+      locationId: filters?.locationId,
+      status: 'dispatched'
+    }).then(entries => entries.filter(entry => !deliveryEntryIds.has(entry.id)));
 
     // Transform data to unified format
     const transformedDispatchedLockers = transformDispatchedLockersData(dispatchedLockersData);
@@ -429,30 +443,52 @@ export async function getUnifiedDispatchRecords(filters?: {
     const transformedDeliveries = await transformDeliveriesData(deliveriesData);
 
     // Combine all records and remove duplicates
+    // Priority order: deliveries > dispatchedLockers > dispatchedEntries
+    // deliveries collection has most complete data including payment details
     let allRecords = [...transformedDispatchedLockers, ...transformedDispatchedEntries, ...transformedDeliveries];
-    
-    // Remove duplicate records based on entryId (each entry should only have one dispatch)
-    const uniqueRecords = new Map();
-    const deduplicatedRecords = [];
-    
-    for (const record of allRecords) {
-      if (!uniqueRecords.has(record.entryId)) {
-        uniqueRecords.set(record.entryId, record);
-        deduplicatedRecords.push(record);
-      } else {
-        // If we find a duplicate, prefer record from deliveries collection (most complete)
-        const existingRecord = uniqueRecords.get(record.entryId);
-        if (record.sourceCollection === 'deliveries' && existingRecord.sourceCollection !== 'deliveries') {
-          // Replace with deliveries collection record
-          const index = deduplicatedRecords.findIndex(r => r === existingRecord);
-          deduplicatedRecords[index] = record;
-          uniqueRecords.set(record.entryId, record);
-        }
-        // If both are from same collection type, keep the first one (no change needed)
+
+    // Deduplicate by entryId, prioritizing deliveries collection records
+    const uniqueRecordsMap = new Map<string, UnifiedDispatchRecord>();
+
+    // First pass: Process deliveries records (highest priority)
+    transformedDeliveries.forEach(record => {
+      if (!uniqueRecordsMap.has(record.entryId)) {
+        uniqueRecordsMap.set(record.entryId, record);
       }
-    }
-    
-    console.log(`🔍 [UnifiedDispatchService] Deduplicated ${allRecords.length} records to ${deduplicatedRecords.length} unique records`);
+    });
+
+    // Second pass: Process dispatchedLockers records (medium priority)
+    transformedDispatchedLockers.forEach(record => {
+      if (!uniqueRecordsMap.has(record.entryId)) {
+        uniqueRecordsMap.set(record.entryId, record);
+      }
+    });
+
+    // Third pass: Process dispatchedEntries records (lowest priority)
+    transformedDispatchedEntries.forEach(record => {
+      if (!uniqueRecordsMap.has(record.entryId)) {
+        uniqueRecordsMap.set(record.entryId, record);
+      }
+    });
+
+    const deduplicatedRecords = Array.from(uniqueRecordsMap.values());
+
+    console.log(`🔍 [UnifiedDispatchService] Deduplication:
+      - dispatchedLockers: ${transformedDispatchedLockers.length}
+      - dispatchedEntries: ${transformedDispatchedEntries.length}
+      - deliveries: ${transformedDeliveries.length}
+      - Total before dedup: ${allRecords.length}
+      - Total after dedup: ${deduplicatedRecords.length}
+      - Records removed: ${allRecords.length - deduplicatedRecords.length}`);
+
+    // Log each record for debugging
+    console.log(`🔍 [UnifiedDispatchService] All records to return:`, deduplicatedRecords.map(r => ({
+      entryId: r.entryId,
+      source: r.sourceCollection,
+      customerName: r.customerInfo.name,
+      paymentAmount: r.dispatchInfo.paymentAmount,
+      dispatchDate: r.dispatchInfo.dispatchDate
+    })));
     
     // Apply additional filters to deduplicated records
     let filteredRecords = deduplicatedRecords;
