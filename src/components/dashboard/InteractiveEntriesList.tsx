@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers, getCustomerByMobile, getDispatchedLockers, addCustomer } from '@/lib/firestore';
+import { getUnifiedDispatchRecords } from '@/lib/unified-dispatch-service';
 import { useUnifiedDispatch } from '@/hooks/use-unified-dispatch';
 import { formatFirestoreDate } from '@/lib/date-utils';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
@@ -196,13 +197,13 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
     fetchData();
   }, [type, locationId, navbarLocation, dateRange]);
 
-  const fetchData = async () => {
+const fetchData = async () => {
     try {
       setLoading(true);
       console.log(`🔍 [InteractiveEntriesList] Fetching ${type} entries...`);
       console.log(`🔍 [InteractiveEntriesList] Location filter:`, navbarLocation || locationId);
       console.log(`🔍 [InteractiveEntriesList] Date range:`, dateRange);
-      
+
       // Fetch locations and users data first (needed for all types)
       const [locationsData, usersData] = await Promise.all([
         getLocations().catch(err => {
@@ -214,12 +215,28 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           return []; // Return empty array on error
         })
       ]);
-      
-      let entriesData, dispatchedLockersData;
+
+      // Create location mapping (needed for all types)
+      const locationMap = new Map();
+      locationsData.forEach(loc => {
+        locationMap.set(loc.id, loc.venueName);
+      });
+
+      // Create operator mapping (needed for all types)
+      const operatorMap = new Map();
+      usersData.forEach(user => {
+        operatorMap.set(user.id, user.name);
+      });
+
+      console.log('🔍 [InteractiveEntriesList] Location map created:', locationMap.size, 'locations');
+      console.log('🔍 [InteractiveEntriesList] Operator map created:', operatorMap.size, 'operators');
+
+      let entriesWithDetails;
 
       if (type === 'dispatched') {
         // Fetch using unified dispatch service to get records from all sources
         // (dispatchedLockers, deliveries, and entries with status='dispatched')
+        console.log('🔍 [InteractiveEntriesList] Fetching unified dispatch records...');
         const dispatchedData = await getUnifiedDispatchRecords({
           locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId),
           dateRange: dateRange
@@ -227,128 +244,115 @@ export default function InteractiveEntriesList({ type, locationId, navbarLocatio
           console.error('🔍 [InteractiveEntriesList] Error fetching unified dispatch records:', err);
           return []; // Return empty array on error
         });
-        dispatchedLockersData = dispatchedData; // Assign to display variable
-        entriesData = []; // Set empty entries data for dispatched type
-      } else {
-      
-      // Create location mapping
-      const locationMap = new Map();
-      locationsData.forEach(loc => {
-        locationMap.set(loc.id, loc.venueName);
-      });
-      
-      // Create operator mapping
-      const operatorMap = new Map();
-      usersData.forEach(user => {
-        operatorMap.set(user.id, user.name);
-      });
-      
-      console.log('🔍 [InteractiveEntriesList] Location map created:', locationMap.size, 'locations');
-      console.log('🔍 [InteractiveEntriesList] Operator map created:', operatorMap.size, 'operators');
-      
-      // Add location names and operator names to entries
-      let entriesWithDetails;
-      
-      if (type === 'dispatched') {
-        // For dispatched lockers, use the dispatchedLockers data structure
-        console.log('🔍 [InteractiveEntriesList] Raw dispatchedLockersData:', dispatchedLockersData);
-        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData type:', typeof dispatchedLockersData);
-        console.log('🔍 [InteractiveEntriesList] dispatchedLockersData is array:', Array.isArray(dispatchedLockersData));
-        
-        const dispatchedData = dispatchedLockersData || [];
-        entriesWithDetails = dispatchedData.map(dispatchedLocker => {
-          console.log('🔍 [InteractiveEntriesList] Processing dispatchedLocker:', dispatchedLocker);
-          
-          // Get location and operator names from maps using IDs from the data
-          const locationId = dispatchedLocker.originalEntryData?.locationId || dispatchedLocker.locationId;
-          const operatorId = dispatchedLocker.originalEntryData?.operatorId || dispatchedLocker.operatorId;
-          
+
+        console.log(`🔍 [InteractiveEntriesList] Received ${dispatchedData.length} unified dispatch records`);
+        console.log('🔍 [InteractiveEntriesList] Source collections:', dispatchedData.map(d => d.sourceCollection));
+
+        // Transform unified dispatch records to display format
+        entriesWithDetails = dispatchedData.map(unifiedRecord => {
+          console.log('🔍 [InteractiveEntriesList] Processing unified dispatch record:', {
+            id: unifiedRecord.id,
+            sourceCollection: unifiedRecord.sourceCollection,
+            customerName: unifiedRecord.customerInfo?.name
+          });
+
           const processedEntry = {
-            ...dispatchedLocker.originalEntryData,
-            id: dispatchedLocker.id, // Use dispatched locker record ID
-            dispatchedInfo: dispatchedLocker.dispatchInfo,
-            // Map to expected fields for display with proper fallbacks
-            customerName: dispatchedLocker.originalEntryData?.customerName || 'Unknown',
-            customerMobile: dispatchedLocker.originalEntryData?.customerMobile || 'Unknown',
-            customerCity: dispatchedLocker.originalEntryData?.customerCity || 'Unknown',
-            locationName: locationMap.get(locationId) || dispatchedLocker.originalEntryData?.locationName || 'Unknown',
-            operatorName: operatorMap.get(operatorId) || dispatchedLocker.originalEntryData?.operatorName || 'Unknown Operator',
+            id: unifiedRecord.id,
+            customerName: unifiedRecord.customerInfo?.name || 'Unknown',
+            customerMobile: unifiedRecord.customerInfo?.mobile || 'Unknown',
+            customerCity: unifiedRecord.customerInfo?.city || 'Unknown',
+            customerId: unifiedRecord.customerInfo?.id,
+            locationName: locationMap.get(unifiedRecord.locationInfo?.id) || unifiedRecord.locationInfo?.name || 'Unknown',
+            locationId: unifiedRecord.locationInfo?.id,
+            operatorName: operatorMap.get(unifiedRecord.operatorInfo?.id) || unifiedRecord.operatorInfo?.name || 'Unknown Operator',
+            operatorId: unifiedRecord.operatorInfo?.id,
             // Use dispatch info for display
-            deliveryDate: dispatchedLocker.dispatchInfo?.dispatchDate,
-            dispatchReason: dispatchedLocker.dispatchInfo?.dispatchReason,
+            deliveryDate: unifiedRecord.dispatchInfo?.dispatchDate,
+            dispatchReason: unifiedRecord.dispatchInfo?.dispatchReason,
+            dispatchedInfo: unifiedRecord.dispatchInfo,
+            sourceCollection: unifiedRecord.sourceCollection,
             // For pots display, show dispatched info
-            totalPots: dispatchedLocker.originalEntryData?.totalPots || 0,
-            numberOfPots: dispatchedLocker.originalEntryData?.totalPots || 0,
+            totalPots: unifiedRecord.originalEntryData?.totalPots || 0,
+            numberOfPots: unifiedRecord.originalEntryData?.totalPots || 0,
+            entryDate: unifiedRecord.originalEntryData?.entryDate,
+            expiryDate: unifiedRecord.originalEntryData?.expiryDate,
+            status: 'dispatched',
             // Show dispatched pots in display with enhanced tracking
             lockerDetails: [{
-              lockerNumber: dispatchedLocker.dispatchInfo?.lockerNumber || 1,
-              totalPots: dispatchedLocker.originalEntryData?.potsPerLocker || 0,
-              remainingPots: dispatchedLocker.dispatchInfo?.remainingPotsInLocker || 0,
-              dispatchedPots: Array.from({ length: dispatchedLocker.dispatchInfo?.potsDispatched || 0 }, (_, i) => `pot-${i + 1}`),
-              // NEW: Enhanced pot tracking information
-              potsInLockerBeforeDispatch: dispatchedLocker.dispatchInfo?.potsInLockerBeforeDispatch || 0,
-              totalRemainingPots: dispatchedLocker.dispatchInfo?.totalRemainingPots || 0,
-              dispatchType: dispatchedLocker.dispatchInfo?.dispatchType || 'unknown'
-            }]
+              lockerNumber: unifiedRecord.dispatchInfo?.lockerNumber || 1,
+              totalPots: unifiedRecord.originalEntryData?.potsPerLocker || unifiedRecord.originalEntryData?.totalPots || 0,
+              remainingPots: unifiedRecord.dispatchInfo?.remainingPots || 0,
+              dispatchedPots: Array.from({ length: unifiedRecord.dispatchInfo?.potsDispatched || 0 }, (_, i) => `pot-${i + 1}`),
+              // Enhanced pot tracking information
+              potsInLockerBeforeDispatch: unifiedRecord.dispatchInfo?.potsInLockerBeforeDispatch || unifiedRecord.originalEntryData?.totalPots || 0,
+              totalRemainingPots: unifiedRecord.dispatchInfo?.totalRemainingPots || unifiedRecord.dispatchInfo?.remainingPots || 0,
+              dispatchType: unifiedRecord.dispatchInfo?.dispatchType || 'unknown'
+            }],
+            // Payment information
+            paymentAmount: unifiedRecord.dispatchInfo?.paymentAmount || 0,
+            dueAmount: unifiedRecord.dispatchInfo?.dueAmount || 0,
+            paymentType: unifiedRecord.dispatchInfo?.paymentType || 'free',
+            paymentMethod: unifiedRecord.dispatchInfo?.paymentMethod || 'cash',
+            handoverPersonName: unifiedRecord.dispatchInfo?.handoverPersonName || '',
+            handoverPersonMobile: unifiedRecord.dispatchInfo?.handoverPersonMobile || '',
+            entryId: unifiedRecord.entryId
           };
-          console.log('🔍 [InteractiveEntriesList] Processed entry:', processedEntry);
-          console.log('🔍 [InteractiveEntriesList] Mappings:', {
-            locationId,
-            operatorId,
-            mappedLocation: locationMap.get(locationId),
-            mappedOperator: operatorMap.get(operatorId),
-            originalLocationName: dispatchedLocker.originalEntryData?.locationName,
-            originalOperatorName: dispatchedLocker.originalEntryData?.operatorName
-          });
           return processedEntry;
         });
-        console.log('🔍 [InteractiveEntriesList] Final entriesWithDetails for dispatched:', entriesWithDetails);
+
+        console.log(`🔍 [InteractiveEntriesList] Final entriesWithDetails for dispatched: ${entriesWithDetails.length} entries`);
+        entriesWithDetails.forEach((entry, index) => {
+          console.log(`Dispatched entry ${index + 1}:`, {
+            id: entry.id,
+            sourceCollection: entry.sourceCollection,
+            customerName: entry.customerName,
+            deliveryDate: entry.deliveryDate,
+            dispatchReason: entry.dispatchReason,
+            paymentAmount: entry.paymentAmount,
+            paymentType: entry.paymentType
+          });
+        });
       } else {
+        // For active and pending entries, fetch original entries data
+        const entriesQuery = await getEntries({
+          locationId: (navbarLocation || locationId) === 'all' ? undefined : (navbarLocation || locationId)
+        });
+
+        console.log(`🔍 [InteractiveEntriesList] Fetched ${entriesQuery.length} entries for type: ${type}`);
+
         // For active and pending entries, use original entries data
-        entriesWithDetails = entriesData.map(entry => ({
+        entriesWithDetails = entriesQuery.map(entry => ({
           ...entry,
           locationName: locationMap.get(entry.locationId) || 'Unknown Location',
           operatorName: operatorMap.get(entry.operatorId) || 'Unknown Operator'
         }));
-      }
 
-      // Debug: Log dispatched entries to see their structure
-      if (type === 'dispatched') {
-        console.log('Dispatched entries data:', entriesWithDetails.slice(0, 3)); // Log first 3 dispatched entries
-        entriesWithDetails.forEach((entry, index) => {
-          console.log(`Dispatched entry ${index + 1}:`, {
-            id: entry.id,
-            status: entry.status,
-            deliveryDate: entry.deliveryDate,
-            dispatchReason: entry.dispatchReason,
-            customerName: entry.customerName
+        // Additional filtering based on type
+        if (type === 'active') {
+          // Filter for truly active entries (not expired)
+          const now = new Date();
+          entriesWithDetails = entriesWithDetails.filter(entry => {
+            const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
+            return expiryDate > now && entry.status === 'active';
           });
-        });
+        } else if (type === 'pending') {
+          // Filter for entries that need renewal (expired but still active)
+          const now = new Date();
+          entriesWithDetails = entriesWithDetails.filter(entry => {
+            const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
+            return expiryDate <= now && entry.status === 'active';
+          });
+        }
+
+        // Apply date range filtering if specified
+        if (dateRange) {
+          entriesWithDetails = entriesWithDetails.filter(entry => {
+            const entryDate = entry.entryDate?.toDate ? entry.entryDate.toDate() : new Date(entry.entryDate);
+            return entryDate >= dateRange.from && entryDate <= dateRange.to;
+          });
+        }
       }
 
-      // Additional filtering based on type
-      if (type === 'active') {
-        // Filter for truly active entries (not expired)
-        const now = new Date();
-        entriesWithDetails = entriesWithDetails.filter(entry => {
-          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
-          return expiryDate > now && entry.status === 'active';
-        });
-      } else if (type === 'pending') {
-        // Filter for entries that need renewal (expired but still active)
-        const now = new Date();
-        entriesWithDetails = entriesWithDetails.filter(entry => {
-          const expiryDate = entry.expiryDate?.toDate ? entry.expiryDate.toDate() : new Date(entry.expiryDate);
-          return expiryDate <= now && entry.status === 'active';
-        });
-      }
-
-      // Apply date range filtering if specified
-      if (dateRange) {
-          return entryDate >= dateRange.from && entryDate <= dateRange.to;
-        };
-      }
-      
       setEntries(entriesWithDetails);
       setLocations(locationsData.filter(loc => loc.isActive));
     } catch (error) {
