@@ -48,6 +48,7 @@ import {
   BarChart3,
   Settings as SettingsIcon
 } from 'lucide-react';
+import { Archive } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -309,6 +310,12 @@ export default function AdminDashboard() {
       url.searchParams.set('tab', tab);
       window.history.pushState({}, '', url.toString());
     }
+    // Navigate to Locker Status page
+    if (tab === 'lockers') {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/locker-status') {
+        window.location.href = '/locker-status';
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -405,6 +412,7 @@ export default function AdminDashboard() {
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
                   { id: 'operators', label: 'Operators', icon: Users },
                   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+ { id: 'lockers', label: 'Locker Status', icon: Archive },
                   { id: 'settings', label: 'Settings', icon: SettingsIcon }
                 ].map((tab) => (
                   <button
@@ -558,6 +566,36 @@ export default function AdminDashboard() {
                   )}
 
                   {/* Pending Ash Pots Details */}
+
+              {/* Locker Status */}
+              {activeTab === 'lockers' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-white rounded-lg border p-6 shadow-sm"
+                >
+                  <h3 className="text-lg font-semibold text-foreground mb-4">
+                    Navigate to Locker Status Page
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Click below to view the complete locker availability grid with all locations and real-time status.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.location.href = '/locker-status';
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    <Archive className="h-4 w-4 mr-2" />
+                    Go to Locker Status
+                  </Button>
+                </motion.div>
+              )}
+
+              {/* Active Ash Pots Details */}
                   {expandedCard === 'pending' && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}

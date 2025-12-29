@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, RefreshCw, Package, AlertTriangle, CheckCircle2, Archive } from 'lucide-react';
+import { Search, RefreshCw, Package, AlertTriangle, CheckCircle2, Archive, CircleDot } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { getEntries, getLocations } from '@/lib/firestore';
@@ -444,9 +444,9 @@ export default function LockerStatusPage() {
                       className={`
                         relative
                         aspect-square
-                        rounded-lg
+                        rounded-md
                         border-2
-                        p-4
+                        p-2
                         flex flex-col
                         items-center
                         justify-center
@@ -455,25 +455,25 @@ export default function LockerStatusPage() {
                         ${getLockerColor(lockerNum)}
                       `}
                     >
-                      <div className="text-2xl md:text-3xl font-bold">
-                        #{lockerNum}
+                      <div className="w-6 h-6 md:w-8 md:h-8">
+                        <CircleDot className={`h-full w-full ${status?.status === 'active' ? 'text-orange-600' : status?.status === 'expired' ? 'text-red-600' : 'text-green-600'}`} />
                       </div>
 
                       {status?.status === 'active' && !isHovered && (
-                        <div className="absolute top-1 right-1">
-                          <Package className="h-5 w-5 text-orange-600" />
+                        <div className="absolute top-1 right-1 w-3 h-3 bg-orange-100 rounded-full flex items-center justify-center">
+                          <Package className="h-2 w-2 text-orange-600" />
                         </div>
                       )}
 
                       {status?.status === 'expired' && !isHovered && (
-                        <div className="absolute top-1 right-1">
-                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                        <div className="absolute top-1 right-1 w-3 h-3 bg-red-100 rounded-full flex items-center justify-center">
+                          <AlertTriangle className="h-2 w-2 text-red-600" />
                         </div>
                       )}
 
                       {(!status || status.status === 'dispatched') && !isHovered && (
-                        <div className="absolute top-1 right-1">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div className="absolute top-1 right-1 w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
+                          <CheckCircle2 className="h-2 w-2 text-green-600" />
                         </div>
                       )}
                     </motion.div>
