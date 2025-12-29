@@ -9,11 +9,13 @@ export const addLocation = async (locationData: {
   venueName: string;
   address: string;
   contactNumber?: string;
+  numberOfLockers?: number;
   createdBy: string;
 }) => {
   try {
     const docRef = await addDoc(collection(db, 'locations'), {
       ...locationData,
+      numberOfLockers: locationData.numberOfLockers || 100,
       isActive: true,
       createdAt: serverTimestamp()
     });
@@ -317,24 +319,40 @@ export const addEntry = async (entryData: {
   operatorId: string;
   paymentMethod: 'cash' | 'upi';
   entryDate?: Date;
+  lockerNumber?: number; // Locker number to assign
 }) => {
   try {
     const entryDate = entryData.entryDate || new Date();
-    
+
     // Validate entry date - prevent backdated entries
- 
+
     // Calculate expiry date
     const expiryDate = new Date(entryDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-    
+
     // Calculate total pots and payment - simplified to single locker per entry
     const totalPots = entryData.totalPots || (entryData.numberOfLockers || 1) * (entryData.potsPerLocker || 1);
     const entryFee = 500; // Fixed ₹500 per entry, not per locker
-    
+
     // Get location details for venue name
     const locations = await getLocations();
     const location = locations.find(loc => loc.id === entryData.locationId);
     const locationName = location?.venueName || 'Unknown Location';
-    
+
+    // Validate locker number
+    const lockerNumber = entryData.lockerNumber || 1;
+    if (location) {
+      const maxLockers = location.numberOfLockers || 100;
+      if (lockerNumber < 1 || lockerNumber > maxLockers) {
+        throw new Error(`Locker number must be between 1 and ${maxLockers}`);
+      }
+
+      // Check if locker is available
+      const isAvailable = await isLockerAvailable(entryData.locationId, lockerNumber);
+      if (!isAvailable) {
+        throw new Error(`Locker ${lockerNumber} is already occupied at this location. Please select a different locker.`);
+      }
+    }
+
     const docRef = await addDoc(collection(db, 'entries'), {
       ...entryData,
       totalPots: totalPots,
@@ -353,7 +371,7 @@ export const addEntry = async (entryData: {
       renewals: [],
       // Track pots per locker for partial dispatches - single locker system
       lockerDetails: [{
-        lockerNumber: 1, // Always locker 1
+        lockerNumber: lockerNumber, // Use the provided locker number
         totalPots: totalPots,
         remainingPots: totalPots, // Initially all pots are remaining
         dispatchedPots: [] // Track which pots have been dispatched
@@ -484,6 +502,72 @@ export const getEntryById = async (entryId: string) => {
     };
   } catch (error) {
     console.error('Error getting entry by ID:', error);
+    throw error;
+  }
+};
+
+// Check if a locker is available at a specific location
+export const isLockerAvailable = async (locationId: string, lockerNumber: number, excludeEntryId?: string) => {
+  try {
+    // Get all active entries for this location
+    const q = query(
+      collection(db, 'entries'),
+      where('locationId', '==', locationId),
+      where('status', '==', 'active')
+    );
+    const querySnapshot = await getDocs(q);
+
+    // Check if any active entry has this locker number
+    for (const doc of querySnapshot.docs) {
+      // Skip the entry if it's the one we're editing (for update scenarios)
+      if (excludeEntryId && doc.id === excludeEntryId) {
+        continue;
+      }
+
+      const entryData = doc.data();
+      // Check if this entry has the specified locker number
+      if (entryData.lockerDetails) {
+        const hasLocker = entryData.lockerDetails.some(
+          (locker: any) => locker.lockerNumber === lockerNumber && locker.remainingPots > 0
+        );
+        if (hasLocker) {
+          return false; // Locker is occupied
+        }
+      }
+    }
+
+    return true; // Locker is available
+  } catch (error) {
+    console.error('Error checking locker availability:', error);
+    throw error;
+  }
+};
+
+// Get all occupied lockers for a location
+export const getOccupiedLockers = async (locationId: string) => {
+  try {
+    const q = query(
+      collection(db, 'entries'),
+      where('locationId', '==', locationId),
+      where('status', '==', 'active')
+    );
+    const querySnapshot = await getDocs(q);
+
+    const occupiedLockers = new Set<number>();
+    querySnapshot.docs.forEach(doc => {
+      const entryData = doc.data();
+      if (entryData.lockerDetails) {
+        entryData.lockerDetails.forEach((locker: any) => {
+          if (locker.remainingPots > 0) {
+            occupiedLockers.add(locker.lockerNumber);
+          }
+        });
+      }
+    });
+
+    return Array.from(occupiedLockers);
+  } catch (error) {
+    console.error('Error getting occupied lockers:', error);
     throw error;
   }
 };

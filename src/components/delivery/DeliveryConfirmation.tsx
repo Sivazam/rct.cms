@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
-import { CheckCircle, Calendar, MapPin, Phone, Package, User, Download, Home, IndianRupee, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Phone, Package, User, Download, Home, IndianRupee, AlertTriangle, Archive } from 'lucide-react';
 import { formatDateTime } from '@/lib/date-utils';
 
 interface Customer {
@@ -24,6 +24,7 @@ interface Entry {
   entryDate: string;
   expiryDate: string;
   pots: number;
+  lockerNumber?: number;
   status: 'active' | 'expired' | 'delivered';
   locationId: string;
   locationName: string;
@@ -258,6 +259,10 @@ export default function DeliveryConfirmation({
               <div>
                 <span className="text-gray-600">Entry Date:</span>
                 <span className="ml-2">{formatDate(entry.entryDate)}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Locker Number:</span>
+                <span className="ml-2 font-semibold">#{entry.lockerNumber || 1}</span>
               </div>
               <div>
                 <span className="text-gray-600">Total Renewals:</span>

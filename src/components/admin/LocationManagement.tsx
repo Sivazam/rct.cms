@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Plus, Edit, Trash2, Phone } from 'lucide-react';
+import { MapPin, Plus, Edit, Trash2, Phone, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { addLocation, getLocations, updateLocation, deleteLocation } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +19,7 @@ interface Location {
   address: string;
   contactNumber?: string;
   isActive: boolean;
+  numberOfLockers?: number;
   createdAt: any;
 }
 
@@ -37,7 +38,8 @@ export default function LocationManagement({ onLocationsUpdated }: LocationManag
   const [formData, setFormData] = useState({
     venueName: '',
     address: '',
-    contactNumber: ''
+    contactNumber: '',
+    numberOfLockers: 100
   });
 
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function LocationManagement({ onLocationsUpdated }: LocationManag
       
       setIsDialogOpen(false);
       setEditingLocation(null);
-      setFormData({ venueName: '', address: '', contactNumber: '' });
+      setFormData({ venueName: '', address: '', contactNumber: '', numberOfLockers: 100 });
       fetchLocations();
       // Notify parent component that locations were updated
       if (onLocationsUpdated) {
@@ -96,7 +98,8 @@ export default function LocationManagement({ onLocationsUpdated }: LocationManag
     setFormData({
       venueName: location.venueName,
       address: location.address,
-      contactNumber: location.contactNumber || ''
+      contactNumber: location.contactNumber || '',
+      numberOfLockers: location.numberOfLockers || 100
     });
     setIsDialogOpen(true);
   };
@@ -121,7 +124,7 @@ export default function LocationManagement({ onLocationsUpdated }: LocationManag
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingLocation(null);
-    setFormData({ venueName: '', address: '', contactNumber: '' });
+    setFormData({ venueName: '', address: '', contactNumber: '', numberOfLockers: 100 });
     setError('');
   };
 
@@ -189,6 +192,22 @@ export default function LocationManagement({ onLocationsUpdated }: LocationManag
                   placeholder="+91XXXXXXXXXX"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="numberOfLockers">Number of Lockers *</Label>
+                <Input
+                  id="numberOfLockers"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={formData.numberOfLockers}
+                  onChange={(e) => setFormData(prev => ({ ...prev, numberOfLockers: parseInt(e.target.value) || 1 }))}
+                  required
+                  placeholder="Enter number of lockers (e.g., 350)"
+                />
+                <p className="text-xs text-gray-500">
+                  Total lockers available at this location (1-1000)
+                </p>
+              </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={handleDialogClose}>
                   Cancel
@@ -249,12 +268,18 @@ export default function LocationManagement({ onLocationsUpdated }: LocationManag
                       <CardDescription className="mt-1">
                         {location.address}
                       </CardDescription>
-                      {location.contactNumber && (
-                        <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
-                          <Phone className="h-4 w-4" />
-                          <span>{location.contactNumber}</span>
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                        {location.contactNumber && (
+                          <div className="flex items-center space-x-1">
+                            <Phone className="h-4 w-4" />
+                            <span>{location.contactNumber}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-1">
+                          <Archive className="h-4 w-4" />
+                          <span>{location.numberOfLockers || 100} Lockers</span>
                         </div>
-                      )}
+                      </div>
                     </div>
                     <div className="flex space-x-2">
                       <Button

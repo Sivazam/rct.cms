@@ -22,6 +22,7 @@ interface Entry {
   customerName: string;
   customerMobile: string;
   numberOfPots: number;
+  lockerNumber?: number;
   expiryDate: any;
   locationId: string;
   payments: Array<{
@@ -71,12 +72,12 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
   }, [formData.renewalMonths, entry]);
 
   const calculateRenewalSummary = () => {
-    // Calculate based on number of lockers, not pots
-    const numberOfLockers = entry.numberOfLockers || 1;
-    const amount = formData.renewalMonths * RENEWAL_RATE_PER_MONTH * numberOfLockers;
+    // Calculate based on 1 locker with selected locker number
+    const lockerNumber = entry.lockerNumber || 1;
+    const amount = formData.renewalMonths * RENEWAL_RATE_PER_MONTH * 1; // Only 1 locker per entry
     const currentExpiry = new Date(entry.expiryDate?.toDate?.() || entry.expiryDate);
     const newExpiryDate = new Date(currentExpiry.getTime() + (formData.renewalMonths * 30 * 24 * 60 * 60 * 1000));
-    
+
     // Calculate total months from original entry
     const totalMonths = entry.payments.reduce((sum, payment) => sum + payment.months, 0) + formData.renewalMonths;
 
@@ -311,7 +312,7 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
                   <SelectItem value="12">12 Months</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">₹{RENEWAL_RATE_PER_MONTH} per month per locker</p>
+              <p className="text-xs text-blue-500">₹{RENEWAL_RATE_PER_MONTH} per month (1 locker)</p>
             </div>
 
             <div className="space-y-2">
@@ -352,10 +353,8 @@ export default function RenewalForm({ entry, onSuccess, onCancel, loading = fals
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-blue-800">Number of Lockers:</span>
-                <span className="text-sm font-medium text-blue-800">
-                  {entry.numberOfLockers || 1}
-                </span>
+                <span className="text-sm text-blue-800">Locker Number:</span>
+                <span className="text-sm font-medium">#{entry.lockerNumber || 1}</span>
               </div>
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between">

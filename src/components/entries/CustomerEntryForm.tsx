@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, MapPin, Package, DollarSign, Calendar } from 'lucide-react';
+import { User, Phone, MapPin, Package, DollarSign, Calendar, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { addCustomer, addEntry, getLocations } from '@/lib/firestore';
+import { addCustomer, addEntry, getLocations, getOccupiedLockers } from '@/lib/firestore';
 import SMSService from '@/lib/sms-service';
 import { sendSMS, SMSTemplates } from '@/lib/sms';
 import { useSMSDialog, SMSDialog } from '@/lib/sms-dialog';
@@ -48,15 +48,24 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
     totalPots: 1, // Total pots (single locker system)
     paymentMethod: 'cash' as 'cash' | 'upi',
     locationId: '',
+    lockerNumber: 1, // Default to locker 1
     entryDate: new Date() // Default to today's date
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [locations, setLocations] = useState<any[]>([]);
+  const [occupiedLockers, setOccupiedLockers] = useState<number[]>([]);
 
   useEffect(() => {
     fetchLocations();
   }, []);
+
+  // Fetch occupied lockers when location changes
+  useEffect(() => {
+    if (formData.locationId) {
+      fetchOccupiedLockers();
+    }
+  }, [formData.locationId]);
 
   const fetchLocations = async () => {
     try {
@@ -65,6 +74,17 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
     } catch (error) {
       console.error('Error fetching locations:', error);
       setLocations([]); // Set empty array instead of fallback data
+    }
+  };
+
+  const fetchOccupiedLockers = async () => {
+    if (!formData.locationId) return;
+    try {
+      const occupied = await getOccupiedLockers(formData.locationId);
+      setOccupiedLockers(occupied);
+    } catch (error) {
+      console.error('Error fetching occupied lockers:', error);
+      setOccupiedLockers([]);
     }
   };
 
@@ -109,13 +129,12 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         customerName: formData.deceasedPersonName, // Use deceased person name as customer name
         customerMobile: formData.mobile,
         deceasedPersonName: formData.deceasedPersonName,
-        numberOfLockers: 1, // Always 1 locker
-        potsPerLocker: formData.totalPots, // Total pots in the single locker
         totalPots: formData.totalPots, // Total pots directly
         locationId: formData.locationId,
         operatorId: user.uid,
         paymentMethod: formData.paymentMethod,
-        entryDate: formData.entryDate
+        entryDate: formData.entryDate,
+        lockerNumber: formData.lockerNumber // Use selected locker number
       });
 
       // Get location name for response
@@ -129,9 +148,8 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         customerMobile: formData.mobile,
         customerCity: formData.city,
         deceasedPersonName: formData.deceasedPersonName,
-        numberOfLockers: 1, // Always 1 locker
-        potsPerLocker: formData.totalPots,
         totalPots: formData.totalPots,
+        lockerNumber: formData.lockerNumber, // Include locker number
         entryDate: new Date(),
         expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         locationName: location?.venueName || 'Unknown Location',
@@ -280,26 +298,59 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
                 />
                 <p className="text-xs text-gray-500">Entry date cannot be in the future</p>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="locationId">Location *</Label>
-              <Select 
-                value={formData.locationId} 
-                onValueChange={(value) => handleChange('locationId', value)}
-                disabled={submitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.venueName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="locationId">Location *</Label>
+                <Select
+                  value={formData.locationId}
+                  onValueChange={(value) => handleChange('locationId', value)}
+                  disabled={submitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.venueName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.locationId && (
+                <div className="space-y-2">
+                  <Label htmlFor="lockerNumber">Locker Number *</Label>
+                  <Input
+                    id="lockerNumber"
+                    type="number"
+                    min="1"
+                    max={locations.find(l => l.id === formData.locationId)?.numberOfLockers || 100}
+                    value={formData.lockerNumber}
+                    onChange={(e) => handleChange('lockerNumber', parseInt(e.target.value) || 1)}
+                    required
+                    disabled={submitting}
+                    placeholder="Enter locker number"
+                  />
+                  <div className="flex items-center space-x-2 text-xs">
+                    <Archive className="h-4 w-4" />
+                    <span className="text-gray-500">
+                      Total lockers: {locations.find(l => l.id === formData.locationId)?.numberOfLockers || 100}
+                    </span>
+                    {occupiedLockers.length > 0 && (
+                      <span className="text-gray-500">
+                        (Occupied: {occupiedLockers.sort((a, b) => a - b).join(', ')})
+                      </span>
+                    )}
+                  </div>
+                  {occupiedLockers.includes(formData.lockerNumber) && (
+                    <p className="text-xs text-red-600 font-medium">
+                      ⚠️ Locker {formData.lockerNumber} is already occupied
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Payment Summary */}
@@ -315,7 +366,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
               </div>
               <div className="mt-2 text-sm text-foreground">
                 <p>Entry Fee: ₹500 (fixed)</p>
-                <p>Number of Lockers: 1 (fixed)</p>
+                <p>Locker Number: {formData.lockerNumber}</p>
                 <p>Total Pots: {formData.totalPots}</p>
                 <p>Storage Period: 30 days</p>
                 <p className="font-semibold">Total Amount: ₹500</p>

@@ -6,14 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
+import {
+  Search,
   Calculator,
-  CheckCircle, 
+  CheckCircle,
   Calendar,
   Package,
   ArrowLeft,
-  RotateCcw
+  RotateCcw,
+  Archive
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -36,6 +37,7 @@ interface Entry {
   entryDate: string;
   expiryDate: string;
   pots: number;
+  lockerNumber?: number;
   status: 'active' | 'expired' | 'dispatched';
   locationId: string;
   locationName: string;

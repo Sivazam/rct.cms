@@ -1,0 +1,100 @@
+ ⚠ Runtime config is deprecated and the `serverRuntimeConfig` configuration option will be removed in Next.js 16.
+   ▲ Next.js 15.5.7
+   - Local:        http://localhost:3000
+   - Network:      http://21.0.11.162:3000
+
+ ✓ Starting...
+ ✓ Ready in 1787ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 780ms (114 modules)
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ ○ Compiling /admin-dashboard/orders ...
+ ✓ Compiled /admin-dashboard/orders in 9.4s (1099 modules)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET /admin-dashboard/orders 200 in 10288ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3.8s (1396 modules)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET / 200 in 4502ms
+ ⚠ Cross origin request detected from preview-chat-ceb53e03-6933-4fbc-a00b-d6a27c7729df.space.z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ GET /admin-dashboard/orders 200 in 142ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ ○ Compiling /api/admin/notifications ...
+ ✓ Compiled /api/admin/notifications in 2.7s (1620 modules)
+ GET /api/admin/notifications 401 in 3583ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/discounts
+ ○ Compiling /admin-dashboard/discounts ...
+ ✓ Compiled /admin-dashboard/discounts in 1247ms (1637 modules)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET /admin-dashboard/discounts 200 in 1932ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/variants
+ ○ Compiling /admin-dashboard/variants ...
+ ✓ Compiled /admin-dashboard/variants in 1274ms (1646 modules)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET /admin-dashboard/variants 200 in 1383ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/products
+ ○ Compiling /admin-dashboard/products ...
+ ✓ Compiled /admin-dashboard/products in 1834ms (1655 modules)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET /admin-dashboard/products 200 in 1987ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ GET /admin-dashboard/orders 200 in 115ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 137ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 40ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 49ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 16ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 28ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 12ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 10ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 10ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 11ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 46ms
+Middleware: Skipping authentication for admin route: /api/admin/notifications
+ GET /api/admin/notifications 401 in 14ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1571ms (1664 modules)
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET /admin-dashboard/orders 404 in 1762ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ GET /admin-dashboard/orders 200 in 1627ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ GET /admin-dashboard/orders 200 in 460ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ GET /admin-dashboard/orders 200 in 124ms
+ ✓ Compiled in 1550ms (1554 modules)
+ ○ Compiling /api/debug/firebase ...
+ ✓ Compiled /api/debug/firebase in 1182ms (1573 modules)
+Debug API: Testing Firebase connection...
+Debug API: Found 40 orders
+Debug API: First order sample: {
+  id: "1JwqVmdlxt2a6LxeeZ8N",
+  orderNumber: "RUD05468354",
+  userId: "+919014882779",
+  status: "pending",
+  customerInfo: "exists",
+  items: "1 items",
+}
+ GET /api/debug/firebase 200 in 1914ms
+Middleware: Skipping authentication for admin route: /api/admin/orders
+ ○ Compiling /api/admin/orders ...
+ ✓ Compiled /api/admin/orders in 1508ms (1660 modules)
+Admin API: Fetching orders from Firestore...
+Admin API: Found 40 orders
+Admin API: Returning 10 orders for page 1
+ GET /api/admin/orders 200 in 1975ms
+Middleware: Skipping authentication for admin route: /admin-dashboard/orders
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ GET /admin-dashboard/orders 200 in 352ms
