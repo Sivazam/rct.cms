@@ -109,6 +109,7 @@ export default function RenewalsList() {
               customerMobile: entry.customerMobile,
               customerCity: entry.customerCity,
               numberOfPots: entry.numberOfPots,
+              lockerNumber: entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined,
               renewalDate: renewal.date,
               months: renewal.months,
               amount: renewal.amount,

@@ -19,6 +19,12 @@ interface Entry {
   customerCity: string;
   numberOfPots: number;
   lockerNumber?: number;
+  lockerDetails?: Array<{
+    lockerNumber: number;
+    totalPots: number;
+    remainingPots: number;
+    dispatchedPots: string[];
+  }>;
   entryDate: any;
   expiryDate: any;
   status: 'active' | 'expired' | 'delivered' | 'disposed';
@@ -354,6 +360,11 @@ export default function EntriesList() {
                       <Package className="h-3 w-3" />
                       <span>{entry.numberOfPots}</span>
                     </div>
+                  </div>
+                  {/* Locker */}
+                  <div className="flex items-center space-x-1 text-sm font-medium text-primary mb-3">
+                    <Archive className="h-3 w-3" />
+                    <span>Locker {entry.lockerNumber || 'N/A'}</span>
                   </div>
                 </div>
 
