@@ -89,7 +89,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       // Process entries with renewals
       allEntries.forEach(entry => {
         // Add the initial entry as an activity
-        const lockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
+        const entryLockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
         allActivities.push({
           id: `entry-${entry.id}`,
           type: 'entry',
@@ -107,7 +107,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
         // Add renewals as separate activities
         if (entry.renewals && Array.isArray(entry.renewals)) {
           entry.renewals.forEach((renewal: any, index: number) => {
-            const lockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
+            const renewalLockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
             allActivities.push({
               id: `renewal-${entry.id}-${index}`,
               type: 'renewal',
@@ -119,13 +119,13 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
               timestamp: renewal.date,
               amount: renewal.amount,
               operatorName: entry.operatorName,
-              lockerNumber: lockerNum
+              lockerNumber: renewalLockerNum
             });
           });
         }
 
         // Add delivery as activity if dispatched
-        const lockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
+        const deliveryLockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
         if (entry.status === 'dispatched' && entry.deliveryDate) {
           allActivities.push({
             id: `delivery-${entry.id}`,
@@ -138,7 +138,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             timestamp: entry.deliveryDate,
             status: entry.status,
             operatorName: entry.operatorName,
-            lockerNumber: lockerNum
+            lockerNumber: deliveryLockerNum
           });
           
           // Mark this entry as dispatched to avoid duplicate from dispatchedLockers
@@ -154,7 +154,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
         
         // Skip if this entry is already marked as dispatched (to avoid duplicates)
         if (dispatchInfo && originalEntryData && !dispatchedEntryIds.has(dispatchedLocker.entryId)) {
-          const lockerNum = originalEntryData.lockerDetails && originalEntryData.lockerDetails[0] ? originalEntryData.lockerDetails[0].lockerNumber : undefined;
+          const partialDispatchLockerNum = originalEntryData.lockerDetails && originalEntryData.lockerDetails[0] ? originalEntryData.lockerDetails[0].lockerNumber : undefined;
           allActivities.push({
             id: `partial-dispatch-${dispatchedLocker.id}`,
             type: 'partial-dispatch',
@@ -168,7 +168,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             operatorName: dispatchInfo.dispatchedBy,
             potsDispatched: dispatchInfo.potsDispatched,
             remainingPots: dispatchInfo.totalRemainingPots,
-            lockerNumber: lockerNum
+            lockerNumber: partialDispatchLockerNum
           });
         } else if (dispatchInfo && originalEntryData && dispatchedEntryIds.has(dispatchedLocker.entryId)) {
           // Log skipped duplicates for debugging
