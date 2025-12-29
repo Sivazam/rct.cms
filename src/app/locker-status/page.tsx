@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, RefreshCw, Package, Archive, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Search, RefreshCw, Package, AlertTriangle, CheckCircle2, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { getEntries, getLocations } from '@/lib/firestore';
