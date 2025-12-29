@@ -63,6 +63,14 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
       isMain: true
     },
     {
+      id: 'lockers',
+      label: 'Locker Status',
+      icon: <Archive className="h-5 w-5" />,
+      href: '/locker-status',
+      isMain: true,
+      badge: 1  // New menu item
+    },
+    {
       id: 'operators',
       label: 'Operators',
       icon: <Users className="h-5 w-5" />,
