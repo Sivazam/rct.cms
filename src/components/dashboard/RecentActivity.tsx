@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Calendar,
   Phone,
-  MapPin
+  MapPin,
+  Archive
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatFirestoreDate } from '@/lib/date-utils';
@@ -33,6 +34,7 @@ interface Activity {
   operatorName?: string;
   potsDispatched?: number;
   remainingPots?: number;
+  lockerNumber?: number;
 }
 
 interface RecentActivityProps {
@@ -87,6 +89,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       // Process entries with renewals
       allEntries.forEach(entry => {
         // Add the initial entry as an activity
+        const lockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
         allActivities.push({
           id: `entry-${entry.id}`,
           type: 'entry',
@@ -97,12 +100,14 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           locationName: getLocationName(entry.locationId),
           timestamp: entry.entryDate,
           status: entry.status,
-          operatorName: entry.operatorName
+          operatorName: entry.operatorName,
+          lockerNumber: lockerNum
         });
 
         // Add renewals as separate activities
         if (entry.renewals && Array.isArray(entry.renewals)) {
           entry.renewals.forEach((renewal: any, index: number) => {
+            const lockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
             allActivities.push({
               id: `renewal-${entry.id}-${index}`,
               type: 'renewal',
@@ -113,12 +118,14 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
               locationName: getLocationName(entry.locationId),
               timestamp: renewal.date,
               amount: renewal.amount,
-              operatorName: entry.operatorName
+              operatorName: entry.operatorName,
+              lockerNumber: lockerNum
             });
           });
         }
 
         // Add delivery as activity if dispatched
+        const lockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
         if (entry.status === 'dispatched' && entry.deliveryDate) {
           allActivities.push({
             id: `delivery-${entry.id}`,
@@ -130,7 +137,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             locationName: getLocationName(entry.locationId),
             timestamp: entry.deliveryDate,
             status: entry.status,
-            operatorName: entry.operatorName
+            operatorName: entry.operatorName,
+            lockerNumber: lockerNum
           });
           
           // Mark this entry as dispatched to avoid duplicate from dispatchedLockers
@@ -146,6 +154,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
         
         // Skip if this entry is already marked as dispatched (to avoid duplicates)
         if (dispatchInfo && originalEntryData && !dispatchedEntryIds.has(dispatchedLocker.entryId)) {
+          const lockerNum = originalEntryData.lockerDetails && originalEntryData.lockerDetails[0] ? originalEntryData.lockerDetails[0].lockerNumber : undefined;
           allActivities.push({
             id: `partial-dispatch-${dispatchedLocker.id}`,
             type: 'partial-dispatch',
@@ -158,7 +167,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             status: dispatchInfo.dispatchType,
             operatorName: dispatchInfo.dispatchedBy,
             potsDispatched: dispatchInfo.potsDispatched,
-            remainingPots: dispatchInfo.totalRemainingPots
+            remainingPots: dispatchInfo.totalRemainingPots,
+            lockerNumber: lockerNum
           });
         } else if (dispatchInfo && originalEntryData && dispatchedEntryIds.has(dispatchedLocker.entryId)) {
           // Log skipped duplicates for debugging
@@ -304,8 +314,15 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start space-x-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                  {getActivityIcon(activity.type)}
+                <div className="relative">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  {activity.lockerNumber && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold border-2 border-white dark:border-gray-800">
+                      {activity.lockerNumber}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex-1 min-w-0">
