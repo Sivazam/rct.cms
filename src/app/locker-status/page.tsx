@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, RefreshCw, Package, AlertTriangle, CheckCircle2, Archive, CircleDot } from 'lucide-react';
+import { Search, RefreshCw, Package, Archive, AlertTriangle, CheckCircle2, CircleDot, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { getEntries, getLocations } from '@/lib/firestore';
+import { formatFirestoreDate } from '@/lib/date-utils';
 
 interface Entry {
   id: string;
@@ -50,15 +51,13 @@ type SearchType = 'all' | 'customer' | 'locker';
 
 export default function LockerStatusPage() {
   const { user } = useAuth();
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [selectedLocationId, setSelectedLocationId] = useState<string>('all');
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [lockerStatusMap, setLockerStatusMap] = useState<Map<number, LockerStatus>>(new Map());
+  const [locations, setLocations] = useState([]);
+  const [selectedLocationId, setSelectedLocationId] = useState('all');
+  const [entries, setEntries] = useState([]);
+  const [lockerStatusMap, setLockerStatusMap] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState<SearchType>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [hoveredLocker, setHoveredLocker] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const LOCKERS_PER_PAGE = 100;
 
@@ -86,7 +85,7 @@ export default function LockerStatusPage() {
   useEffect(() => {
     if (entries.length === 0) return;
 
-    const newStatusMap = new Map<number, LockerStatus>();
+    const newStatusMap = new Map();
 
     entries.forEach(entry => {
       if (!entry.lockerDetails || entry.lockerDetails.length === 0) return;
@@ -96,14 +95,20 @@ export default function LockerStatusPage() {
 
       if (selectedLocationId !== 'all' && locationId !== selectedLocationId) return;
 
-      let status: LockerStatus['status'];
+      let status: LockerStatus['status'] = 'available';
 
       if (entry.status === 'dispatched' || entry.status === 'disposed') {
         status = 'dispatched';
       } else if (entry.expiryDate) {
         const expiry = new Date(entry.expiryDate);
         const now = new Date();
-        status = expiry <= now ? 'expired' : 'active';
+        const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilExpiry < 0) {
+          status = 'expired';
+        } else {
+          status = 'active';
+        }
       } else {
         status = 'active';
       }
@@ -147,16 +152,12 @@ export default function LockerStatusPage() {
 
     const term = searchTerm.toLowerCase();
 
-    if (searchType === 'customer' || searchType === 'all') {
-      if (lockerStatus?.customerName?.toLowerCase().includes(term)) {
-        return true;
-      }
+    if (lockerStatus?.customerName?.toLowerCase().includes(term)) {
+      return true;
     }
 
-    if (searchType === 'locker' || searchType === 'all') {
-      if (lockerNum.toString().includes(term)) {
-        return true;
-      }
+    if (lockerNum.toString().includes(term)) {
+      return true;
     }
 
     return false;
@@ -195,31 +196,26 @@ export default function LockerStatusPage() {
 
   const statusCounts = getStatusCounts();
 
-  const getLockerColor = (lockerNum: number) => {
-    const status = lockerStatusMap.get(lockerNum);
-
-    if (!status) {
-      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 hover:scale-105 transition-transform cursor-default';
-    } else if (status.status === 'active') {
-      return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 hover:scale-105 transition-transform cursor-pointer hover:shadow-md';
-    } else if (status.status === 'expired') {
-      return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800 hover:scale-105 transition-transform cursor-pointer hover:shadow-md';
-    } else {
-      return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 hover:scale-105 transition-transform cursor-default';
-    }
+  const getLockerColorClass = (status) => {
+    if (!status) return 'bg-green-100 text-green-800 border-green-200 hover:scale-105 cursor-default';
+    if (status === 'active') return 'bg-orange-100 text-orange-800 border-orange-200 hover:scale-105 hover:shadow-md cursor-pointer';
+    if (status === 'expired') return 'bg-red-100 text-red-800 border-red-200 hover:scale-105 hover:shadow-md cursor-pointer';
+    return 'bg-green-100 text-green-800 border-green-200 hover:scale-105 cursor-default';
   };
 
-  const getGridCols = () => {
-    if (typeof window !== 'undefined') {
-      if (window.innerWidth >= 1280) return 8;
-      if (window.innerWidth >= 1024) return 6;
-      if (window.innerWidth >= 768) return 4;
-      return 2;
-    }
-    return 8;
+  const getDotColorClass = (status) => {
+    if (!status) return 'text-green-600';
+    if (status === 'active') return 'text-orange-600';
+    if (status === 'expired') return 'text-red-600';
+    return 'text-green-600';
   };
 
-  const gridCols = getGridCols();
+  const getStatusIcon = (status) => {
+    if (!status || status === 'dispatched') return <CheckCircle2 className="h-1 w-1 text-white" />;
+    if (status === 'active') return <Package className="h-1 w-1 text-white" />;
+    if (status === 'expired') return <AlertTriangle className="h-1 w-1 text-white" />;
+    return <CheckCircle2 className="h-1 w-1 text-white" />;
+  };
 
   if (loading) {
     return (
@@ -274,7 +270,7 @@ export default function LockerStatusPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Status Filter</label>
-                <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
@@ -289,9 +285,9 @@ export default function LockerStatusPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Search By</label>
-                <Select value={searchType} onValueChange={(value: any) => setSearchType(value)}>
+                <Select value={searchTerm} onValueChange={(e) => setSearchTerm(e.target.value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Search type" />
+                    <SelectValue placeholder="Search customer or locker..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Fields</SelectItem>
@@ -301,7 +297,7 @@ export default function LockerStatusPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Search</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -333,19 +329,19 @@ export default function LockerStatusPage() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
               <div className="p-4 bg-white rounded-lg border-2 border-green-200 shadow-sm">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{statusCounts.available}</div>
+                <div className="text-2xl font-bold text-green-600">{statusCounts.available}</div>
                 <div className="text-sm text-gray-600">Available</div>
               </div>
               <div className="p-4 bg-white rounded-lg border-2 border-orange-200 shadow-sm">
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{statusCounts.active}</div>
+                <div className="text-2xl font-bold text-orange-600">{statusCounts.active}</div>
                 <div className="text-sm text-gray-600">Active</div>
               </div>
               <div className="p-4 bg-white rounded-lg border-2 border-red-200 shadow-sm">
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{statusCounts.expired}</div>
+                <div className="text-2xl font-bold text-red-600">{statusCounts.expired}</div>
                 <div className="text-sm text-gray-600">Pending Renewal</div>
               </div>
               <div className="p-4 bg-white rounded-lg border-2 border-blue-200 shadow-sm">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{statusCounts.total}</div>
+                <div className="text-2xl font-bold text-blue-600">{statusCounts.total}</div>
                 <div className="text-sm text-gray-600">Total Lockers</div>
               </div>
             </div>
@@ -379,7 +375,7 @@ export default function LockerStatusPage() {
                 {selectedLocation?.venueName || 'All Locations'}
                 {selectedLocation && (
                   <span className="text-lg font-normal text-gray-600">
-                    {` - ${searchedLockers.length} of ${totalLockers} Lockers`}
+                    {searchedLockers.length} of {totalLockers} Lockers
                   </span>
                 )}
               </CardTitle>
@@ -423,14 +419,10 @@ export default function LockerStatusPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="grid gap-3"
-                style={{
-                  gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`
-                }}
+                className="grid gap-2 grid-cols-14 xl:grid-cols-16 lg:grid-cols-12 md:grid-cols-8"
               >
                 {paginatedLockers.map((lockerNum) => {
                   const status = lockerStatusMap.get(lockerNum);
-                  const isHovered = hoveredLocker === lockerNum;
 
                   return (
                     <motion.div
@@ -439,43 +431,23 @@ export default function LockerStatusPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.2 }}
                       whileHover={{ scale: 1.05 }}
-                      onHoverStart={() => setHoveredLocker(lockerNum)}
-                      onHoverEnd={() => setHoveredLocker(null)}
-                      className={`
-                        relative
-                        aspect-square
-                        rounded-md
-                        border-2
-                        p-2
-                        flex flex-col
-                        items-center
-                        justify-center
-                        cursor-pointer
-                        transition-all
-                        ${getLockerColor(lockerNum)}
-                      `}
+                      className={'relative aspect-square rounded-sm border-2 p-1 flex flex-col items-center justify-center cursor-pointer transition-all ' + getLockerColorClass(status)}
                     >
-                      <div className="w-6 h-6 md:w-8 md:h-8">
-                        <CircleDot className={`h-full w-full ${status?.status === 'active' ? 'text-orange-600' : status?.status === 'expired' ? 'text-red-600' : 'text-green-600'}`} />
+                      <div className="relative w-full h-full flex flex-col items-center justify-center">
+                        <div className="w-3 h-3 md:w-4 md:h-4">
+                          <CircleDot className={'h-full w-full ' + getDotColorClass(status)} />
+                        </div>
+
+                        <div className="text-[10px] md:text-xs font-medium mt-0.5">
+                          #{lockerNum}
+                        </div>
+
+                        {status && (
+                          <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full flex items-center justify-center shadow-md">
+                            {getStatusIcon(status)}
+                          </div>
+                        )}
                       </div>
-
-                      {status?.status === 'active' && !isHovered && (
-                        <div className="absolute top-1 right-1 w-3 h-3 bg-orange-100 rounded-full flex items-center justify-center">
-                          <Package className="h-2 w-2 text-orange-600" />
-                        </div>
-                      )}
-
-                      {status?.status === 'expired' && !isHovered && (
-                        <div className="absolute top-1 right-1 w-3 h-3 bg-red-100 rounded-full flex items-center justify-center">
-                          <AlertTriangle className="h-2 w-2 text-red-600" />
-                        </div>
-                      )}
-
-                      {(!status || status.status === 'dispatched') && !isHovered && (
-                        <div className="absolute top-1 right-1 w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
-                          <CheckCircle2 className="h-2 w-2 text-green-600" />
-                        </div>
-                      )}
                     </motion.div>
                   );
                 })}
@@ -487,7 +459,7 @@ export default function LockerStatusPage() {
         <Card className="md:hidden">
           <CardContent className="pt-4">
             <p className="text-sm text-gray-600">
-              <strong>Tip:</strong> Tap on a locker to see details. Lockers in green are available.
+              <strong>Tip:</strong> Lockers in green are available. Tap to see details (coming soon).
             </p>
           </CardContent>
         </Card>

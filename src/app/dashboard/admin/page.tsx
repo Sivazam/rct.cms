@@ -310,12 +310,6 @@ export default function AdminDashboard() {
       url.searchParams.set('tab', tab);
       window.history.pushState({}, '', url.toString());
     }
-    // Navigate to Locker Status page
-    if (tab === 'lockers') {
-      if (typeof window !== 'undefined' && window.location.pathname !== '/locker-status') {
-        window.location.href = '/locker-status';
-      }
-    }
   };
 
   const handleLogout = async () => {
