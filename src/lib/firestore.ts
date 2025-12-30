@@ -1054,8 +1054,14 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       totalRenewals: totalRenewals,
       totalDeliveries: totalDeliveries, // Now from unified dispatch records
       currentActive: locationId ?
-        entries.filter(e => e.status === 'active' && e.locationId === locationId).length :
-        entries.filter(e => e.status === 'active').length, // Filter by location if specified
+        entries.filter(e => {
+          const expiryDate = e.expiryDate?.toDate?.() || new Date(e.expiryDate);
+          return e.status === 'active' && e.locationId === locationId && expiryDate > now;
+        }).length :
+        entries.filter(e => {
+          const expiryDate = e.expiryDate?.toDate?.() || new Date(e.expiryDate);
+          return e.status === 'active' && expiryDate > now;
+        }).length, // Only count non-expired active entries
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
       renewalCollections: totalRenewalCollections,

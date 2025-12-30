@@ -107,9 +107,20 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
       if (entry.status === 'dispatched' || entry.status === 'disposed') {
         status = 'dispatched';
       } else if (entry.expiryDate) {
-        const expiry = new Date(entry.expiryDate);
+        // Handle both Firestore Timestamp and JavaScript Date
+        let expiry: Date;
+        if (typeof (entry.expiryDate as any).toDate === 'function') {
+          expiry = (entry.expiryDate as any).toDate();
+        } else if (entry.expiryDate instanceof Date) {
+          expiry = entry.expiryDate;
+        } else {
+          expiry = new Date(entry.expiryDate);
+        }
+
         const now = new Date();
         const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        console.log(`🔍 [Locker Status] Entry: ${entry.customerName}, Locker: ${lockerNum}, Expiry: ${expiry.toISOString()}, Now: ${now.toISOString()}, Days: ${daysUntilExpiry}, Status: ${entry.status}`);
 
         if (daysUntilExpiry < 0) {
           status = 'expired';
