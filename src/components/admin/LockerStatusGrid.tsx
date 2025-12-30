@@ -417,7 +417,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="grid gap-2 grid-cols-14 xl:grid-cols-16 lg:grid-cols-12 md:grid-cols-8"
+              className="grid gap-2 grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-14 2xl:grid-cols-16"
             >
               {paginatedLockers.map((lockerNum) => {
                 const lockerStatus = lockerStatusMap.get(lockerNum);

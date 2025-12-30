@@ -561,20 +561,6 @@ export default function AdminDashboard() {
                   )}
 
                   {/* Pending Ash Pots Details */}
-
-              {/* Locker Status */}
-              {activeTab === 'lockers' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="bg-white rounded-lg border p-6 shadow-sm"
-                >
-                  <LockerStatusGrid initialLocationId={navbarLocation} onLocationChange={setNavbarLocation} />
-                </motion.div>
-              )}
-
-              {/* Active Ash Pots Details */}
                   {expandedCard === 'pending' && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
@@ -798,6 +784,16 @@ export default function AdminDashboard() {
             )}
 
             {/* Other Tabs */}
+            {activeTab === 'lockers' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white rounded-lg border p-6 shadow-sm"
+              >
+                <LockerStatusGrid initialLocationId={navbarLocation} onLocationChange={setNavbarLocation} />
+              </motion.div>
+            )}
             {activeTab === 'operators' && <OperatorManagement />}
             {activeTab === 'analytics' && <OperatorPerformance />}
             {activeTab === 'settings' && <AdminSettings />}
