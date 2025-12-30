@@ -71,15 +71,20 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
   const fetchActivities = async (showAll: boolean = false) => {
     try {
       setLoading(true);
-      
+      console.log('🔄 [RecentActivity] Fetching activities with filters:', { locationId, dateRange, showAll });
+
       // Fetch all entries and dispatched lockers
-      const allEntries = await getEntries({ 
-        locationId: locationId === 'all' ? undefined : locationId 
+      const allEntries = await getEntries({
+        locationId: locationId === 'all' ? undefined : locationId
       });
-      
-      const dispatchedLockers = await getDispatchedLockers({ 
-        locationId: locationId === 'all' ? undefined : locationId 
+
+      console.log('🔄 [RecentActivity] Fetched entries:', allEntries.length);
+
+      const dispatchedLockers = await getDispatchedLockers({
+        locationId: locationId === 'all' ? undefined : locationId
       });
+
+      console.log('🔄 [RecentActivity] Fetched dispatched lockers:', dispatchedLockers.length);
 
       const allActivities: Activity[] = [];
 
@@ -183,6 +188,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
         return dateB.getTime() - dateA.getTime();
       });
 
+      console.log('🔄 [RecentActivity] Total activities created:', allActivities.length);
+
       // Apply date range filtering if specified
       let filteredActivities = allActivities;
       if (dateRange) {
@@ -190,13 +197,16 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           const activityDate = activity.timestamp?.toDate ? activity.timestamp.toDate() : new Date(activity.timestamp);
           return activityDate >= dateRange.from && activityDate <= dateRange.to;
         });
+        console.log('🔄 [RecentActivity] Activities after date range filter:', filteredActivities.length);
       }
 
       // Always fetch more data but limit display
       const activityLimit = 100; // Fetch more data for better sorting
-      setActivities(filteredActivities.slice(0, activityLimit));
+      const displayedActivities = filteredActivities.slice(0, activityLimit);
+      console.log('🔄 [RecentActivity] Activities to display:', displayedActivities.length);
+      setActivities(displayedActivities);
     } catch (error) {
-      console.error('Error fetching activities:', error);
+      console.error('❌ [RecentActivity] Error fetching activities:', error);
     } finally {
       setLoading(false);
     }
@@ -211,13 +221,9 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return <Truck className="h-4 w-4" />;
       case 'partial-dispatch':
-      case 'full-dispatch':
-        return 'secondary';
-      case 'full-dispatch':
-        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+        return <Archive className="h-4 w-4" />;
       case 'full-dispatch':
         return <Package className="h-4 w-4" />;
-        return <Truck className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
@@ -232,12 +238,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
       case 'partial-dispatch':
+        return 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
       case 'full-dispatch':
-        return 'secondary';
-      case 'full-dispatch':
-        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
-      case 'full-dispatch':
-        return <Package className="h-4 w-4" />;
         return 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
       default:
         return 'bg-muted text-muted-foreground border-border';
@@ -253,13 +255,9 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return 'outline';
       case 'partial-dispatch':
-      case 'full-dispatch':
         return 'secondary';
       case 'full-dispatch':
-        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
-      case 'full-dispatch':
-        return <Package className="h-4 w-4" />;
-        return 'secondary';
+        return 'destructive';
       default:
         return 'secondary';
     }
@@ -303,7 +301,15 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           {activities.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No recent activity found</p>
+              <p className="text-muted-foreground mb-2">No recent activity found</p>
+              <p className="text-xs text-muted-foreground">
+                {loading
+                  ? 'Loading activities...'
+                  : dateRange
+                  ? 'No activities found in the selected date range'
+                  : 'No activities found. Activities will appear here when entries, renewals, or deliveries are made in the system.'
+                }
+              </p>
             </div>
           ) : (
             activities.slice(0, showAll ? activities.length : limit).map((activity, index) => (

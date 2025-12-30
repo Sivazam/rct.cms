@@ -440,11 +440,14 @@ export const getEntries = async (filters?: {
     if (filters?.expiringSoon) {
       const now = new Date();
       const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       entries = entries.filter(entry => {
         const expiryDate = entry.expiryDate?.toDate();
-        return expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now;
+        // Include entries expiring in next 7 days OR expired within last 7 days
+        // This shows users entries that need their attention
+        return expiryDate && ((expiryDate <= sevenDaysFromNow && expiryDate > now) || (expiryDate <= now && expiryDate > sevenDaysAgo));
       });
-      console.log('Expiring soon entries after filter:', entries.length);
+      console.log('📅 [getEntries] Expiring soon entries (includes recently expired):', entries.length);
     }
     
     // Filter for entries that need renewal (expired but still active)

@@ -773,7 +773,7 @@ export default function AdminDashboard() {
                         ))}
                         {expiringEntries.length === 0 && (
                           <p className="text-sm text-muted-foreground text-center py-4">
-                            No entries expiring soon
+                            No entries expiring soon or recently expired
                           </p>
                         )}
                       </div>
