@@ -22,6 +22,7 @@ import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesLis
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import LockerStatusGrid from '@/components/admin/LockerStatusGrid';
 import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
 import { Switch } from '@/components/ui/switch';
 import DateTimeBar from '@/components/ui/DateTimeBar';
@@ -468,7 +469,7 @@ export default function AdminDashboard() {
                   {[
                     {
                       title: 'Total Active Lockers',
-                      value: stats.totalEntries,
+                      value: stats.currentActive,
                       icon: Package,
                       color: 'amber',
                       change: '+12%',
@@ -569,23 +570,7 @@ export default function AdminDashboard() {
                   exit={{ opacity: 0, height: 0 }}
                   className="bg-white rounded-lg border p-6 shadow-sm"
                 >
-                  <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Navigate to Locker Status Page
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Click below to view the complete locker availability grid with all locations and real-time status.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        window.location.href = '/locker-status';
-                      }
-                    }}
-                    className="w-full"
-                  >
-                    <Archive className="h-4 w-4 mr-2" />
-                    Go to Locker Status
-                  </Button>
+                  <LockerStatusGrid initialLocationId={navbarLocation} onLocationChange={setNavbarLocation} />
                 </motion.div>
               )}
 
