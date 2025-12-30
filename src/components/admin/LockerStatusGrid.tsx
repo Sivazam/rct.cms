@@ -235,7 +235,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
 
   return (
     <div className="space-y-6">
-      <Card>
+      {/* <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center space-x-3">
@@ -253,7 +253,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
             Real-time locker availability status across all locations
           </CardDescription>
         </CardHeader>
-      </Card>
+      </Card> */}
 
       <Card>
         <CardContent className="space-y-4 pt-6">
