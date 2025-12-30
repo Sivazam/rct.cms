@@ -430,14 +430,14 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.2 }}
                     whileHover={{ scale: 1.05 }}
-                    className={'relative aspect-square rounded-sm border-2 p-1 flex flex-col items-center justify-center cursor-pointer transition-all ' + getLockerColorClass(status)}
+                    className={'relative w-12 h-12 sm:w-14 sm:h-14 rounded-sm border-2 p-1 flex flex-col items-center justify-center cursor-pointer transition-all ' + getLockerColorClass(status)}
                   >
                     <div className="relative w-full h-full flex flex-col items-center justify-center">
-                      <div className="w-3 h-3 md:w-4 md:h-4">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4">
                         <CircleDot className={'h-full w-full ' + getDotColorClass(status)} />
                       </div>
 
-                      <div className="text-[10px] md:text-xs font-medium mt-0.5">
+                      <div className="text-[10px] sm:text-xs font-medium mt-0.5">
                         #{lockerNum}
                       </div>
 
