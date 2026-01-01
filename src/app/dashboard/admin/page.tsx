@@ -22,7 +22,6 @@ import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesLis
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import LockerStatusGrid from '@/components/admin/LockerStatusGrid';
 import { ResponsiveDateRangePicker } from '@/components/ui/responsive-date-range-picker';
 import { Switch } from '@/components/ui/switch';
 import DateTimeBar from '@/components/ui/DateTimeBar';
@@ -49,7 +48,6 @@ import {
   BarChart3,
   Settings as SettingsIcon
 } from 'lucide-react';
-import { Archive } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -407,7 +405,6 @@ export default function AdminDashboard() {
                   { id: 'overview', label: 'Dashboard', icon: BarChart3 },
                   { id: 'operators', label: 'Operators', icon: Users },
                   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
- { id: 'lockers', label: 'Locker Status', icon: Archive },
                   { id: 'settings', label: 'Settings', icon: SettingsIcon }
                 ].map((tab) => (
                   <button
@@ -469,7 +466,7 @@ export default function AdminDashboard() {
                   {[
                     {
                       title: 'Total Active Lockers',
-                      value: stats.currentActive,
+                      value: stats.totalEntries,
                       icon: Package,
                       color: 'amber',
                       change: '+12%',
@@ -773,7 +770,7 @@ export default function AdminDashboard() {
                         ))}
                         {expiringEntries.length === 0 && (
                           <p className="text-sm text-muted-foreground text-center py-4">
-                            No entries expiring soon or recently expired
+                            No entries expiring soon
                           </p>
                         )}
                       </div>
@@ -784,16 +781,6 @@ export default function AdminDashboard() {
             )}
 
             {/* Other Tabs */}
-            {activeTab === 'lockers' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-white rounded-lg border p-6 shadow-sm"
-              >
-                <LockerStatusGrid initialLocationId={navbarLocation} onLocationChange={setNavbarLocation} />
-              </motion.div>
-            )}
             {activeTab === 'operators' && <OperatorManagement />}
             {activeTab === 'analytics' && <OperatorPerformance />}
             {activeTab === 'settings' && <AdminSettings />}

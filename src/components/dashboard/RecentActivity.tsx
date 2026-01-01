@@ -13,8 +13,7 @@ import {
   AlertTriangle,
   Calendar,
   Phone,
-  MapPin,
-  Archive
+  MapPin
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatFirestoreDate } from '@/lib/date-utils';
@@ -34,7 +33,6 @@ interface Activity {
   operatorName?: string;
   potsDispatched?: number;
   remainingPots?: number;
-  lockerNumber?: number;
 }
 
 interface RecentActivityProps {
@@ -71,20 +69,15 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
   const fetchActivities = async (showAll: boolean = false) => {
     try {
       setLoading(true);
-      console.log('🔄 [RecentActivity] Fetching activities with filters:', { locationId, dateRange, showAll });
-
+      
       // Fetch all entries and dispatched lockers
-      const allEntries = await getEntries({
-        locationId: locationId === 'all' ? undefined : locationId
+      const allEntries = await getEntries({ 
+        locationId: locationId === 'all' ? undefined : locationId 
       });
-
-      console.log('🔄 [RecentActivity] Fetched entries:', allEntries.length);
-
-      const dispatchedLockers = await getDispatchedLockers({
-        locationId: locationId === 'all' ? undefined : locationId
+      
+      const dispatchedLockers = await getDispatchedLockers({ 
+        locationId: locationId === 'all' ? undefined : locationId 
       });
-
-      console.log('🔄 [RecentActivity] Fetched dispatched lockers:', dispatchedLockers.length);
 
       const allActivities: Activity[] = [];
 
@@ -94,7 +87,6 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       // Process entries with renewals
       allEntries.forEach(entry => {
         // Add the initial entry as an activity
-        const entryLockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
         allActivities.push({
           id: `entry-${entry.id}`,
           type: 'entry',
@@ -105,14 +97,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           locationName: getLocationName(entry.locationId),
           timestamp: entry.entryDate,
           status: entry.status,
-          operatorName: entry.operatorName,
-          lockerNumber: lockerNum
+          operatorName: entry.operatorName
         });
 
         // Add renewals as separate activities
         if (entry.renewals && Array.isArray(entry.renewals)) {
           entry.renewals.forEach((renewal: any, index: number) => {
-            const renewalLockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
             allActivities.push({
               id: `renewal-${entry.id}-${index}`,
               type: 'renewal',
@@ -123,14 +113,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
               locationName: getLocationName(entry.locationId),
               timestamp: renewal.date,
               amount: renewal.amount,
-              operatorName: entry.operatorName,
-              lockerNumber: renewalLockerNum
+              operatorName: entry.operatorName
             });
           });
         }
 
         // Add delivery as activity if dispatched
-        const deliveryLockerNum = entry.lockerDetails && entry.lockerDetails[0] ? entry.lockerDetails[0].lockerNumber : undefined;
         if (entry.status === 'dispatched' && entry.deliveryDate) {
           allActivities.push({
             id: `delivery-${entry.id}`,
@@ -142,8 +130,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             locationName: getLocationName(entry.locationId),
             timestamp: entry.deliveryDate,
             status: entry.status,
-            operatorName: entry.operatorName,
-            lockerNumber: deliveryLockerNum
+            operatorName: entry.operatorName
           });
           
           // Mark this entry as dispatched to avoid duplicate from dispatchedLockers
@@ -159,7 +146,6 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
         
         // Skip if this entry is already marked as dispatched (to avoid duplicates)
         if (dispatchInfo && originalEntryData && !dispatchedEntryIds.has(dispatchedLocker.entryId)) {
-          const partialDispatchLockerNum = originalEntryData.lockerDetails && originalEntryData.lockerDetails[0] ? originalEntryData.lockerDetails[0].lockerNumber : undefined;
           allActivities.push({
             id: `partial-dispatch-${dispatchedLocker.id}`,
             type: 'partial-dispatch',
@@ -172,8 +158,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
             status: dispatchInfo.dispatchType,
             operatorName: dispatchInfo.dispatchedBy,
             potsDispatched: dispatchInfo.potsDispatched,
-            remainingPots: dispatchInfo.totalRemainingPots,
-            lockerNumber: partialDispatchLockerNum
+            remainingPots: dispatchInfo.totalRemainingPots
           });
         } else if (dispatchInfo && originalEntryData && dispatchedEntryIds.has(dispatchedLocker.entryId)) {
           // Log skipped duplicates for debugging
@@ -188,8 +173,6 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
         return dateB.getTime() - dateA.getTime();
       });
 
-      console.log('🔄 [RecentActivity] Total activities created:', allActivities.length);
-
       // Apply date range filtering if specified
       let filteredActivities = allActivities;
       if (dateRange) {
@@ -197,16 +180,13 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           const activityDate = activity.timestamp?.toDate ? activity.timestamp.toDate() : new Date(activity.timestamp);
           return activityDate >= dateRange.from && activityDate <= dateRange.to;
         });
-        console.log('🔄 [RecentActivity] Activities after date range filter:', filteredActivities.length);
       }
 
       // Always fetch more data but limit display
       const activityLimit = 100; // Fetch more data for better sorting
-      const displayedActivities = filteredActivities.slice(0, activityLimit);
-      console.log('🔄 [RecentActivity] Activities to display:', displayedActivities.length);
-      setActivities(displayedActivities);
+      setActivities(filteredActivities.slice(0, activityLimit));
     } catch (error) {
-      console.error('❌ [RecentActivity] Error fetching activities:', error);
+      console.error('Error fetching activities:', error);
     } finally {
       setLoading(false);
     }
@@ -221,9 +201,13 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return <Truck className="h-4 w-4" />;
       case 'partial-dispatch':
-        return <Archive className="h-4 w-4" />;
+      case 'full-dispatch':
+        return 'secondary';
+      case 'full-dispatch':
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
       case 'full-dispatch':
         return <Package className="h-4 w-4" />;
+        return <Truck className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
@@ -238,8 +222,12 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
       case 'partial-dispatch':
-        return 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
       case 'full-dispatch':
+        return 'secondary';
+      case 'full-dispatch':
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'full-dispatch':
+        return <Package className="h-4 w-4" />;
         return 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
       default:
         return 'bg-muted text-muted-foreground border-border';
@@ -255,9 +243,13 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
       case 'delivery':
         return 'outline';
       case 'partial-dispatch':
+      case 'full-dispatch':
         return 'secondary';
       case 'full-dispatch':
-        return 'destructive';
+        return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'full-dispatch':
+        return <Package className="h-4 w-4" />;
+        return 'secondary';
       default:
         return 'secondary';
     }
@@ -301,15 +293,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           {activities.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground mb-2">No recent activity found</p>
-              <p className="text-xs text-muted-foreground">
-                {loading
-                  ? 'Loading activities...'
-                  : dateRange
-                  ? 'No activities found in the selected date range'
-                  : 'No activities found. Activities will appear here when entries, renewals, or deliveries are made in the system.'
-                }
-              </p>
+              <p className="text-muted-foreground">No recent activity found</p>
             </div>
           ) : (
             activities.slice(0, showAll ? activities.length : limit).map((activity, index) => (
@@ -320,15 +304,8 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start space-x-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
               >
-                <div className="relative">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  {activity.lockerNumber && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold border-2 border-white dark:border-gray-800">
-                      {activity.lockerNumber}
-                    </div>
-                  )}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                  {getActivityIcon(activity.type)}
                 </div>
                 
                 <div className="flex-1 min-w-0">

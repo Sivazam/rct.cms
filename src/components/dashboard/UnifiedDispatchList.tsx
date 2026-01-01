@@ -22,8 +22,7 @@ import {
   RefreshCw, 
   IndianRupee,
   AlertTriangle,
-  TrendingUp,
-  Archive
+  TrendingUp
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUnifiedDispatch, useUnifiedDispatchAnalytics } from '@/hooks/use-unified-dispatch';
@@ -309,7 +308,6 @@ export default function UnifiedDispatchList({
                   <TableHead>Location</TableHead>
                   <TableHead>Operator</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Locker</TableHead>
                   <TableHead>Pots</TableHead>
                   <TableHead>Payment</TableHead>
                   <TableHead>Amount</TableHead>
@@ -343,12 +341,6 @@ export default function UnifiedDispatchList({
                     </TableCell>
                     <TableCell>
                       {getDispatchTypeBadge(record.dispatchInfo.dispatchType)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-1">
-                        <Archive className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium">#{record.lockerNumber || 'N/A'}</span>
-                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-center">

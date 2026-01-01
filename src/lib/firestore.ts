@@ -440,14 +440,11 @@ export const getEntries = async (filters?: {
     if (filters?.expiringSoon) {
       const now = new Date();
       const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       entries = entries.filter(entry => {
         const expiryDate = entry.expiryDate?.toDate();
-        // Include entries expiring in next 7 days OR expired within last 7 days
-        // This shows users entries that need their attention
-        return expiryDate && ((expiryDate <= sevenDaysFromNow && expiryDate > now) || (expiryDate <= now && expiryDate > sevenDaysAgo));
+        return expiryDate && expiryDate <= sevenDaysFromNow && expiryDate > now;
       });
-      console.log('📅 [getEntries] Expiring soon entries (includes recently expired):', entries.length);
+      console.log('Expiring soon entries after filter:', entries.length);
     }
     
     // Filter for entries that need renewal (expired but still active)
@@ -1057,14 +1054,8 @@ export const getSystemStats = async (locationId?: string, dateRange?: { from: Da
       totalRenewals: totalRenewals,
       totalDeliveries: totalDeliveries, // Now from unified dispatch records
       currentActive: locationId ?
-        entries.filter(e => {
-          const expiryDate = e.expiryDate?.toDate?.() || new Date(e.expiryDate);
-          return e.status === 'active' && e.locationId === locationId && expiryDate > now;
-        }).length :
-        entries.filter(e => {
-          const expiryDate = e.expiryDate?.toDate?.() || new Date(e.expiryDate);
-          return e.status === 'active' && expiryDate > now;
-        }).length, // Only count non-expired active entries
+        entries.filter(e => e.status === 'active' && e.locationId === locationId).length :
+        entries.filter(e => e.status === 'active').length, // Filter by location if specified
       expiringIn7Days: expiringIn7Days,
       monthlyRevenue: totalRenewalCollections + totalDeliveryCollections, // Total collections
       renewalCollections: totalRenewalCollections,
