@@ -431,13 +431,13 @@ export default function AdminSettings() {
       </div>
 
       {/* SMS Logs Section */}
-      <div className="space-y-4">
+      {/* <div className="space-y-4">
         <div className="flex items-center space-x-2">
           <MessageSquare className="h-5 w-5" />
           <h3 className="text-xl font-semibold">SMS Logs</h3>
         </div>
         <SMSLogsTable />
-      </div>
+      </div> */}
     </div>
   );
 }

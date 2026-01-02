@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck } from 'lucide-react';
+import { Calendar, Package, Phone, User, MapPin, Search, Filter, Users, RefreshCw, Plus, ArrowLeft, Calculator, Clock, Info, Truck, Archive } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getEntries, getLocations, getUsers, getCustomerByMobile, getDispatchedLockers, addCustomer } from '@/lib/firestore';
 import { getUnifiedDispatchRecords } from '@/lib/unified-dispatch-service';
@@ -363,10 +363,9 @@ const fetchData = async () => {
   };
 
   const handleNewEntryClick = () => {
-    setShowMobileDialog(true);
-    setMobileNumber('');
-    setFoundCustomer(null);
-    setCustomerError('');
+    // Directly show the entry form without mobile search
+    setShowNewEntry(true);
+    setFoundCustomer(null); // Ensure customer is null to use default values
   };
 
   const handleMobileSearch = async () => {
@@ -1030,13 +1029,10 @@ const fetchData = async () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-orange-800">
-              {foundCustomer ? 'Create New Entry for Existing Customer' : 'Create New Customer Entry'}
+              Create New Entry
             </h3>
             <p className="text-sm text-orange-600">
-              {foundCustomer 
-                ? `Create ash pot entry for ${foundCustomer.name}`
-                : 'Register a new customer and create ash pot entry'
-              }
+              Create a new ash pot entry
             </p>
           </div>
           <Button variant="outline" onClick={handleBackToList}>
@@ -1044,7 +1040,7 @@ const fetchData = async () => {
           </Button>
         </div>
         <CustomerEntryForm 
-          customer={foundCustomer} 
+          customer={null}
           onSuccess={handleBackToList}
           onCancel={handleBackToList}
         />
@@ -1158,6 +1154,7 @@ const fetchData = async () => {
               <TableHead>Contact</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Operator</TableHead>
+              <TableHead>Locker</TableHead>
               <TableHead>Pots</TableHead>
               <TableHead>Entry Date</TableHead>
               {type === 'dispatched' && <TableHead>Dispatched Date</TableHead>}
@@ -1171,10 +1168,10 @@ const fetchData = async () => {
             {filteredEntries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={
-                  (type === 'pending' ? 1 : 0) + 
-                  (type === 'active' ? 1 : 0) + 
-                  (type === 'dispatched' ? 2 : 0) + 
-                  9
+                  (type === 'pending' ? 1 : 0) +
+                  (type === 'active' ? 1 : 0) +
+                  (type === 'dispatched' ? 2 : 0) +
+                  10
                 } className="text-center py-12">
                   <div className="flex flex-col items-center space-y-4">
                     <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
@@ -1301,6 +1298,24 @@ const fetchData = async () => {
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
                         <span>{entry.operatorName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Archive className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {(() => {
+                            if (type === 'dispatched') {
+                              // For dispatched entries, show locker number from dispatch info
+                              return entry.dispatchedInfo?.lockerNumber || 'N/A';
+                            } else {
+                              // For active and pending entries, show locker from lockerDetails
+                              return entry.lockerDetails && entry.lockerDetails[0]
+                                ? entry.lockerDetails[0].lockerNumber
+                                : (entry.lockerNumber || 'N/A');
+                            }
+                          })()}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>

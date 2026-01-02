@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Home, 
+  Archive,
   Users, 
   TrendingUp,
   Settings,
@@ -61,6 +62,14 @@ export default function MobileBottomNav({ userRole = 'admin', userName = 'User',
       icon: <Home className="h-5 w-5" />,
       href: '/dashboard/admin?tab=overview',
       isMain: true
+    },
+    {
+      id: 'lockers',
+      label: 'Locker Status',
+      icon: <Archive className="h-5 w-5" />,
+      href: '/dashboard/admin?tab=lockers',
+      isMain: true,
+      badge: 1  // New menu item
     },
     {
       id: 'operators',

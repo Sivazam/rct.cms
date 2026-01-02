@@ -38,7 +38,7 @@ type Step = 'search' | 'form' | 'confirmation';
 
 export default function CustomerEntrySystem() {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<Step>('search');
+  const [currentStep, setCurrentStep] = useState<Step>('form'); // Start directly with form
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [createdEntry, setCreatedEntry] = useState<EntryData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,12 +73,12 @@ export default function CustomerEntrySystem() {
   };
 
   const handleCancel = () => {
-    setCurrentStep('search');
+    setCurrentStep('form');
     setSelectedCustomer(null);
   };
 
   const handleNewEntry = () => {
-    setCurrentStep('search');
+    setCurrentStep('form');
     setSelectedCustomer(null);
     setCreatedEntry(null);
   };
@@ -143,21 +143,6 @@ export default function CustomerEntrySystem() {
 
   const renderStep = () => {
     switch (currentStep) {
-      case 'search':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <CustomerSearch
-              onCustomerFound={handleCustomerFound}
-              onCreateNew={handleCreateNew}
-              loading={loading}
-            />
-          </motion.div>
-        );
-
       case 'form':
         return (
           <motion.div
@@ -172,7 +157,7 @@ export default function CustomerEntrySystem() {
                 className="mb-4"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Search
+                Back to Form
               </Button>
             </div>
             <CustomerEntryForm
@@ -225,7 +210,6 @@ export default function CustomerEntrySystem() {
           <div className="mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
               {[
-                { step: 'search', label: 'Search Customer', icon: Users },
                 { step: 'form', label: 'Entry Details', icon: Package },
                 { step: 'confirmation', label: 'Confirmation', icon: Package }
               ].map((item, index) => (
@@ -246,7 +230,7 @@ export default function CustomerEntrySystem() {
                   >
                     {item.label}
                   </span>
-                  {index < 2 && (
+                  {index < 1 && (
                     <div className="ml-2 sm:ml-4 w-8 h-0.5 bg-gray-300 hidden sm:block"></div>
                   )}
                 </div>
@@ -255,12 +239,11 @@ export default function CustomerEntrySystem() {
             {/* Mobile connector lines */}
             <div className="sm:hidden flex flex-col items-center space-y-2 mt-4 ml-4">
               {[
-                { step: 'search', label: 'Search Customer', icon: Users },
                 { step: 'form', label: 'Entry Details', icon: Package },
                 { step: 'confirmation', label: 'Confirmation', icon: Package }
               ].map((item, index) => (
                 <div key={item.step} className="flex items-center">
-                  {index < 2 && (
+                  {index < 1 && (
                     <div className="w-0.5 h-8 bg-gray-300 ml-4"></div>
                   )}
                 </div>
@@ -274,51 +257,8 @@ export default function CustomerEntrySystem() {
           {renderStep()}
         </div>
 
-        {/* Entries List - Only shown in search step */}
-        {currentStep === 'search' && (
-          <div className="mt-6">
-            <EntriesList />
-          </div>
-        )}
-
-        {/* Quick Stats */}
-        {currentStep === 'search' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Today's Entries</p>
-                    <p className="text-2xl font-bold text-primary">{stats.todayEntries}</p>
-                  </div>
-                  <Package className="h-8 w-8 text-primary/20" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Customers</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.activeCustomers}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-green-200" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-                    <p className="text-2xl font-bold text-purple-600">₹{stats.monthlyRevenue.toLocaleString()}</p>
-                  </div>
-                  <Package className="h-8 w-8 text-purple-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Quick Stats - Removed as we don't have search step anymore */}
+        {/* Stats can be viewed from dashboard */}
       </div>
     </div>
   );

@@ -110,8 +110,8 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
 
     try {
       let customerId = customer?.id;
-      
-      // Create new customer if not exists
+
+      // Create new customer if not exists (for backwards compatibility)
       if (!customerId) {
         customerId = await addCustomer({
           name: formData.name,
@@ -123,7 +123,7 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
         });
       }
 
-      // Create entry
+      // Create entry with customerId (uses created customer or existing one)
       const entryId = await addEntry({
         customerId: customerId!,
         customerName: formData.deceasedPersonName, // Use deceased person name as customer name
@@ -174,15 +174,10 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Package className="h-5 w-5" />
-          <span>
-            {isExistingCustomer ? 'Create New Entry' : 'New Customer Entry'}
-          </span>
+          <span>Create New Entry</span>
         </CardTitle>
         <CardDescription>
-          {isExistingCustomer 
-            ? 'Create a new locker entry for existing customer'
-            : 'Register new customer and create first entry'
-          }
+          Create a new locker entry
         </CardDescription>
       </CardHeader>
       <CardContent>
