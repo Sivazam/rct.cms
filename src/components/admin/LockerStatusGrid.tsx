@@ -67,6 +67,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredLocker, setHoveredLocker] = useState<{ lockerNum: number; lockerStatus: LockerStatus | undefined } | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const LOCKERS_PER_PAGE = 100;
 
   // Track locker refs for positioning
