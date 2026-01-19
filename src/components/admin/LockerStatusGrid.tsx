@@ -326,7 +326,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     setTouchStartX(null);
   };
 
-  // Simplified hover handler - position card directly below the hovered locker
+  // Simplified hover handler - use mouse position directly with offset
   const handleLockerHover = (lockerNum: number, e: React.MouseEvent<HTMLDivElement>) => {
     const lockerStatus = lockerStatusMap.get(lockerNum);
     console.log('Hovering locker:', lockerNum, 'Status:', lockerStatus, 'Has deceased:', !!lockerStatus?.deceasedPersonName);
@@ -334,19 +334,14 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     if (lockerStatus && (lockerStatus.status === 'active' || lockerStatus.status === 'expired')) {
       setHoveredLocker({ lockerNum, lockerStatus });
 
-      // Position card directly below the hovered locker
-      const lockerElement = e.currentTarget;
-      const rect = lockerElement.getBoundingClientRect();
+      // Use mouse position with offset - simpler and more reliable
+      const x = e.clientX;
+      const y = e.clientY;
 
-      // Get scroll offsets
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      console.log('Setting hover card position from mouse:', { x, y });
 
-      // Set position to center of locker, at top edge (20px below)
-      setMousePosition({
-        x: rect.left + scrollLeft + rect.width / 2,
-        y: rect.top + scrollTop
-      });
+      // Position card at mouse position
+      setMousePosition({ x, y });
     } else {
       setHoveredLocker(null);
     }
@@ -357,6 +352,11 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     setHoveredLocker(null);
     setMousePosition(null);
   };
+
+  // Debug: Log when hoveredLocker or mousePosition changes
+  useEffect(() => {
+    console.log('hoveredLocker changed:', hoveredLocker, 'mousePosition:', mousePosition);
+  }, [hoveredLocker, mousePosition]);
 
   return (
     <>
@@ -376,7 +376,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
             style={{
               left: `${mousePosition?.x || 0}px`,
               top: `${mousePosition?.y || 0}px`,
-              transform: 'translate(-50%, 20px)',
+              transform: 'translate(10px, 20px)',
               zIndex: 9999
             }}
           >
