@@ -199,13 +199,17 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
         .map(e => `${e.customerName.toLowerCase().trim()}_${e.customerMobile.replace(/\D/g, '')}`)
     );
 
-    // Fetch occupied lockers for all locations
-    const occupiedLockersMap = new Map<string, number[]>();
+    // Create a map of occupied lockers by location
+    const occupiedLockersByLocation = new Map<string, Set<number>>();
     for (const location of locations) {
       const occupied = await getOccupiedLockers(location.id);
-      occupiedLockersMap.set(location.id, occupied);
+      occupiedLockersByLocation.set(location.id, new Set(occupied));
     }
-    setOccupiedLockers(occupiedLockersMap);
+    setOccupiedLockers(new Map(Array.from(occupiedLockersByLocation.entries()).map(([id, set]) => [id, Array.from(set)] as [string, number[]])));
+
+    // IMPORTANT: Wait for state to be set before continuing
+    // This ensures occupiedLockers state is available for the grid
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -270,10 +274,10 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
       let hasLockerConflict = false;
       let conflictDetails = '';
       if (location) {
-        const occupied = occupiedLockersMap.get(location.id) || [];
-        if (occupied.includes(row.locker_number)) {
+        const occupiedLockers = occupiedLockersByLocation.get(location.id);
+        if (occupiedLockers && occupiedLockers.has(row.locker_number)) {
           hasLockerConflict = true;
-          conflictDetails = `Locker ${row.locker_number} is already occupied at ${location.venueName}`;
+          conflictDetails = `Locker ${row.locker_number} is already occupied at ${location.venueName} by an existing entry`;
         }
 
         // Check locker number within valid range
@@ -503,8 +507,8 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
             <DialogTitle>Confirm Bulk Import</DialogTitle>
             <DialogDescription>
               Review the parsed entries before confirming the import
@@ -512,33 +516,33 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
           </DialogHeader>
 
           {/* Stats Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 py-4 border-y flex-shrink-0">
-            <div className="text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 px-6 py-4 border-y flex-shrink-0">
+            <div className="text-center min-w-0">
               <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
               <div className="text-xs text-muted-foreground">Total Rows</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-0">
               <div className="text-2xl font-bold text-green-600">{stats.valid}</div>
               <div className="text-xs text-muted-foreground">Valid Entries</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-0">
               <div className="text-2xl font-bold text-amber-600">{stats.duplicates}</div>
               <div className="text-xs text-muted-foreground">Duplicates</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-0">
               <div className="text-2xl font-bold text-orange-600">{stats.lockerConflicts}</div>
               <div className="text-xs text-muted-foreground">Locker Conflicts</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-0">
               <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
               <div className="text-xs text-muted-foreground">Errors</div>
             </div>
           </div>
 
           {/* Entries List */}
-          <div className="flex-1 min-h-0 overflow-hidden flex-shrink-0">
-            <ScrollArea className="h-full">
-              <div className="space-y-2">
+          <div className="flex-1 min-h-0 overflow-hidden px-6">
+            <ScrollArea className="h-full overflow-x-auto overflow-y-auto">
+              <div className="space-y-2 pb-4 pr-2">
                 {parsedEntries.map((entry, index) => (
                   <div
                     key={index}
@@ -580,38 +584,38 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Name:</span>{' '}
-                        <span className="font-medium">{entry.deceasedPersonName}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Name:</span>
+                        <span className="font-medium break-words">{entry.deceasedPersonName}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Mobile:</span>{' '}
-                        <span className="font-medium">{entry.mobile}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Mobile:</span>
+                        <span className="font-medium break-words">{entry.mobile}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">City:</span>{' '}
-                        <span className="font-medium">{entry.city}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">City:</span>
+                        <span className="font-medium break-words">{entry.city}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Pots:</span>{' '}
-                        <span className="font-medium">{entry.totalPots}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Pots:</span>
+                        <span className="font-medium break-words">{entry.totalPots}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Location:</span>{' '}
-                        <span className="font-medium">{entry.locationName}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Location:</span>
+                        <span className="font-medium break-words">{entry.locationName}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Locker:</span>{' '}
-                        <span className="font-medium">{entry.lockerNumber}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Locker:</span>
+                        <span className="font-medium break-words">{entry.lockerNumber}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Payment:</span>{' '}
-                        <span className="font-medium uppercase">{entry.paymentMethod}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Payment:</span>
+                        <span className="font-medium break-words uppercase">{entry.paymentMethod}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Date:</span>{' '}
-                        <span className="font-medium">{entry.entryDate.toLocaleDateString()}</span>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">Date:</span>
+                        <span className="font-medium break-words">{entry.entryDate.toLocaleDateString()}</span>
                       </div>
                     </div>
 
@@ -641,7 +645,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
             </ScrollArea>
           </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 flex-shrink-0 pt-4">
+          <DialogFooter className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 flex-shrink-0 px-6 pt-4 pb-6">
             <Button
               variant="outline"
               onClick={() => {

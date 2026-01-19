@@ -477,7 +477,8 @@ export default function AdminDashboard() {
                       icon: Package,
                       color: 'amber',
                       change: '+12%',
-                      type: 'active'
+                      type: 'active',
+                      className: 'admin-card-active'
                     },
                     {
                       title: 'Pending Renewals',
@@ -485,7 +486,8 @@ export default function AdminDashboard() {
                       icon: RefreshCw,
                       color: 'orange',
                       change: '+5%',
-                      type: 'pending'
+                      type: 'pending',
+                      className: 'admin-card-pending'
                     },
                     {
                       title: 'Total Dispatches',
@@ -493,7 +495,8 @@ export default function AdminDashboard() {
                       icon: Truck,
                       color: 'amber',
                       change: '+8%',
-                      type: 'dispatched'
+                      type: 'dispatched',
+                      className: 'admin-card-dispatched'
                     },
                     {
                       title: 'Monthly Revenue',
@@ -501,7 +504,8 @@ export default function AdminDashboard() {
                       icon: IndianRupee,
                       color: 'orange',
                       change: '+15%',
-                      type: 'revenue'
+                      type: 'revenue',
+                      className: 'admin-card-revenue'
                     }
                   ].map((stat, index) => (
                     <motion.div
@@ -511,8 +515,8 @@ export default function AdminDashboard() {
                       transition={{ delay: index * 0.1 }}
                       className="group"
                     >
-                      <Card 
-                        className="h-full hover:shadow-md transition-all duration-200 border cursor-pointer hover:scale-105 admin-overview-card"
+                      <Card
+                        className={`h-full hover:shadow-md transition-all duration-200 border cursor-pointer hover:scale-105 ${stat.className}`}
                         onClick={() => handleCardClick(stat.type)}
                       >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

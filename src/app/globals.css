@@ -195,12 +195,38 @@
 }
 
 /* Admin overview cards with red background and white text */
+/* Admin Overview Card Styles */
 .admin-overview-card {
   background-color: #99031e !important;
   color: white !important;
 }
 
-.admin-overview-card * {
+/* Individual card colors */
+.admin-card-active {
+  background-color: #99031e !important;
+  color: white !important;
+}
+
+.admin-card-pending {
+  background-color: #ea580c !important;
+  color: white !important;
+}
+
+.admin-card-dispatched {
+  background-color: #16a34a !important;
+  color: white !important;
+}
+
+.admin-card-revenue {
+  background-color: #1e3a8a !important;
+  color: white !important;
+}
+
+.admin-overview-card *,
+.admin-card-active *,
+.admin-card-pending *,
+.admin-card-dispatched *,
+.admin-card-revenue * {
   color: white !important;
 }
 
@@ -219,13 +245,85 @@
 .admin-overview-card h6,
 .admin-overview-card p,
 .admin-overview-card span,
-.admin-overview-card div {
+.admin-overview-card div,
+.admin-card-active .text-foreground,
+.admin-card-active .text-muted-foreground,
+.admin-card-active .text-secondary-foreground,
+.admin-card-active .text-accent-foreground,
+.admin-card-active .text-card-foreground,
+.admin-card-active .text-popover-foreground,
+.admin-card-active .text-sidebar-foreground,
+.admin-card-active h1,
+.admin-card-active h2,
+.admin-card-active h3,
+.admin-card-active h4,
+.admin-card-active h5,
+.admin-card-active h6,
+.admin-card-active p,
+.admin-card-active span,
+.admin-card-active div,
+.admin-card-pending .text-foreground,
+.admin-card-pending .text-muted-foreground,
+.admin-card-pending .text-secondary-foreground,
+.admin-card-pending .text-accent-foreground,
+.admin-card-pending .text-card-foreground,
+.admin-card-pending .text-popover-foreground,
+.admin-card-pending .text-sidebar-foreground,
+.admin-card-pending h1,
+.admin-card-pending h2,
+.admin-card-pending h3,
+.admin-card-pending h4,
+.admin-card-pending h5,
+.admin-card-pending h6,
+.admin-card-pending p,
+.admin-card-pending span,
+.admin-card-pending div,
+.admin-card-dispatched .text-foreground,
+.admin-card-dispatched .text-muted-foreground,
+.admin-card-dispatched .text-secondary-foreground,
+.admin-card-dispatched .text-accent-foreground,
+.admin-card-dispatched .text-card-foreground,
+.admin-card-dispatched .text-popover-foreground,
+.admin-card-dispatched .text-sidebar-foreground,
+.admin-card-dispatched h1,
+.admin-card-dispatched h2,
+.admin-card-dispatched h3,
+.admin-card-dispatched h4,
+.admin-card-dispatched h5,
+.admin-card-dispatched h6,
+.admin-card-dispatched p,
+.admin-card-dispatched span,
+.admin-card-dispatched div,
+.admin-card-revenue .text-foreground,
+.admin-card-revenue .text-muted-foreground,
+.admin-card-revenue .text-secondary-foreground,
+.admin-card-revenue .text-accent-foreground,
+.admin-card-revenue .text-card-foreground,
+.admin-card-revenue .text-popover-foreground,
+.admin-card-revenue .text-sidebar-foreground,
+.admin-card-revenue h1,
+.admin-card-revenue h2,
+.admin-card-revenue h3,
+.admin-card-revenue h4,
+.admin-card-revenue h5,
+.admin-card-revenue h6,
+.admin-card-revenue p,
+.admin-card-revenue span,
+.admin-card-revenue div {
   color: white !important;
 }
 
 /* Override icon colors for admin overview cards */
 .admin-overview-card svg,
-.admin-overview-card .lucide {
+.admin-overview-card .lucide,
+.admin-card-active svg,
+.admin-card-active .lucide,
+.admin-card-pending svg,
+.admin-card-pending .lucide,
+.admin-card-dispatched svg,
+.admin-card-dispatched .lucide,
+.admin-card-revenue svg,
+.admin-card-revenue .lucide {
   color: white !important;
   stroke: white !important;
 }

@@ -379,9 +379,9 @@ export default function CustomerEntryForm({ customer, onSuccess, onCancel, loadi
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={submitting || !formData.locationId || !formData.deceasedPersonName.trim()}
+            <Button
+              type="submit"
+              disabled={submitting || !formData.locationId || !formData.deceasedPersonName.trim() || (occupiedLockers.length > 0 && occupiedLockers.includes(formData.lockerNumber))}
             >
               {submitting ? (
                 <>

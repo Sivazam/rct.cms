@@ -68,10 +68,21 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const [hoveredLocker, setHoveredLocker] = useState<{ lockerNum: number; lockerStatus: LockerStatus | undefined } | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const LOCKERS_PER_PAGE = 100;
 
   // Track locker refs for positioning
   const lockerRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Detect if device is touch-enabled
+  useEffect(() => {
+    const checkTouch = () => {
+      setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkTouch();
+    window.addEventListener('touchstart', checkTouch, { once: true });
+    return () => window.removeEventListener('touchstart', checkTouch);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -245,17 +256,17 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const statusCounts = getStatusCounts();
 
   const getLockerColorClass = (status?: string) => {
-    if (!status) return 'bg-green-100 text-green-800 border-green-200 hover:scale-105 cursor-default';
-    if (status === 'active') return 'bg-orange-100 text-orange-800 border-orange-200 hover:scale-105 hover:shadow-md cursor-pointer';
-    if (status === 'expired') return 'bg-red-100 text-red-800 border-red-200 hover:scale-105 hover:shadow-md cursor-pointer';
-    return 'bg-green-100 text-green-800 border-green-200 hover:scale-105 cursor-default';
+    if (!status) return 'bg-green-700 text-white border-green-800 hover:scale-105 cursor-default';
+    if (status === 'active') return 'bg-orange-700 text-white border-orange-800 hover:scale-105 hover:shadow-md cursor-pointer';
+    if (status === 'expired') return 'bg-red-700 text-white border-red-800 hover:scale-105 hover:shadow-md cursor-pointer';
+    return 'bg-green-700 text-white border-green-800 hover:scale-105 cursor-default';
   };
 
   const getDotColorClass = (status?: string) => {
-    if (!status) return 'text-green-600';
-    if (status === 'active') return 'text-orange-600';
-    if (status === 'expired') return 'text-red-600';
-    return 'text-green-600';
+    if (!status) return 'text-green-200';
+    if (status === 'active') return 'text-orange-200';
+    if (status === 'expired') return 'text-red-200';
+    return 'text-green-200';
   };
 
   const getStatusIcon = (status?: string) => {
@@ -328,6 +339,9 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
 
   // Simplified hover handler - use mouse position directly with offset
   const handleLockerHover = (lockerNum: number, e: React.MouseEvent<HTMLDivElement>) => {
+    // Skip hover handling on touch devices
+    if (isTouchDevice) return;
+
     const lockerStatus = lockerStatusMap.get(lockerNum);
     console.log('Hovering locker:', lockerNum, 'Status:', lockerStatus, 'Has deceased:', !!lockerStatus?.deceasedPersonName);
 
@@ -347,10 +361,39 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     }
   };
 
-  const handleLockerLeave = () => {
-    console.log('Leaving locker');
+  // Click handler for both touch and desktop - toggle modal
+  const handleLockerClick = (lockerNum: number, e: React.MouseEvent<HTMLDivElement>) => {
+    const lockerStatus = lockerStatusMap.get(lockerNum);
+    e.stopPropagation();
+
+    // Only show modal for filled lockers
+    if (lockerStatus && (lockerStatus.status === 'active' || lockerStatus.status === 'expired')) {
+      // If clicking the same locker, close it. Otherwise, open new one.
+      if (hoveredLocker?.lockerNum === lockerNum) {
+        setHoveredLocker(null);
+        setMousePosition(null);
+      } else {
+        setHoveredLocker({ lockerNum, lockerStatus });
+        const x = e.clientX;
+        const y = e.clientY;
+        setMousePosition({ x, y });
+      }
+    }
+  };
+
+  const handleBackdropClick = () => {
+    console.log('Backdrop clicked, closing modal');
     setHoveredLocker(null);
     setMousePosition(null);
+  };
+
+  const handleLockerLeave = () => {
+    // Only close on leave if NOT a touch device
+    if (!isTouchDevice) {
+      console.log('Leaving locker');
+      setHoveredLocker(null);
+      setMousePosition(null);
+    }
   };
 
   // Debug: Log when hoveredLocker or mousePosition changes
@@ -360,49 +403,103 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
 
   return (
     <>
-      {/* Hover Card - Rendered at outermost level for proper z-index */}
+      {/* Centered Modal - Rendered at outermost level for proper z-index */}
       <AnimatePresence>
         {hoveredLocker && hoveredLocker.lockerStatus && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.15 }}
-            className={`fixed rounded-lg shadow-xl border-2 p-3 min-w-48 pointer-events-none ${
-              theme === 'dark' 
-                ? 'bg-slate-800 border-slate-700' 
-                : 'bg-white border-gray-200'
-            }`}
-            style={{
-              left: `${mousePosition?.x || 0}px`,
-              top: `${mousePosition?.y || 0}px`,
-              transform: 'translate(10px, 20px)',
-              zIndex: 9999
-            }}
+          <div
+            className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50 backdrop-blur-sm"
+            onClick={handleBackdropClick}
           >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <User className={`h-4 w-4 ${
-                  theme === 'dark' ? 'text-slate-300' : 'text-gray-600'
-                }`} />
-                <span className={`text-sm font-semibold ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`rounded-xl shadow-2xl border-2 p-6 min-w-80 max-w-sm pointer-events-auto ${
+                theme === 'dark'
+                  ? 'bg-slate-800 border-slate-700'
+                  : 'bg-white border-gray-200'
+              }`}
+            >
+              {/* Close button */}
+              <button
+                onClick={handleBackdropClick}
+                className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                  theme === 'dark' ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                aria-label="Close"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  hoveredLocker.lockerStatus.status === 'active' ? 'bg-orange-600' : 'bg-red-600'
                 }`}>
-                  Deceased: {hoveredLocker.lockerStatus.deceasedPersonName || 'N/A'}
-                </span>
+                  <Archive className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <div className={`text-lg font-bold ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    Locker #{hoveredLocker.lockerNum}
+                  </div>
+                  <Badge className={
+                    hoveredLocker.lockerStatus.status === 'active'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-red-600 text-white'
+                  }>
+                    {hoveredLocker.lockerStatus.status === 'active' ? 'Active' : 'Expired'}
+                  </Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Layers className={`h-4 w-4 ${
-                  theme === 'dark' ? 'text-slate-300' : 'text-gray-600'
-                }`} />
-                <span className={`text-sm ${
-                  theme === 'dark' ? 'text-slate-200' : 'text-gray-700'
-                }`}>
-                  Pots: {hoveredLocker.lockerStatus.pots || 0}
-                </span>
+
+              <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-slate-700`}>
+                    <User className={`h-5 w-5 ${
+                      theme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                    }`} />
+                  </div>
+                  <div>
+                    <div className={`text-xs uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
+                    }`}>
+                      Deceased Person
+                    </div>
+                    <div className={`text-sm font-medium ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {hoveredLocker.lockerStatus.deceasedPersonName || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-slate-700`}>
+                    <Layers className={`h-5 w-5 ${
+                      theme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                    }`} />
+                  </div>
+                  <div>
+                    <div className={`text-xs uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
+                    }`}>
+                      Total Pots
+                    </div>
+                    <div className={`text-sm font-medium ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {hoveredLocker.lockerStatus.pots || 0} Pots
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -503,21 +600,21 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            <div className="p-4 bg-white rounded-lg border-2 border-green-200 shadow-sm">
-              <div className="text-2xl font-bold text-green-600">{statusCounts.available}</div>
-              <div className="text-sm text-gray-600">Available</div>
+            <div className="p-4 bg-green-600 rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-white">{statusCounts.available}</div>
+              <div className="text-sm text-green-100">Available</div>
             </div>
-            <div className="p-4 bg-white rounded-lg border-2 border-orange-200 shadow-sm">
-              <div className="text-2xl font-bold text-orange-600">{statusCounts.active}</div>
-              <div className="text-sm text-gray-600">Active</div>
+            <div className="p-4 bg-orange-600 rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-white">{statusCounts.active}</div>
+              <div className="text-sm text-orange-100">Active</div>
             </div>
-            <div className="p-4 bg-white rounded-lg border-2 border-red-200 shadow-sm">
-              <div className="text-2xl font-bold text-red-600">{statusCounts.expired}</div>
-              <div className="text-sm text-gray-600">Pending Renewal</div>
+            <div className="p-4 bg-red-600 rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-white">{statusCounts.expired}</div>
+              <div className="text-sm text-red-100">Pending Renewal</div>
             </div>
-            <div className="p-4 bg-white rounded-lg border-2 border-blue-200 shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">{statusCounts.total}</div>
-              <div className="text-sm text-gray-600">Total Lockers</div>
+            <div className="p-4 bg-blue-600 rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-white">{statusCounts.total}</div>
+              <div className="text-sm text-blue-100">Total Lockers</div>
             </div>
           </div>
         </CardContent>
@@ -640,9 +737,11 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.2 }}
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       className={'relative w-12 h-12 sm:w-14 sm:h-14 rounded-sm border-2 p-1 flex flex-col items-center justify-center cursor-pointer transition-all ' + getLockerColorClass(status)}
                       onMouseEnter={(e) => isFilled && handleLockerHover(lockerNum, e)}
                       onMouseLeave={handleLockerLeave}
+                      onClick={(e) => isFilled && handleLockerClick(lockerNum, e)}
                     >
                       <div className="relative w-full h-full flex flex-col items-center justify-center">
                         <div className="w-3 h-3 sm:w-4 sm:h-4">
@@ -650,7 +749,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
                         </div>
 
                         <div className="text-[10px] sm:text-xs font-medium mt-0.5">
-                          #{lockerNum}
+                          {lockerNum}
                         </div>
 
                         {status && (
