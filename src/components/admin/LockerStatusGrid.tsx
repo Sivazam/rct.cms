@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, RefreshCw, Package, Archive, AlertTriangle, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, User, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from 'next-themes';
 import { getEntries, getLocations } from '@/lib/firestore';
 
 interface Entry {
@@ -54,6 +55,7 @@ interface LockerStatusGridProps {
 }
 
 export default function LockerStatusGrid({ initialLocationId = 'all', onLocationChange }: LockerStatusGridProps) {
+  const { theme, systemTheme } = useTheme();
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState(initialLocationId);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -66,10 +68,9 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const [hoveredLocker, setHoveredLocker] = useState<{ lockerNum: number; lockerStatus: LockerStatus | undefined } | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const LOCKERS_PER_PAGE = 100;
-  const gridRef = useRef<HTMLDivElement>(null);
 
-  // Swipe gesture handling
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  // Track locker refs for positioning
+  const lockerRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Track mouse movement for hover card positioning
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -331,12 +332,27 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     setTouchStartX(null);
   };
 
-  // Simplified hover handler - just set hovered locker number
-  const handleLockerHover = (lockerNum: number) => {
+  // Simplified hover handler - position card on top of locker
+  const handleLockerHover = (lockerNum: number, e: React.MouseEvent<HTMLDivElement>) => {
     const lockerStatus = lockerStatusMap.get(lockerNum);
     console.log('Hovering locker:', lockerNum, 'Status:', lockerStatus, 'Has deceased:', !!lockerStatus?.deceasedPersonName);
+
     if (lockerStatus && (lockerStatus.status === 'active' || lockerStatus.status === 'expired')) {
       setHoveredLocker({ lockerNum, lockerStatus });
+      
+      // Position card directly on top of the hovered locker
+      const lockerElement = e.currentTarget;
+      const rect = lockerElement.getBoundingClientRect();
+      
+      // Get scroll offsets
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      
+      // Set position to center of locker, 20px below top edge
+      setMousePosition({
+        x: rect.left + scrollLeft + rect.width / 2,
+        y: rect.top + scrollTop + rect.height
+      });
     } else {
       setHoveredLocker(null);
     }
@@ -367,7 +383,11 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15 }}
-            className="fixed bg-white rounded-lg shadow-xl border-2 border-gray-200 p-3 min-w-48 pointer-events-none"
+            className={`fixed rounded-lg shadow-xl border-2 p-3 min-w-48 pointer-events-none ${
+              theme === 'dark' 
+                ? 'bg-slate-800 border-slate-700' 
+                : 'bg-white border-gray-200'
+            }`}
             style={{
               left: `${mousePosition?.x || 0}px`,
               top: `${(mousePosition?.y || 0) + 20}px`,
@@ -377,14 +397,22 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
           >
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-600" />
-                <span className="text-sm font-semibold text-gray-900">
+                <User className={`h-4 w-4 ${
+                  theme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                }`} />
+                <span className={`text-sm font-semibold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   Deceased: {hoveredLocker.lockerStatus.deceasedPersonName || 'N/A'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-700">
+                <Layers className={`h-4 w-4 ${
+                  theme === 'dark' ? 'text-slate-300' : 'text-gray-600'
+                }`} />
+                <span className={`text-sm ${
+                  theme === 'dark' ? 'text-slate-200' : 'text-gray-700'
+                }`}>
                   Pots: {hoveredLocker.lockerStatus.pots || 0}
                 </span>
               </div>

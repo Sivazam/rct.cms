@@ -62,8 +62,10 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
   const [importResults, setImportResults] = useState<{
     successful: number;
     failed: number;
+    lockerConflicts: number;
+    duplicates: number;
     errors: { row: number; error: string }[];
-  }>({ successful: 0, failed: 0, errors: [] });
+  }>({ successful: 0, failed: 0, lockerConflicts: 0, duplicates: 0, errors: [] });
   const [locations, setLocations] = useState<any[]>([]);
   const [occupiedLockers, setOccupiedLockers] = useState<Map<string, number[]>>(new Map());
 
@@ -352,7 +354,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
     setIsProcessing(true);
     setProgress({ current: 0, total: 0 });
 
-    const validEntries = parsedEntries.filter(e => e.errors.length === 0 && !e.isDuplicate);
+    const validEntries = parsedEntries.filter(e => e.errors.length === 0 && !e.isDuplicate && !e.hasLockerConflict);
     const uniqueValidEntries = validEntries.filter((entry, index, self) =>
       index === self.findIndex(e =>
         e.deceasedPersonName.toLowerCase() === entry.deceasedPersonName.toLowerCase() &&
@@ -365,6 +367,8 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
     const results = {
       successful: 0,
       failed: 0,
+      lockerConflicts: 0,
+      duplicates: 0,
       errors: [] as { row: number; error: string }[]
     };
 
@@ -408,7 +412,13 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      setImportResults(results);
+      setImportResults({
+        successful: results.successful,
+        failed: results.failed,
+        lockerConflicts: parsedEntries.filter(e => e.hasLockerConflict).length,
+        duplicates: parsedEntries.filter(e => e.isDuplicate).length,
+        errors: results.errors
+      });
 
       // Log the import to settings
       await fetch('/api/admin/log-import', {
@@ -493,7 +503,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Confirm Bulk Import</DialogTitle>
             <DialogDescription>
@@ -502,7 +512,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
           </DialogHeader>
 
           {/* Stats Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 py-4 border-y">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 py-4 border-y flex-shrink-0">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
               <div className="text-xs text-muted-foreground">Total Rows</div>
@@ -526,110 +536,112 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
           </div>
 
           {/* Entries List */}
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-2">
-              {parsedEntries.map((entry, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border ${
-                    entry.errors.length > 0 || entry.isDuplicate || entry.hasLockerConflict
-                      ? 'bg-red-50 border-red-200'
-                      : 'bg-green-50 border-green-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="text-xs">
-                        Row {entry.rowNumber}
-                      </Badge>
-                      {entry.errors.length === 0 && !entry.isDuplicate && !entry.hasLockerConflict && (
-                        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 text-xs">
-                          <Check className="h-3 w-3 mr-1" />
-                          Valid
+          <div className="flex-1 min-h-0 overflow-hidden flex-shrink-0">
+            <ScrollArea className="h-full">
+              <div className="space-y-2">
+                {parsedEntries.map((entry, index) => (
+                  <div
+                    key={index}
+                    className={`p-3 rounded-lg border ${
+                      entry.errors.length > 0 || entry.isDuplicate || entry.hasLockerConflict
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-green-50 border-green-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="text-xs">
+                          Row {entry.rowNumber}
                         </Badge>
-                      )}
-                      {entry.isDuplicate && (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Duplicate
-                        </Badge>
-                      )}
-                      {entry.hasLockerConflict && (
-                        <Badge variant="destructive" className="text-xs bg-orange-500">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Locker Conflict
-                        </Badge>
-                      )}
-                      {entry.errors.length > 0 && (
-                        <Badge variant="destructive" className="text-xs">
-                          <X className="h-3 w-3 mr-1" />
-                          Error
-                        </Badge>
-                      )}
+                        {entry.errors.length === 0 && !entry.isDuplicate && !entry.hasLockerConflict && (
+                          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 text-xs">
+                            <Check className="h-3 w-3 mr-1" />
+                            Valid
+                          </Badge>
+                        )}
+                        {entry.isDuplicate && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Duplicate
+                          </Badge>
+                        )}
+                        {entry.hasLockerConflict && (
+                          <Badge variant="destructive" className="text-xs bg-orange-500">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Locker Conflict
+                          </Badge>
+                        )}
+                        {entry.errors.length > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            <X className="h-3 w-3 mr-1" />
+                            Error
+                          </Badge>
+                        )}
+                      </div>
                     </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Name:</span>{' '}
+                        <span className="font-medium">{entry.deceasedPersonName}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Mobile:</span>{' '}
+                        <span className="font-medium">{entry.mobile}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">City:</span>{' '}
+                        <span className="font-medium">{entry.city}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Pots:</span>{' '}
+                        <span className="font-medium">{entry.totalPots}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Location:</span>{' '}
+                        <span className="font-medium">{entry.locationName}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Locker:</span>{' '}
+                        <span className="font-medium">{entry.lockerNumber}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Payment:</span>{' '}
+                        <span className="font-medium uppercase">{entry.paymentMethod}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Date:</span>{' '}
+                        <span className="font-medium">{entry.entryDate.toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    {entry.conflictDetails && (
+                      <Alert className="mt-2 bg-orange-50 border-orange-200">
+                        <AlertDescription className="text-sm text-orange-800">
+                          {entry.conflictDetails}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {entry.errors.length > 0 && (
+                      <Alert className="mt-2">
+                        <AlertDescription className="text-sm">
+                          <strong>Errors:</strong>
+                          <ul className="list-disc list-inside mt-1">
+                            {entry.errors.map((error, i) => (
+                              <li key={i}>{error}</li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Name:</span>{' '}
-                      <span className="font-medium">{entry.deceasedPersonName}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Mobile:</span>{' '}
-                      <span className="font-medium">{entry.mobile}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">City:</span>{' '}
-                      <span className="font-medium">{entry.city}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Pots:</span>{' '}
-                      <span className="font-medium">{entry.totalPots}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Location:</span>{' '}
-                      <span className="font-medium">{entry.locationName}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Locker:</span>{' '}
-                      <span className="font-medium">{entry.lockerNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Payment:</span>{' '}
-                      <span className="font-medium uppercase">{entry.paymentMethod}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Date:</span>{' '}
-                      <span className="font-medium">{entry.entryDate.toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  {entry.conflictDetails && (
-                    <Alert className="mt-2 bg-orange-50 border-orange-200">
-                      <AlertDescription className="text-sm text-orange-800">
-                        {entry.conflictDetails}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {entry.errors.length > 0 && (
-                    <Alert className="mt-2">
-                      <AlertDescription className="text-sm">
-                        <strong>Errors:</strong>
-                        <ul className="list-disc list-inside mt-1">
-                          {entry.errors.map((error, i) => (
-                            <li key={i}>{error}</li>
-                          ))}
-                        </ul>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-
-          <DialogFooter className="flex justify-between items-center">
+          <DialogFooter className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 flex-shrink-0 pt-4">
             <Button
               variant="outline"
               onClick={() => {
@@ -641,17 +653,18 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
                 }
               }}
               disabled={isProcessing}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
               <div className="text-sm text-muted-foreground">
                 {stats.valid} entries will be created
               </div>
               <Button
                 onClick={handleConfirmImport}
                 disabled={stats.valid === 0 || isProcessing}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
               >
                 {isProcessing ? (
                   <>
@@ -710,8 +723,8 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
       )}
 
       {/* Results Dialog */}
-      <Dialog open={!isProcessing && importResults.successful > 0} onOpenChange={() => setImportResults({ successful: 0, failed: 0, errors: [] })}>
-        <DialogContent>
+      <Dialog open={!isProcessing && importResults.successful > 0} onOpenChange={() => setImportResults({ successful: 0, failed: 0, lockerConflicts: 0, duplicates: 0, errors: [] })}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Import Complete</DialogTitle>
             <DialogDescription>
@@ -720,10 +733,18 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <div className="text-2xl font-bold text-green-600">{importResults.successful}</div>
                 <div className="text-sm text-muted-foreground">Successful</div>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="text-2xl font-bold text-orange-600">{importResults.lockerConflicts}</div>
+                <div className="text-sm text-muted-foreground">Locker Conflicts</div>
+              </div>
+              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="text-2xl font-bold text-amber-600">{importResults.duplicates}</div>
+                <div className="text-sm text-muted-foreground">Duplicates</div>
               </div>
               <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                 <div className="text-2xl font-bold text-red-600">{importResults.failed}</div>
@@ -731,23 +752,49 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
               </div>
             </div>
 
+            {importResults.lockerConflicts > 0 && (
+              <Alert className="bg-orange-50 border-orange-200">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-sm text-orange-800">
+                  <strong>{importResults.lockerConflicts}</strong> entries were skipped due to locker conflicts (already occupied or invalid locker number).
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {importResults.duplicates > 0 && (
+              <Alert className="bg-amber-50 border-amber-200">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-sm text-amber-800">
+                  <strong>{importResults.duplicates}</strong> entries were skipped as duplicates (same name and mobile already exist).
+                </AlertDescription>
+              </Alert>
+            )}
+
             {importResults.errors.length > 0 && (
-              <ScrollArea className="h-[200px]">
-                <div className="space-y-2">
-                  {importResults.errors.map((error, index) => (
-                    <Alert key={index} variant="destructive">
-                      <AlertDescription>
-                        Row {error.row}: {error.error}
-                      </AlertDescription>
-                    </Alert>
-                  ))}
-                </div>
-              </ScrollArea>
+              <div>
+                <Alert className="mb-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>{importResults.errors.length}</strong> entries failed to create:
+                  </AlertDescription>
+                </Alert>
+                <ScrollArea className="h-[200px]">
+                  <div className="space-y-2">
+                    {importResults.errors.map((error, index) => (
+                      <Alert key={index} variant="destructive">
+                        <AlertDescription>
+                          Row {error.row}: {error.error}
+                        </AlertDescription>
+                      </Alert>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             )}
           </div>
 
-          <DialogFooter>
-            <Button onClick={onSuccess}>Done</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button onClick={onSuccess} className="w-full sm:w-auto">Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
