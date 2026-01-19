@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, RefreshCw, Package, Archive, AlertTriangle, CheckCircle2, CircleDot } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search, RefreshCw, Package, Archive, AlertTriangle, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, User, Layers } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getEntries, getLocations } from '@/lib/firestore';
 
 interface Entry {
@@ -25,6 +25,7 @@ interface Entry {
   status: string;
   locationId: string;
   numberOfPots?: number;
+  deceasedPersonName?: string;
 }
 
 interface Location {
@@ -42,6 +43,7 @@ interface LockerStatus {
   customerName?: string;
   expiryDate?: any;
   pots?: number;
+  deceasedPersonName?: string;
 }
 
 type StatusFilter = 'all' | 'active' | 'expired' | 'available';
@@ -57,10 +59,17 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const [entries, setEntries] = useState<Entry[]>([]);
   const [lockerStatusMap, setLockerStatusMap] = useState<Map<number, LockerStatus>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [gridLoading, setGridLoading] = useState(false); // Separate loading for grid
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [hoveredLocker, setHoveredLocker] = useState<{ lockerNum: number; lockerStatus: LockerStatus | undefined } | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const LOCKERS_PER_PAGE = 100;
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Swipe gesture handling
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -75,6 +84,11 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const fetchData = async () => {
     try {
       setLoading(true);
+      setGridLoading(true); // Start grid loading
+
+      // Clear locker status map immediately when location changes
+      setLockerStatusMap(new Map());
+
       const [locationsData, entriesData] = await Promise.all([
         getLocations(),
         getEntries()
@@ -82,6 +96,8 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
 
       setLocations(locationsData.filter(loc => loc.isActive) as Location[]);
       setEntries(entriesData as Entry[]);
+
+      // Grid loading will be set to false when lockerStatusMap is updated
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -90,7 +106,15 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   };
 
   useEffect(() => {
-    if (entries.length === 0) return;
+    // Set grid loading to false when lockerStatusMap is updated
+    setGridLoading(false);
+  }, [lockerStatusMap]);
+
+  useEffect(() => {
+    if (entries.length === 0) {
+      setLockerStatusMap(new Map());
+      return;
+    }
 
     const newStatusMap = new Map<number, LockerStatus>();
 
@@ -137,7 +161,8 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
         entry,
         customerName: entry.customerName,
         expiryDate: entry.expiryDate,
-        pots: entry.lockerDetails[0].remainingPots
+        pots: entry.lockerDetails[0].remainingPots,
+        deceasedPersonName: entry.deceasedPersonName
       };
 
       newStatusMap.set(lockerNum, lockerStatus);
@@ -145,6 +170,11 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
 
     setLockerStatusMap(newStatusMap);
   }, [entries, selectedLocationId]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm, selectedLocationId]);
 
   const selectedLocation = locations.find(loc => loc.id === selectedLocationId);
   const totalLockers = selectedLocation?.numberOfLockers || 0;
@@ -231,6 +261,87 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     if (status === 'active') return <Package className="h-1 w-1 text-white" />;
     if (status === 'expired') return <AlertTriangle className="h-1 w-1 text-white" />;
     return <CheckCircle2 className="h-1 w-1 text-white" />;
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage(Math.max(1, currentPage - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(Math.min(totalPages, currentPage + 1));
+  };
+
+  // Touch/Swipe handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchEndX - touchStartX;
+
+    // Minimum swipe distance to trigger (in pixels)
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diff) < minSwipeDistance) return;
+
+    if (diff > 0) {
+      // Swipe RIGHT = PREVIOUS page
+      console.log('Swipe detected: RIGHT (Previous)');
+      handlePreviousPage();
+    } else {
+      // Swipe LEFT = NEXT page
+      console.log('Swipe detected: LEFT (Next)');
+      handleNextPage();
+    }
+
+    setTouchStartX(null);
+  };
+
+  // Mouse drag handlers for desktop swipe
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setTouchStartX(e.clientX);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (touchStartX === null) return;
+
+    const diff = e.clientX - touchStartX;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diff) < minSwipeDistance) return;
+
+    if (diff > 0) {
+      console.log('Mouse drag detected: RIGHT (Previous)');
+      handlePreviousPage();
+    } else {
+      console.log('Mouse drag detected: LEFT (Next)');
+      handleNextPage();
+    }
+
+    setTouchStartX(null);
+  };
+
+  // Hover handlers
+  const handleLockerHover = (lockerNum: number, e: React.MouseEvent<HTMLDivElement>) => {
+    const lockerStatus = lockerStatusMap.get(lockerNum);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+    setHoverPosition({
+      x: rect.left + scrollLeft + rect.width / 2,
+      y: rect.top + scrollTop + rect.height / 2
+    });
+
+    setHoveredLocker({ lockerNum, lockerStatus });
+  };
+
+  const handleLockerLeave = () => {
+    setHoveredLocker(null);
+    setHoverPosition(null);
   };
 
   return (
@@ -382,7 +493,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  onClick={handlePreviousPage}
                   disabled={currentPage === 1 || loading}
                 >
                   Previous
@@ -393,7 +504,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  onClick={handleNextPage}
                   disabled={currentPage === totalPages || loading}
                 >
                   Next
@@ -403,7 +514,12 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          {paginatedLockers.length === 0 ? (
+          {gridLoading ? (
+            <div className="text-center py-16">
+              <RefreshCw className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-spin" />
+              <h3 className="text-lg font-medium text-gray-900">Loading Lockers...</h3>
+            </div>
+          ) : paginatedLockers.length === 0 ? (
             <div className="text-center py-16">
               <Archive className="h-16 w-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-lg font-medium text-gray-900">No Lockers Found</h3>
@@ -414,43 +530,125 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
               </p>
             </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid gap-2 grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-14 2xl:grid-cols-16"
-            >
-              {paginatedLockers.map((lockerNum) => {
-                const lockerStatus = lockerStatusMap.get(lockerNum);
-                const status = lockerStatus?.status;
+            <div className="relative">
+              {/* Left Navigation Arrow */}
+              {totalPages > 1 && currentPage > 1 && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 h-8 w-8 rounded-full shadow-lg bg-white hover:bg-gray-100"
+                  onClick={handlePreviousPage}
+                  disabled={loading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
 
-                return (
-                  <motion.div
-                    key={lockerNum}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                    whileHover={{ scale: 1.05 }}
-                    className={'relative w-12 h-12 sm:w-14 sm:h-14 rounded-sm border-2 p-1 flex flex-col items-center justify-center cursor-pointer transition-all ' + getLockerColorClass(status)}
-                  >
-                    <div className="relative w-full h-full flex flex-col items-center justify-center">
-                      <div className="w-3 h-3 sm:w-4 sm:h-4">
-                        <CircleDot className={'h-full w-full ' + getDotColorClass(status)} />
-                      </div>
+              {/* Right Navigation Arrow */}
+              {totalPages > 1 && currentPage < totalPages && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 h-8 w-8 rounded-full shadow-lg bg-white hover:bg-gray-100"
+                  onClick={handleNextPage}
+                  disabled={loading}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
 
-                      <div className="text-[10px] sm:text-xs font-medium mt-0.5">
-                        #{lockerNum}
-                      </div>
+              {/* Locker Grid with Swipe Support */}
+              <motion.div
+                ref={gridRef}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid gap-2 grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-14 2xl:grid-cols-16 px-8"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseUp}
+              >
+                {paginatedLockers.map((lockerNum) => {
+                  const lockerStatus = lockerStatusMap.get(lockerNum);
+                  const status = lockerStatus?.status;
+                  const isFilled = status === 'active' || status === 'expired';
 
-                      {status && (
-                        <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full flex items-center justify-center shadow-md">
-                          {getStatusIcon(status)}
+                  return (
+                    <motion.div
+                      key={lockerNum}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                      whileHover={{ scale: 1.05 }}
+                      className={'relative w-12 h-12 sm:w-14 sm:h-14 rounded-sm border-2 p-1 flex flex-col items-center justify-center cursor-pointer transition-all ' + getLockerColorClass(status)}
+                      onMouseEnter={(e) => isFilled && handleLockerHover(lockerNum, e)}
+                      onMouseLeave={handleLockerLeave}
+                    >
+                      <div className="relative w-full h-full flex flex-col items-center justify-center">
+                        <div className="w-3 h-3 sm:w-4 sm:h-4">
+                          <CircleDot className={'h-full w-full ' + getDotColorClass(status)} />
                         </div>
-                      )}
+
+                        <div className="text-[10px] sm:text-xs font-medium mt-0.5">
+                          #{lockerNum}
+                        </div>
+
+                        {status && (
+                          <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full flex items-center justify-center shadow-md">
+                            {getStatusIcon(status)}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+
+              {/* Hover Card */}
+              <AnimatePresence>
+                {hoveredLocker && hoveredLocker.lockerStatus && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.15 }}
+                    className="fixed z-50 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-3 min-w-48 pointer-events-none"
+                    style={{
+                      left: `${hoverPosition?.x || 0}px`,
+                      top: `${hoverPosition?.y || 0}px`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm font-semibold text-gray-900">
+                          Deceased: {hoveredLocker.lockerStatus.deceasedPersonName || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Layers className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm text-gray-700">
+                          Pots: {hoveredLocker.lockerStatus.pots || 0}
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
-                );
-              })}
-            </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Swipe hint text */}
+          {totalPages > 1 && !gridLoading && paginatedLockers.length > 0 && (
+            <div className="mt-4 text-center text-sm text-gray-600">
+              <p className="hidden md:block">
+                💡 Tip: Use arrow buttons on the sides, or swipe/drag left and right to navigate between pages
+              </p>
+              <p className="md:hidden">
+                💡 Tip: Swipe left or right to navigate between pages
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -458,7 +656,7 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
       <Card className="md:hidden">
         <CardContent className="pt-4">
           <p className="text-sm text-gray-600">
-            <strong>Tip:</strong> Lockers in green are available. Tap to see details (coming soon).
+            <strong>Tip:</strong> Lockers in green are available. Tap filled lockers to see details.
           </p>
         </CardContent>
       </Card>
