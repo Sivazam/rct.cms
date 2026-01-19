@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { motion } from 'framer-motion';
 import LocationManagement from '@/components/admin/LocationManagement';
@@ -16,6 +17,7 @@ import SMSLogsTable from '@/components/admin/SMSLogsTable';
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminMobileTest from '@/components/admin/AdminMobileTest';
 import CustomerEntrySystem from '@/components/entries/CustomerEntrySystem';
+import BulkEntryUpload from '@/components/entries/BulkEntryUpload';
 import RenewalSystem from '@/components/renewals/RenewalSystem';
 import DeliverySystem from '@/components/delivery/DeliverySystem';
 import InteractiveEntriesList from '@/components/dashboard/InteractiveEntriesList';
@@ -47,7 +49,8 @@ import {
   Building2,
   FileText,
   BarChart3,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  FileUp
 } from 'lucide-react';
 import { Archive } from 'lucide-react';
 
@@ -74,6 +77,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const expandedContentRef = useRef<HTMLDivElement>(null);
 
   // Handle navbar location change
@@ -535,8 +539,67 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
+                {/* Quick Actions Section */}
+                {/* <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Plus className="h-5 w-5" />
+                      <span>Quick Actions</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Create new entries or import from CSV
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={() => setExpandedCard('new-entry')}
+                          className="w-full h-auto py-6 flex flex-col items-center justify-center space-y-2"
+                          variant="default"
+                        >
+                          <Package className="h-6 w-6" />
+                          <span className="text-lg font-semibold">Add Single Entry</span>
+                          <span className="text-xs">Create individual entry</span>
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={() => setShowBulkUpload(true)}
+                          className="w-full h-auto py-6 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700"
+                          variant="default"
+                        >
+                          <FileUp className="h-6 w-6" />
+                          <span className="text-lg font-semibold">Upload CSV</span>
+                          <span className="text-xs">Bulk import entries</span>
+                        </Button>
+                      </motion.div>
+                    </div>
+                  </CardContent>
+                </Card> */}
+
                 {/* Expandable Content Sections */}
                 <div ref={expandedContentRef} className="space-y-6">
+                  {/* Single Entry Form */}
+                  {/* {expandedCard === 'entry-form' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      <CustomerEntrySystem />
+                    </motion.div>
+                  )} */}
+
+                  {/* Bulk Upload Dialog */}
+                  {/* <BulkEntryUpload
+                    onSuccess={() => {
+                      setShowBulkUpload(false);
+                      fetchDashboardData();
+                    }}
+                    onCancel={() => setShowBulkUpload(false)}
+                  /> */}
+
                   {/* Active Ash Pots Details */}
                   {expandedCard === 'active' && (
                     <motion.div
@@ -547,14 +610,24 @@ export default function AdminDashboard() {
                     >
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-semibold text-foreground">Active Lockers Details</h3>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setExpandedCard(null)}
-                          className="text-muted-foreground"
-                        >
-                          Close
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setExpandedCard(null)}
+                            className="text-muted-foreground"
+                          >
+                            Close
+                          </Button>
+                          <Button
+                            onClick={() => setShowBulkUpload(true)}
+                            className="bg-orange-600 hover:bg-orange-700"
+                            variant="default"
+                          >
+                            <FileUp className="h-4 w-4 mr-2" />
+                            Upload CSV
+                          </Button>
+                        </div>
                       </div>
                       <InteractiveEntriesList type="active" navbarLocation={navbarLocation} onDataChanged={handleEntriesDataChanged} />
                     </motion.div>
@@ -737,6 +810,29 @@ export default function AdminDashboard() {
                       </div>
                     </motion.div>
                   )}
+
+                  {/* New Entry Form */}
+                  {expandedCard === 'new-entry' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-white rounded-lg border p-6 shadow-sm"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Create New Entry</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setExpandedCard(null)}
+                          className="text-muted-foreground"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      <CustomerEntrySystem />
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Recent Activity */}
@@ -801,11 +897,32 @@ export default function AdminDashboard() {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <MobileBottomNav 
-          userRole="admin" 
-          userName={user?.name || 'Admin'} 
-          onLogout={handleLogout} 
+        <MobileBottomNav
+          userRole="admin"
+          userName={user?.name || 'Admin'}
+          onLogout={handleLogout}
         />
+
+        {/* Bulk Entry Upload Dialog */}
+        {showBulkUpload && (
+          <Dialog open={showBulkUpload} onOpenChange={setShowBulkUpload}>
+            <DialogContent className="max-w-5xl max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>Bulk Entry Upload</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file to create multiple entries at once
+                </DialogDescription>
+              </DialogHeader>
+              <BulkEntryUpload
+                onSuccess={() => {
+                  setShowBulkUpload(false);
+                  fetchDashboardData();
+                }}
+                onCancel={() => setShowBulkUpload(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </ProtectedRoute>
   );

@@ -106,7 +106,7 @@ export default function RecentActivity({ locationId, dateRange, limit = 5 }: Rec
           timestamp: entry.entryDate,
           status: entry.status,
           operatorName: entry.operatorName,
-          lockerNumber: lockerNum
+          lockerNumber: entryLockerNum
         });
 
         // Add renewals as separate activities

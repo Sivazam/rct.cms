@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Save, RotateCcw, Smartphone, Shield, MapPin, MessageSquare, Clock, Play, TestTube, Headphones } from 'lucide-react';
+import { Settings, Save, RotateCcw, Smartphone, Shield, MapPin, MessageSquare, Clock, Play, TestTube, Headphones, FileText, Trash2, Check } from 'lucide-react';
 import { useAdminConfigStore, useHelpDeskMobile, useSetHelpDeskMobile } from '@/stores/admin-config';
 import LocationManagement from './LocationManagement';
 import SMSLogsTable from './SMSLogsTable';
@@ -23,11 +23,75 @@ export default function AdminSettings() {
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [importLogs, setImportLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   
   // Sync input with global state when helpDeskMobile changes
   useEffect(() => {
     setInputMobile(helpDeskMobile);
   }, [helpDeskMobile]);
+
+  // Fetch import logs on mount
+  useEffect(() => {
+    fetchImportLogs();
+  }, []);
+
+  const fetchImportLogs = async () => {
+    try {
+      setLoadingLogs(true);
+      const response = await fetch('/api/admin/log-import');
+      const result = await response.json();
+
+      if (result.success) {
+        setImportLogs(result.logs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching import logs:', error);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleRollback = async (batchId: string) => {
+    if (!confirm('Are you sure you want to rollback this import? This will delete all entries created in this batch.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/rollback-batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ batchId })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage({
+          type: 'success',
+          text: result.message || 'Rollback successful'
+        });
+        // Refresh logs
+        fetchImportLogs();
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Rollback failed'
+        });
+      }
+    } catch (error) {
+      console.error('Rollback error:', error);
+      setMessage({
+        type: 'error',
+        text: 'Rollback failed. Please try again.'
+      });
+    }
+
+    // Clear message after 5 seconds
+    setTimeout(() => setMessage(null), 5000);
+  };
 
   // Real-time validation
   const validateMobile = (mobile: string): string | null => {
@@ -428,6 +492,101 @@ export default function AdminSettings() {
           )}
         </CardContent>
       </Card>
+      </div>
+
+      {/* Bulk Import Logs Section */}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <FileText className="h-5 w-5" />
+          <h3 className="text-xl font-semibold">Bulk Import Logs</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchImportLogs}
+            disabled={loadingLogs}
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Refresh
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Import History</CardTitle>
+            <CardDescription>
+              Track bulk entry imports with ability to rollback
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingLogs ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="text-sm text-muted-foreground mt-2">Loading logs...</p>
+              </div>
+            ) : importLogs.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No import logs found</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {importLogs.map((log, index) => (
+                  <div
+                    key={log.id || index}
+                    className="border rounded-lg p-4 space-y-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center space-x-3 text-sm">
+                          <span className="font-medium">Total Rows:</span>
+                          <Badge variant="secondary">{log.totalRows}</Badge>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm">
+                          <span className="font-medium">Successful:</span>
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            <Check className="h-3 w-3 mr-1" />
+                            {log.successful}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm">
+                          <span className="font-medium">Failed:</span>
+                          <Badge variant="destructive">
+                            {log.failed}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm">
+                          <span className="font-medium">Duplicates:</span>
+                          <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200">
+                            {log.duplicateRows}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm">
+                          <span className="font-medium">Locker Conflicts:</span>
+                          <Badge variant="outline" className="bg-orange-50 text-orange-800 border-orange-200">
+                            {log.lockerConflicts}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRollback(log.importBatchId)}
+                          disabled={!log.importBatchId}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-1" />
+                          Rollback
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* SMS Logs Section */}
