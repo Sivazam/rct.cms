@@ -350,16 +350,13 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     <>
       {/* Hover Card - Rendered at outermost level for proper z-index */}
       <AnimatePresence>
-        {(() => {
-          console.log('🔍 Render check - hoveredLocker:', hoveredLocker, 'has status:', !!hoveredLocker?.lockerStatus);
-          return hoveredLocker && hoveredLocker.lockerStatus;
-        })() && (
+        {hoveredLocker && hoveredLocker.lockerStatus && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15 }}
-            className="fixed bg-white rounded-lg shadow-xl border-2 border-gray-200 p-3 min-w-48 pointer-events-none"
+            className="fixed bg-white rounded-lg shadow-xl border-2 border-gray-200 p-3 min-w-48"
             style={{
               left: `${hoverPosition?.x || 0}px`,
               top: `${hoverPosition?.y || 0}px`,
@@ -371,13 +368,13 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-gray-600" />
                 <span className="text-sm font-semibold text-gray-900">
-                  Deceased: {hoveredLocker!.lockerStatus.deceasedPersonName || 'N/A'}
+                  Deceased: {hoveredLocker.lockerStatus.deceasedPersonName || 'N/A'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Layers className="h-4 w-4 text-gray-600" />
                 <span className="text-sm text-gray-700">
-                  Pots: {hoveredLocker!.lockerStatus.pots || 0}
+                  Pots: {hoveredLocker.lockerStatus.pots || 0}
                 </span>
               </div>
             </div>
