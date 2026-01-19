@@ -64,12 +64,19 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredLocker, setHoveredLocker] = useState<{ lockerNum: number; lockerStatus: LockerStatus | undefined } | null>(null);
-  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const LOCKERS_PER_PAGE = 100;
   const gridRef = useRef<HTMLDivElement>(null);
 
   // Swipe gesture handling
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  // Track mouse movement for hover card positioning
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (hoveredLocker) {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -324,27 +331,31 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
     setTouchStartX(null);
   };
 
-  // Hover handlers
-  const handleLockerHover = (lockerNum: number, e: React.MouseEvent<HTMLDivElement>) => {
+  // Simplified hover handler - just set hovered locker number
+  const handleLockerHover = (lockerNum: number) => {
     const lockerStatus = lockerStatusMap.get(lockerNum);
-    console.log('Hovering locker:', lockerNum, 'Status:', lockerStatus);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
-    setHoverPosition({
-      x: rect.left + scrollLeft + rect.width / 2,
-      y: rect.top + scrollTop + rect.height / 2
-    });
-
-    setHoveredLocker({ lockerNum, lockerStatus });
+    console.log('Hovering locker:', lockerNum, 'Status:', lockerStatus, 'Has deceased:', !!lockerStatus?.deceasedPersonName);
+    if (lockerStatus && (lockerStatus.status === 'active' || lockerStatus.status === 'expired')) {
+      setHoveredLocker({ lockerNum, lockerStatus });
+    } else {
+      setHoveredLocker(null);
+    }
   };
 
   const handleLockerLeave = () => {
     console.log('Leaving locker');
     setHoveredLocker(null);
-    setHoverPosition(null);
+    setMousePosition(null);
   };
+
+  // Add mouse move listener to document
+  useEffect(() => {
+    document.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   return (
     <>
@@ -356,11 +367,11 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15 }}
-            className="fixed bg-white rounded-lg shadow-xl border-2 border-gray-200 p-3 min-w-48"
+            className="fixed bg-white rounded-lg shadow-xl border-2 border-gray-200 p-3 min-w-48 pointer-events-none"
             style={{
-              left: `${hoverPosition?.x || 0}px`,
-              top: `${hoverPosition?.y || 0}px`,
-              transform: 'translate(-50%, -50%)',
+              left: `${mousePosition?.x || 0}px`,
+              top: `${(mousePosition?.y || 0) + 20}px`,
+              transform: 'translate(-50%, 100%)',
               zIndex: 9999
             }}
           >
