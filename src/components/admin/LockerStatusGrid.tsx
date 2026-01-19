@@ -635,7 +635,6 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
 
               {/* Locker Grid with Swipe Support */}
               <motion.div
-                ref={gridRef}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="grid gap-2 grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 xl:grid-cols-14 2xl:grid-cols-16 px-8"
