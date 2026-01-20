@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileUp, X, Check, AlertTriangle, Download, Loader2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { getEntries, getLocations, getOccupiedLockers } from '@/lib/firestore';
+import { getEntries, getLocations, getAllAssignedLockers } from '@/lib/firestore';
 
 interface CSVRow {
   deceased_person_name: string;
@@ -202,14 +202,10 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
     // Create a map of occupied lockers by location
     const occupiedLockersByLocation = new Map<string, Set<number>>();
     for (const location of locations) {
-      const occupied = await getOccupiedLockers(location.id);
+      const occupied = await getAllAssignedLockers(location.id);
       occupiedLockersByLocation.set(location.id, new Set(occupied));
+      console.log(`🔍 [Validation] Location: ${location.venueName} (${location.id}), Occupied Lockers:`, occupied);
     }
-    setOccupiedLockers(new Map(Array.from(occupiedLockersByLocation.entries()).map(([id, set]) => [id, Array.from(set)] as [string, number[]])));
-
-    // IMPORTANT: Wait for state to be set before continuing
-    // This ensures occupiedLockers state is available for the grid
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -262,6 +258,10 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
         loc.venueName.toLowerCase() === (row.location || '').toLowerCase().trim()
       );
 
+      console.log(`🔍 [Validation] Row ${i+2}: Looking for location "${row.location}"`);
+      console.log(`🔍 [Validation] Row ${i+2}: Matched location:`, location ? `${location.venueName} (${location.id})` : 'NOT FOUND');
+      console.log(`🔍 [Validation] Row ${i+2}: Locker number: ${row.locker_number}`);
+
       if (!location) {
         errors.push(`Location "${row.location || 'N/A'}" not found`);
       }
@@ -275,9 +275,19 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
       let conflictDetails = '';
       if (location) {
         const occupiedLockers = occupiedLockersByLocation.get(location.id);
-        if (occupiedLockers && occupiedLockers.has(row.locker_number)) {
+        // Convert locker number from CSV to number safely
+        const lockerNum = parseInt(String(row.locker_number || '0'));
+        console.log(`🔍 [Validation] Row ${i+2}: lockerNum from CSV:`, lockerNum, `type:`, typeof lockerNum);
+        console.log(`🔍 [Validation] Row ${i+2}: Occupied lockers for location ${location.id}:`, JSON.stringify(Array.from(occupiedLockers || [])));
+
+        // Check if this locker number exists in occupied set
+        const isOccupied = occupiedLockers && occupiedLockers.has(lockerNum);
+        console.log(`🔍 [Validation] Row ${i+2}: Locker ${lockerNum} is occupied?`, isOccupied);
+
+        if (isOccupied) {
           hasLockerConflict = true;
-          conflictDetails = `Locker ${row.locker_number} is already occupied at ${location.venueName} by an existing entry`;
+          conflictDetails = `Locker ${lockerNum} is already occupied at ${location.venueName} by an existing entry`;
+          console.log(`⚠️ [Validation] Row ${i+2}: LOCKER CONFLICT DETECTED!`);
         }
 
         // Check locker number within valid range
@@ -507,7 +517,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
             <DialogTitle>Confirm Bulk Import</DialogTitle>
             <DialogDescription>
@@ -541,7 +551,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
 
           {/* Entries List */}
           <div className="flex-1 min-h-0 overflow-hidden px-6">
-            <ScrollArea className="h-full overflow-x-auto overflow-y-auto">
+            <div className="h-full overflow-y-auto">
               <div className="space-y-2 pb-4 pr-2">
                 {parsedEntries.map((entry, index) => (
                   <div
@@ -642,7 +652,7 @@ export default function BulkEntryUpload({ onSuccess, onCancel }: BulkEntryUpload
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 flex-shrink-0 px-6 pt-4 pb-6">

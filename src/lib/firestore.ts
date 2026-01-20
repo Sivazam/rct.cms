@@ -575,6 +575,42 @@ export const getOccupiedLockers = async (locationId: string) => {
   }
 };
 
+// Get all lockers that have been assigned, regardless of status
+// Used for validation to prevent duplicate locker assignments
+export const getAllAssignedLockers = async (locationId: string) => {
+  try {
+    console.log(`🔍 [getAllAssignedLockers] Fetching for location: ${locationId}`);
+    const q = query(
+      collection(db, 'entries'),
+      where('locationId', '==', locationId)
+    );
+    const querySnapshot = await getDocs(q);
+
+    const assignedLockers = new Set<number>();
+    querySnapshot.docs.forEach(doc => {
+      const entryData = doc.data();
+      console.log(`🔍 [getAllAssignedLockers] Entry:`, entryData.customerName, 'Status:', entryData.status, 'lockerDetails:', entryData.lockerDetails);
+      if (entryData.lockerDetails) {
+        entryData.lockerDetails.forEach((locker: any) => {
+          // Add all assigned lockers, regardless of status or pot count
+          // Only exclude entries that have been disposed or cancelled
+          if (!['disposed', 'cancelled'].includes(entryData.status)) {
+            assignedLockers.add(locker.lockerNumber);
+            console.log(`🔍 [getAllAssignedLockers] Adding locker ${locker.lockerNumber} to assigned list`);
+          }
+        });
+      }
+    });
+
+    const result = Array.from(assignedLockers);
+    console.log(`🔍 [getAllAssignedLockers] Final assigned lockers for ${locationId}:`, result);
+    return result;
+  } catch (error) {
+    console.error('Error getting all assigned lockers:', error);
+    throw error;
+  }
+};
+
 // Partial Dispatch Management
 export const partialDispatch = async (entryId: string, dispatchData: {
   lockerNumber: number;

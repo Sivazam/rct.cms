@@ -388,8 +388,9 @@ export default function LockerStatusGrid({ initialLocationId = 'all', onLocation
   };
 
   const handleLockerLeave = () => {
-    // Only close on leave if NOT a touch device
-    if (!isTouchDevice) {
+    // Only close on leave if NOT a touch device AND modal is not currently open via click
+    // When modal is open (clicked), we don't want to close it on mouse leave
+    if (!isTouchDevice && !mousePosition) {
       console.log('Leaving locker');
       setHoveredLocker(null);
       setMousePosition(null);
